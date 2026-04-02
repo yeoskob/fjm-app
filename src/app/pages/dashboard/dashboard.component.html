@@ -1,0 +1,249 @@
+<section class="page">
+  <div class="page-header">
+    <div>
+      <h1>Dashboard</h1>
+      <p>Overview of the sales pipeline performance.</p>
+    </div>
+    <button type="button" class="ghost" (click)="load()">Refresh</button>
+  </div>
+
+  <ng-container *ngIf="dashboard">
+    <!-- Stats -->
+    <div class="stat-row">
+      <div class="stat-card">
+        <div class="stat-value">{{ dashboard.thisMonth }}</div>
+        <div class="stat-label">Inquiry Bulan Ini</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value">{{ dashboard.total }}</div>
+        <div class="stat-label">Total Inquiry</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value">{{ dashboard.quotationSent }}</div>
+        <div class="stat-label">Quotation Dikirim</div>
+      </div>
+      <div class="stat-card highlight-green">
+        <div class="stat-value">{{ dashboard.deals }}</div>
+        <div class="stat-label">Deal</div>
+      </div>
+      <div class="stat-card highlight-red">
+        <div class="stat-value">{{ dashboard.lost }}</div>
+        <div class="stat-label">Lost</div>
+      </div>
+      <div class="stat-card highlight-blue">
+        <div class="stat-value">{{ dashboard.conversionRate }}%</div>
+        <div class="stat-label">Conversion Rate</div>
+      </div>
+    </div>
+
+    <div class="two-col">
+      <!-- Pipeline Breakdown -->
+      <div class="card">
+        <h2>Pipeline Breakdown</h2>
+        <div class="breakdown-list">
+          <div class="breakdown-row" *ngFor="let s of dashboard.statusBreakdown">
+            <span class="breakdown-label">{{ statusLabel(s.status) }}</span>
+            <span class="breakdown-count">{{ s.count }}</span>
+          </div>
+          <div class="empty" *ngIf="dashboard.statusBreakdown.length === 0">No data yet.</div>
+        </div>
+      </div>
+
+      <!-- Top Sales -->
+      <div class="card">
+        <h2>Top Sales (by Deal)</h2>
+        <div class="empty" *ngIf="dashboard.topSales.length === 0">No deals yet.</div>
+        <table class="leaderboard" *ngIf="dashboard.topSales.length > 0">
+          <thead>
+            <tr><th>#</th><th>Sales</th><th>Deals</th></tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let s of dashboard.topSales; let i = index">
+              <td class="rank">{{ i + 1 }}</td>
+              <td>{{ s.sales_pic }}</td>
+              <td><strong>{{ s.deal_count }}</strong></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </ng-container>
+
+  <div class="empty" *ngIf="!dashboard">Loading...</div>
+
+  <!-- User Lookup (admin only) -->
+  <ng-container *ngIf="isAdmin">
+    <div class="section-divider"></div>
+
+    <div class="user-lookup">
+      <div class="user-lookup-header">
+        <h2>User Achievement Lookup</h2>
+        <p>Search for a team member to view their sales and sourcing performance.</p>
+      </div>
+
+      <div class="user-lookup-body">
+        <!-- Search Panel -->
+        <div class="user-search-panel">
+          <div class="search-filters">
+            <input
+              type="text"
+              class="search-input"
+              placeholder="Search by name or username..."
+              [(ngModel)]="searchQuery"
+            />
+            <select class="role-filter-select" [(ngModel)]="roleFilter">
+              <option value="">All Roles</option>
+              <option value="marketing">Sales / Marketing</option>
+              <option value="sourcing">Sourcing</option>
+              <option value="manager">Manager</option>
+              <option value="admin">Admin</option>
+            </select>
+          </div>
+          <div class="user-list">
+            <div
+              class="user-list-item"
+              *ngFor="let u of filteredUsers"
+              [class.active]="selectedUser?.id === u.id"
+              (click)="selectUser(u)"
+            >
+              <div class="user-list-name">{{ u.name }}</div>
+              <div class="user-list-meta">
+                <span class="user-username">@{{ u.username }}</span>
+                <span class="role-badge" [attr.data-role]="u.role">{{ roleLabel(u.role) }}</span>
+              </div>
+            </div>
+            <div class="empty" *ngIf="filteredUsers.length === 0">No users found.</div>
+          </div>
+        </div>
+
+        <!-- Profile Card -->
+        <div class="user-profile-panel">
+          <ng-container *ngIf="!selectedUser">
+            <div class="user-placeholder">
+              <span>Select a user to view their achievement.</span>
+            </div>
+          </ng-container>
+
+          <ng-container *ngIf="selectedUser">
+            <div class="profile-card">
+              <div class="profile-card-header">
+                <div class="profile-avatar">{{ selectedUser.name.charAt(0).toUpperCase() }}</div>
+                <div class="profile-info">
+                  <div class="profile-name">{{ selectedUser.name }}</div>
+                  <div class="profile-sub">
+                    <span class="user-username">@{{ selectedUser.username }}</span>
+                    <span class="role-badge" [attr.data-role]="selectedUser.role">{{ roleLabel(selectedUser.role) }}</span>
+                  </div>
+                </div>
+                <button type="button" class="ghost clear-btn" (click)="clearUser()">Clear</button>
+              </div>
+
+              <div class="empty" *ngIf="loadingUser">Loading achievement data...</div>
+
+              <ng-container *ngIf="userStats && !loadingUser">
+
+                <!-- Sales Achievement -->
+                <ng-container *ngIf="userStats.salesStats.total > 0">
+                  <div class="achievement-section">
+                    <h3 class="achievement-title">Sales Achievement</h3>
+                    <div class="achievement-stat-row">
+                      <div class="achievement-stat">
+                        <div class="achievement-stat-value">{{ userStats.salesStats.total }}</div>
+                        <div class="achievement-stat-label">Total Inquiries</div>
+                      </div>
+                      <div class="achievement-stat">
+                        <div class="achievement-stat-value">{{ userStats.salesStats.thisMonth }}</div>
+                        <div class="achievement-stat-label">This Month</div>
+                      </div>
+                      <div class="achievement-stat">
+                        <div class="achievement-stat-value">{{ userStats.salesStats.active }}</div>
+                        <div class="achievement-stat-label">Active</div>
+                      </div>
+                      <div class="achievement-stat highlight-green">
+                        <div class="achievement-stat-value">{{ userStats.salesStats.deals }}</div>
+                        <div class="achievement-stat-label">Deals</div>
+                      </div>
+                      <div class="achievement-stat highlight-red">
+                        <div class="achievement-stat-value">{{ userStats.salesStats.lost }}</div>
+                        <div class="achievement-stat-label">Lost</div>
+                      </div>
+                      <div class="achievement-stat highlight-blue">
+                        <div class="achievement-stat-value">{{ userStats.salesStats.conversionRate }}%</div>
+                        <div class="achievement-stat-label">Conversion Rate</div>
+                      </div>
+                    </div>
+
+                    <div class="pipeline-table-wrap">
+                      <table class="pipeline-table">
+                        <thead>
+                          <tr><th>Pipeline Stage</th><th>Count</th></tr>
+                        </thead>
+                        <tbody>
+                          <tr *ngFor="let s of userStats.salesStats.statusBreakdown">
+                            <td>{{ statusLabel(s.status) }}</td>
+                            <td><strong>{{ s.count }}</strong></td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </ng-container>
+
+                <!-- Sourcing Achievement -->
+                <ng-container *ngIf="userStats.sourcingStats.itemsSourced > 0">
+                  <div class="achievement-section">
+                    <h3 class="achievement-title">Sourcing Achievement</h3>
+                    <div class="achievement-stat-row">
+                      <div class="achievement-stat highlight-blue">
+                        <div class="achievement-stat-value">{{ userStats.sourcingStats.itemsSourced }}</div>
+                        <div class="achievement-stat-label">Items Sourced</div>
+                      </div>
+                      <div class="achievement-stat">
+                        <div class="achievement-stat-value">{{ userStats.sourcingStats.inquiriesContributed }}</div>
+                        <div class="achievement-stat-label">Inquiries Contributed</div>
+                      </div>
+                      <div class="achievement-stat">
+                        <div class="achievement-stat-value">{{ userStats.sourcingStats.thisMonth }}</div>
+                        <div class="achievement-stat-label">This Month</div>
+                      </div>
+                    </div>
+                  </div>
+                </ng-container>
+
+                <!-- Manager Achievement -->
+                <ng-container *ngIf="userStats.managerStats.approvalsTotal > 0">
+                  <div class="achievement-section">
+                    <h3 class="achievement-title">Manager Achievement</h3>
+                    <div class="achievement-stat-row">
+                      <div class="achievement-stat highlight-blue">
+                        <div class="achievement-stat-value">{{ userStats.managerStats.approvalsTotal }}</div>
+                        <div class="achievement-stat-label">Total Approvals</div>
+                      </div>
+                      <div class="achievement-stat">
+                        <div class="achievement-stat-value">{{ userStats.managerStats.approvalsThisMonth }}</div>
+                        <div class="achievement-stat-label">This Month</div>
+                      </div>
+                      <div class="achievement-stat">
+                        <div class="achievement-stat-value">{{ userStats.managerStats.inquiriesApproved }}</div>
+                        <div class="achievement-stat-label">Inquiries Approved</div>
+                      </div>
+                    </div>
+                  </div>
+                </ng-container>
+
+                <!-- No activity -->
+                <div
+                  class="empty"
+                  *ngIf="userStats.salesStats.total === 0 && userStats.sourcingStats.itemsSourced === 0 && userStats.managerStats.approvalsTotal === 0"
+                >
+                  No sales or sourcing activity recorded for this user yet.
+                </div>
+
+              </ng-container>
+            </div>
+          </ng-container>
+        </div>
+      </div>
+    </div>
+  </ng-container>
+</section>

@@ -1,0 +1,8 @@
+{
+  "/api": {
+    "target": "https://api.yeosbuild.com",
+    "secure": true,
+    "changeOrigin": true,
+    "logLevel": "info"
+  }
+}

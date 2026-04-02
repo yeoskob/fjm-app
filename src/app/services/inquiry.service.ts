@@ -1,0 +1,108 @@
+import { Injectable } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { firstValueFrom } from 'rxjs';
+import { DashboardStats, Inquiry, InquiryCreate, InquiryNote, PriceApproval, SourcingInfo, UserStats } from '../models/inquiry';
+import { environment } from '../../environments/environment';
+
+@Injectable({ providedIn: 'root' })
+export class InquiryService {
+  private readonly base = `${environment.apiUrl}/inquiries`;
+
+  constructor(private http: HttpClient) {}
+
+  getAll(): Promise<Inquiry[]> {
+    return firstValueFrom(this.http.get<Inquiry[]>(this.base));
+  }
+
+  getDashboard(): Promise<DashboardStats> {
+    return firstValueFrom(this.http.get<DashboardStats>(`${this.base}/dashboard`));
+  }
+
+  create(payload: InquiryCreate): Promise<{ id: string; rfqNo: string }> {
+    return firstValueFrom(this.http.post<{ id: string; rfqNo: string }>(this.base, payload));
+  }
+
+  importCoupa(payload: { fileBase64: string; fileName: string; createdBy: string; createdByName: string }): Promise<{ id: string; rfqNo: string; itemCount: number }> {
+    return firstValueFrom(this.http.post<{ id: string; rfqNo: string; itemCount: number }>(`${this.base}/import-coupa`, payload));
+  }
+
+  update(id: string, payload: Partial<InquiryCreate> & { updatedBy: string; updatedByName: string }): Promise<void> {
+    return firstValueFrom(this.http.put<void>(`${this.base}/${id}`, payload));
+  }
+
+  sendRfq(id: string, doneBy: string, doneByName: string, note?: string): Promise<void> {
+    return firstValueFrom(this.http.post<void>(`${this.base}/${id}/send-rfq`, { doneBy, doneByName, note }));
+  }
+
+  reviewItem(id: string, itemId: string, payload: { targetPrice?: number; itemImage?: string; doneBy: string; doneByName: string }): Promise<void> {
+    return firstValueFrom(this.http.patch<void>(`${this.base}/${id}/items/${itemId}`, payload));
+  }
+
+  addItem(id: string, payload: { itemName: string; itemQuantity?: number; itemUom?: string; itemNeedByDate?: string; itemManufacturerName?: string; itemManufacturerPartNumber?: string; itemClassificationOfGoods?: string; itemExtendedDescription?: string; targetPrice?: number; itemImage?: string; doneBy: string; doneByName: string }): Promise<void> {
+    return firstValueFrom(this.http.post<void>(`${this.base}/${id}/items`, payload));
+  }
+
+  sendToPriceApproval(id: string, doneBy: string, doneByName: string, note?: string): Promise<void> {
+    return firstValueFrom(this.http.post<void>(`${this.base}/${id}/send-to-price-approval`, { doneBy, doneByName, note }));
+  }
+
+  submitSourcingInfo(id: string, payload: SourcingInfo): Promise<void> {
+    return firstValueFrom(this.http.post<void>(`${this.base}/${id}/sourcing-info`, payload));
+  }
+
+  submitSourcingInfoItem(id: string, itemId: string, payload: SourcingInfo): Promise<void> {
+    return firstValueFrom(this.http.post<void>(`${this.base}/${id}/items/${itemId}/sourcing-info`, payload));
+  }
+
+  approve(id: string, payload: PriceApproval): Promise<void> {
+    return firstValueFrom(this.http.post<void>(`${this.base}/${id}/approve`, payload));
+  }
+
+  approveItem(id: string, itemId: string, payload: PriceApproval): Promise<void> {
+    return firstValueFrom(this.http.post<void>(`${this.base}/${id}/items/${itemId}/approve`, payload));
+  }
+
+  exportCoupa(id: string): Promise<Blob> {
+    return firstValueFrom(this.http.get(`${this.base}/${id}/export-coupa`, { responseType: 'blob' }));
+  }
+
+  followUp(id: string, doneBy: string, doneByName: string, note?: string): Promise<void> {
+    return firstValueFrom(this.http.post<void>(`${this.base}/${id}/follow-up`, { doneBy, doneByName, note }));
+  }
+
+  close(id: string, outcome: 'deal' | 'lost', doneBy: string, doneByName: string, note?: string): Promise<void> {
+    return firstValueFrom(this.http.post<void>(`${this.base}/${id}/close`, { outcome, doneBy, doneByName, note }));
+  }
+
+  readyToPurchase(id: string, doneBy: string, doneByName: string): Promise<void> {
+    return firstValueFrom(this.http.post<void>(`${this.base}/${id}/ready-to-purchase`, { doneBy, doneByName }));
+  }
+
+  assignSales(id: string, salesPic: string, doneBy: string, doneByName: string, role: string): Promise<void> {
+    return firstValueFrom(this.http.post<void>(`${this.base}/${id}/assign-sales`, { salesPic, doneBy, doneByName, role }));
+  }
+
+  assignSourcing(id: string, sourcingPic: string | null, doneBy: string, doneByName: string, role: string): Promise<void> {
+    return firstValueFrom(this.http.post<void>(`${this.base}/${id}/assign-sourcing`, { sourcingPic, doneBy, doneByName, role }));
+  }
+
+  getItemNotes(inquiryId: string, itemId: string): Promise<InquiryNote[]> {
+    return firstValueFrom(this.http.get<InquiryNote[]>(`${this.base}/${inquiryId}/items/${itemId}/notes`));
+  }
+
+  addItemNote(inquiryId: string, itemId: string, note: string, doneBy: string, doneByName: string, role: string): Promise<void> {
+    return firstValueFrom(this.http.post<void>(`${this.base}/${inquiryId}/items/${itemId}/notes`, { note, doneBy, doneByName, role }));
+  }
+
+  updateHargaJual(inquiryId: string, itemId: string, hargaJual: number, doneBy: string, doneByName: string): Promise<void> {
+    return firstValueFrom(this.http.patch<void>(`${this.base}/${inquiryId}/items/${itemId}/harga-jual`, { hargaJual, doneBy, doneByName }));
+  }
+
+  getUserStats(name: string): Promise<UserStats> {
+    return firstValueFrom(this.http.get<UserStats>(`${this.base}/dashboard/user`, { params: { name } }));
+  }
+
+  getUsers(): Promise<Array<{ id: string; name: string; username: string; role: string }>> {
+    return firstValueFrom(this.http.get<Array<{ id: string; name: string; username: string; role: string }>>(`${environment.apiUrl}/users`));
+  }
+}

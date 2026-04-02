@@ -1,0 +1,55 @@
+﻿<section class="login-shell">
+  <div class="login-card">
+    <h1>FJM Portal</h1>
+    <p class="subtitle">Sign in to access your menus.</p>
+
+    <form (ngSubmit)="submit()" #loginForm="ngForm">
+      <label>
+        Username
+        <input
+          type="text"
+          name="username"
+          required
+          [(ngModel)]="username"
+          autocomplete="username"
+        />
+      </label>
+
+      <label>
+        Password
+        <input
+          type="password"
+          name="password"
+          required
+          [(ngModel)]="password"
+          autocomplete="current-password"
+        />
+      </label>
+
+      <div class="error" *ngIf="error">{{ error }}</div>
+
+      <button class="primary" type="submit" [disabled]="!loginForm.form.valid || isSubmitting">
+        {{ isSubmitting ? 'Signing in...' : 'Login' }}
+      </button>
+    </form>
+
+    <div class="demo">
+      <h2>Demo Accounts</h2>
+      <p class="demo-hint">Click an account to auto-fill.</p>
+      <div class="demo-list">
+        <button type="button" class="demo-item" (click)="fillDemo('admin', 'admin')">
+          <span class="demo-role">Admin</span>
+          <span class="demo-cred">admin / admin</span>
+        </button>
+        <button type="button" class="demo-item" (click)="fillDemo('sourcing', 'sourcing')">
+          <span class="demo-role">Sourcing</span>
+          <span class="demo-cred">sourcing / sourcing</span>
+        </button>
+        <button type="button" class="demo-item" (click)="fillDemo('marketing', 'marketing')">
+          <span class="demo-role">Sales / Marketing</span>
+          <span class="demo-cred">marketing / marketing</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</section>

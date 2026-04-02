@@ -1,0 +1,93 @@
+﻿<section class="page">
+  <div class="page-header">
+    <div>
+      <h1>Admin User Management</h1>
+      <p>Manage user access and roles.</p>
+    </div>
+  </div>
+
+  <!-- Settings -->
+  <div class="card settings-card">
+    <h2>Settings</h2>
+    <div class="settings-row">
+      <label>
+        Default Margin Harga Jual (%)
+        <span class="hint">Pre-fill harga jual = harga beli × (1 + margin%)</span>
+        <div class="settings-input-row">
+          <input type="number" [(ngModel)]="marginPct" [ngModelOptions]="{standalone:true}" min="0" max="500" step="1" class="settings-input" />
+          <span class="pct-label">%</span>
+          <button type="button" class="primary" (click)="saveMargin()">Simpan</button>
+        </div>
+      </label>
+    </div>
+    <div class="notice success" *ngIf="settingsSuccess">{{ settingsSuccess }}</div>
+  </div>
+
+  <div class="admin-grid">
+    <form class="card" (ngSubmit)="save()" #userForm="ngForm">
+      <h2>{{ editingId ? 'Edit User' : 'Add User' }}</h2>
+
+      <label>
+        Full name
+        <input type="text" name="name" required [(ngModel)]="form.name" />
+      </label>
+
+      <label>
+        Username
+        <input type="text" name="username" required [(ngModel)]="form.username" />
+      </label>
+
+      <label>
+        Password
+        <input type="password" name="password" [(ngModel)]="form.password" />
+        <span class="hint" *ngIf="editingId">Leave blank to keep the current password.</span>
+      </label>
+
+      <label>
+        Role
+        <select name="role" [(ngModel)]="form.role">
+          <option value="admin">Admin</option>
+          <option value="manager">Manager</option>
+          <option value="sourcing">Sourcing</option>
+          <option value="marketing">Sales / Marketing</option>
+          <option value="purchasing">Purchasing</option>
+        </select>
+      </label>
+
+      <div class="notice error" *ngIf="error">{{ error }}</div>
+      <div class="notice success" *ngIf="success">{{ success }}</div>
+
+      <div class="actions">
+        <button type="submit" class="primary" [disabled]="!userForm.form.valid || isBusy">
+          {{ editingId ? 'Update' : 'Add' }}
+        </button>
+        <button type="button" class="ghost" *ngIf="editingId" (click)="cancelEdit()">Cancel</button>
+      </div>
+    </form>
+
+    <div class="card">
+      <h2>Users</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Username</th>
+            <th>Role</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let user of users">
+            <td>{{ user.name }}</td>
+            <td>{{ user.username }}</td>
+            <td>{{ user.role }}</td>
+            <td class="row-actions">
+              <button type="button" class="ghost" (click)="startEdit(user)">Edit</button>
+              <button type="button" class="danger" (click)="delete(user)">Delete</button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>

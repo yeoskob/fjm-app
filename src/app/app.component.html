@@ -1,0 +1,35 @@
+<div class="app-shell">
+  <header class="topbar" *ngIf="authService.isLoggedIn()">
+    <div class="brand">FJM Portal</div>
+
+    <nav class="menu">
+      <a routerLink="/marketing" routerLinkActive="active" *ngIf="authService.hasMenu('marketing')">
+        Marketing
+      </a>
+      <a routerLink="/sourcing" routerLinkActive="active" *ngIf="authService.hasMenu('sourcing')">
+        Sourcing
+      </a>
+      <a routerLink="/dashboard" routerLinkActive="active" *ngIf="authService.hasMenu('dashboard')">
+        Dashboard
+      </a>
+      <a routerLink="/pricelist" routerLinkActive="active" *ngIf="authService.hasMenu('pricelist')">
+        Price Approval
+      </a>
+      <a routerLink="/purchasing" routerLinkActive="active" *ngIf="authService.hasMenu('purchasing')">
+        Purchasing
+      </a>
+      <a routerLink="/admin/users" routerLinkActive="active" *ngIf="authService.hasMenu('admin')">
+        Admin
+      </a>
+    </nav>
+
+    <div class="user">
+      <span>{{ authService.getCurrentUser()?.name }}</span>
+      <button type="button" class="ghost" (click)="logout()">Logout</button>
+    </div>
+  </header>
+
+  <main class="content" [class.full]="!authService.isLoggedIn()">
+    <router-outlet></router-outlet>
+  </main>
+</div>
