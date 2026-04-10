@@ -10,21 +10,34 @@
   <div class="notice error" *ngIf="error && !selectedInquiry">{{ error }}</div>
   <div class="notice success" *ngIf="success && !selectedInquiry">{{ success }}</div>
 
-  <!-- RFQ Masuk -->
-  <div class="card">
-    <h2>RFQ Menunggu Sourcing <span class="count-badge">{{ rfqInquiries.length }}</span></h2>
+  <!-- Tabs -->
+  <div class="tab-bar">
+    <button type="button" class="tab-btn" [class.active]="activeTab === 'rfq'" (click)="activeTab = 'rfq'">
+      RFQ <span class="tab-count">{{ rfqInquiries.length }}</span>
+    </button>
+    <button type="button" class="tab-btn" [class.active]="activeTab === 'riwayat'" (click)="activeTab = 'riwayat'">
+      Riwayat <span class="tab-count">{{ doneInquiries.length }}</span>
+    </button>
+  </div>
+
+  <!-- RFQ Tab -->
+  <div class="tab-content" *ngIf="activeTab === 'rfq'">
     <div class="empty" *ngIf="rfqInquiries.length === 0">Tidak ada RFQ yang masuk saat ini.</div>
+    <div class="table-toolbar" *ngIf="rfqInquiries.length > 0">
+      <input class="table-filter" type="text" [(ngModel)]="rfqFilter"
+        placeholder="Filter RFQ, customer, PIC..." />
+    </div>
     <div class="rfq-table-wrap" *ngIf="rfqInquiries.length > 0">
       <table class="rfq-table">
         <thead>
           <tr>
-            <th>RFQ No</th>
-            <th>Customer</th>
-            <th>Sales PIC</th>
-            <th>Sourcing PIC</th>
-            <th class="col-center">Items</th>
-            <th class="col-center">Pending</th>
-            <th>Tanggal</th>
+            <th (click)="toggleSort(rfqSort,'rfqNo')" class="sortable">RFQ No <span class="sort-icon">{{ sortIcon(rfqSort,'rfqNo') }}</span></th>
+            <th (click)="toggleSort(rfqSort,'customer')" class="sortable">Customer <span class="sort-icon">{{ sortIcon(rfqSort,'customer') }}</span></th>
+            <th (click)="toggleSort(rfqSort,'salesPic')" class="sortable">Sales PIC <span class="sort-icon">{{ sortIcon(rfqSort,'salesPic') }}</span></th>
+            <th (click)="toggleSort(rfqSort,'sourcingPic')" class="sortable">Sourcing PIC <span class="sort-icon">{{ sortIcon(rfqSort,'sourcingPic') }}</span></th>
+            <th (click)="toggleSort(rfqSort,'items')" class="sortable col-center">Items <span class="sort-icon">{{ sortIcon(rfqSort,'items') }}</span></th>
+            <th (click)="toggleSort(rfqSort,'pending')" class="sortable col-center">Pending <span class="sort-icon">{{ sortIcon(rfqSort,'pending') }}</span></th>
+            <th (click)="toggleSort(rfqSort,'tanggal')" class="sortable">Need By Date <span class="sort-icon">{{ sortIcon(rfqSort,'tanggal') }}</span></th>
           </tr>
         </thead>
         <tbody>
@@ -44,7 +57,17 @@
               <span class="pending-pill" *ngIf="pendingCount(inq) > 0">{{ pendingCount(inq) }}</span>
               <span class="done-pill" *ngIf="pendingCount(inq) === 0">✓ Done</span>
             </td>
-            <td class="muted">{{ formatDate(inq.tanggal) }}</td>
+            <td>
+              <ng-container *ngIf="earliestNeedByDate(inq) as nbd; else noNbd">
+                <span class="muted">{{ formatDate(nbd) }}</span>
+                <span class="days-left-badge"
+                  [class.urgent]="(daysLeft(nbd) ?? 99) <= 3"
+                  [class.warning]="(daysLeft(nbd) ?? 99) > 3 && (daysLeft(nbd) ?? 99) <= 7">
+                  {{ daysLeft(nbd) }} days left
+                </span>
+              </ng-container>
+              <ng-template #noNbd><span class="muted">-</span></ng-template>
+            </td>
           </tr>
         </tbody>
       </table>
@@ -56,21 +79,24 @@
     </div>
   </div>
 
-  <!-- Riwayat -->
-  <div class="card">
-    <h2>Riwayat Sourcing</h2>
+  <!-- Riwayat Tab -->
+  <div class="tab-content" *ngIf="activeTab === 'riwayat'">
     <div class="empty" *ngIf="doneInquiries.length === 0">Belum ada riwayat.</div>
+    <div class="table-toolbar" *ngIf="doneInquiries.length > 0">
+      <input class="table-filter" type="text" [(ngModel)]="doneFilter"
+        placeholder="Filter RFQ, customer, PIC..." />
+    </div>
     <div class="rfq-table-wrap" *ngIf="doneInquiries.length > 0">
       <table class="rfq-table">
         <thead>
           <tr>
-            <th>RFQ No</th>
-            <th>Customer</th>
-            <th>Sales PIC</th>
-            <th class="col-center">Items</th>
-            <th class="col-center">Sourced</th>
-            <th>Status</th>
-            <th>Tanggal</th>
+            <th (click)="toggleSort(doneSort,'rfqNo')" class="sortable">RFQ No <span class="sort-icon">{{ sortIcon(doneSort,'rfqNo') }}</span></th>
+            <th (click)="toggleSort(doneSort,'customer')" class="sortable">Customer <span class="sort-icon">{{ sortIcon(doneSort,'customer') }}</span></th>
+            <th (click)="toggleSort(doneSort,'salesPic')" class="sortable">Sales PIC <span class="sort-icon">{{ sortIcon(doneSort,'salesPic') }}</span></th>
+            <th (click)="toggleSort(doneSort,'items')" class="sortable col-center">Items <span class="sort-icon">{{ sortIcon(doneSort,'items') }}</span></th>
+            <th (click)="toggleSort(doneSort,'sourced')" class="sortable col-center">Sourced <span class="sort-icon">{{ sortIcon(doneSort,'sourced') }}</span></th>
+            <th (click)="toggleSort(doneSort,'status')" class="sortable">Status <span class="sort-icon">{{ sortIcon(doneSort,'status') }}</span></th>
+            <th (click)="toggleSort(doneSort,'tanggal')" class="sortable">Inquiry Date <span class="sort-icon">{{ sortIcon(doneSort,'tanggal') }}</span></th>
           </tr>
         </thead>
         <tbody>
@@ -121,7 +147,7 @@
         <span>{{ selectedInquiry.customer }}</span>
       </div>
       <div class="modal-header-row">
-        <span class="header-label">Tanggal:</span>
+        <span class="header-label">Inquiry Date:</span>
         <span>{{ formatDate(selectedInquiry.tanggal) }}</span>
       </div>
       <div class="modal-header-row">
@@ -190,32 +216,30 @@
         <tbody>
           <ng-container *ngFor="let item of selectedInquiry.items; let i = index">
             <!-- Item row -->
-            <tr [class.sourced-row]="isSourced(item)" [class.editing-row]="editingItemId === item.id">
+            <tr class="item-row"
+              [class.sourced-row]="isSourced(item)"
+              [class.approved-row]="item.priceApproved"
+              [class.editing-row]="editingItemId === item.id"
+              [class.clickable-row]="selectedInquiry.status === 'rfq' && !item.priceApproved"
+              (click)="!item.priceApproved && toggleFill(item)">
               <td class="muted">{{ i + 1 }}</td>
               <td class="item-name">
                 <div class="item-short" [title]="item.itemName || ''">{{ item.itemName || '-' }}</div>
                 <div class="item-desc" *ngIf="item.itemExtendedDescription" [title]="item.itemExtendedDescription">{{ item.itemExtendedDescription }}</div>
               </td>
               <td>{{ item.itemQuantity ?? '-' }}</td>
-              <td class="muted">{{ item.itemUom || '-' }}</td>
-              <td [title]="item.supplier || ''">{{ item.supplier || '-' }}</td>
+              <td class="muted"><div class="clamp-cell">{{ item.itemUom || '-' }}</div></td>
+              <td><div class="clamp-cell" [title]="item.supplier || ''">{{ item.supplier || '-' }}</div></td>
               <td>{{ formatCurrency(item.hargaBeli) }}</td>
               <td [title]="item.leadTime || ''">{{ item.leadTime || '-' }}</td>
               <td>
-                <span class="sourced-pill" *ngIf="isSourced(item)">Sourced</span>
-                <span class="unsourced-pill" *ngIf="!isSourced(item)">Belum</span>
+                <span class="approved-pill" *ngIf="item.priceApproved">Price Approved</span>
+                <span class="sourced-pill" *ngIf="!item.priceApproved && isSourced(item)">Sourced</span>
+                <span class="unsourced-pill" *ngIf="!item.priceApproved && !isSourced(item)">Belum</span>
               </td>
               <td class="action-cell">
-                <button *ngIf="editingItemId !== item.id && selectedInquiry.status === 'rfq'"
-                  type="button" class="primary sm" (click)="startFill(selectedInquiry, item)">
-                  {{ isSourced(item) ? 'Edit' : 'Isi Info' }}
-                </button>
                 <button *ngIf="editingItemId === item.id"
-                  type="button" class="ghost sm" (click)="cancelFill()">Batal</button>
-                <button type="button" class="item-comment-toggle" [class.active]="openCommentItemId === item.id"
-                  (click)="toggleItemComments(item)">
-                  💬<span class="item-comment-count" *ngIf="(itemNotesMap[item.id]?.length ?? 0) > 0">{{ itemNotesMap[item.id].length }}</span>
-                </button>
+                  type="button" class="ghost sm" (click)="cancelFill(); $event.stopPropagation()">Batal</button>
               </td>
             </tr>
             <!-- Inline fill form -->
@@ -234,8 +258,11 @@
                   </div>
                   <div class="inline-field-row">
                     <span class="field-label">Lead Time *</span>
-                    <input type="text" [(ngModel)]="fillForm.leadTime" [ngModelOptions]="{standalone:true}"
-                      class="form-control" placeholder="cth: 7 hari" />
+                    <div class="lead-time-input-wrap">
+                      <input type="number" [(ngModel)]="fillForm.leadTimeNum" [ngModelOptions]="{standalone:true}"
+                        class="form-control" min="0" />
+                      <span class="lead-time-unit">hari</span>
+                    </div>
                   </div>
                   <div class="inline-field-row">
                     <span class="field-label">MOQ</span>
@@ -248,9 +275,14 @@
                       class="form-control" placeholder="cth: Ready 500pcs" />
                   </div>
                   <div class="inline-field-row">
-                    <span class="field-label">Term Pembayaran</span>
+                    <span class="field-label">Shipping Term</span>
                     <input type="text" [(ngModel)]="fillForm.termPembayaran" [ngModelOptions]="{standalone:true}"
                       class="form-control" placeholder="cth: NET 30, COD" />
+                  </div>
+                  <div class="inline-field-row">
+                    <span class="field-label">Supplier Item Name</span>
+                    <input type="text" [(ngModel)]="fillForm.alternateName" [ngModelOptions]="{standalone:true}"
+                      class="form-control" placeholder="Supplier item name" />
                   </div>
                   <div class="inline-field-row inline-actions-row">
                     <span></span>
@@ -263,7 +295,7 @@
               </td>
             </tr>
             <!-- Per-item comments row -->
-            <tr *ngIf="openCommentItemId === item.id" class="item-comment-row">
+            <tr *ngIf="editingItemId === item.id" class="item-comment-row">
               <td colspan="9">
                 <div class="item-comments-feed">
                   <div class="empty-comments" *ngIf="(itemNotesMap[item.id]?.length ?? 0) === 0">No comments yet.</div>
@@ -304,7 +336,6 @@
         {{ pendingCount(selectedInquiry) }} item belum terisi.
       </div>
       <button type="button" class="primary"
-        [disabled]="pendingCount(selectedInquiry) > 0"
         (click)="sendToPriceApproval()">
         Kirim ke Price Approval
       </button>

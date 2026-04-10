@@ -59,7 +59,6 @@ export interface InquiryItem {
   bidItemPartNumber?: string;
   bidItemDescription?: string;
   bidShippingTerm?: string;
-  targetPrice?: number;
   alternateName?: string;
   approvedPrice?: number;
   supplier?: string;
@@ -119,7 +118,7 @@ export interface InquiryCreate {
   itemManufacturerName?: string;
   itemManufacturerPartNumber?: string;
   itemClassificationOfGoods?: string;
-  targetPrice?: number;
+  itemImage?: string;
   deadlineQuotation?: string;
   lampiran?: string;
   createdBy: string;
@@ -133,6 +132,7 @@ export interface SourcingInfo {
   moq?: number;
   stockAvailability?: string;
   termPembayaran?: string;
+  alternateName?: string;
   doneBy: string;
   doneByName: string;
 }
@@ -155,6 +155,10 @@ export interface DashboardStats {
   conversionRate: number;
   topSales: Array<{ sales_pic: string; deal_count: number }>;
   statusBreakdown: Array<{ status: string; count: number }>;
+  sourcingPending: number;
+  sourcingItemsThisMonth: number;
+  sourcingItemsTotal: number;
+  topSourcers: Array<{ sourcing_pic: string; items_count: number }>;
 }
 
 export interface UserStats {

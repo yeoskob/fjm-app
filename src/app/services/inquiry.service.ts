@@ -34,16 +34,20 @@ export class InquiryService {
     return firstValueFrom(this.http.post<void>(`${this.base}/${id}/send-rfq`, { doneBy, doneByName, note }));
   }
 
-  reviewItem(id: string, itemId: string, payload: { targetPrice?: number; itemImage?: string; doneBy: string; doneByName: string }): Promise<void> {
+  reviewItem(id: string, itemId: string, payload: { itemImage?: string; doneBy: string; doneByName: string }): Promise<void> {
     return firstValueFrom(this.http.patch<void>(`${this.base}/${id}/items/${itemId}`, payload));
   }
 
-  addItem(id: string, payload: { itemName: string; itemQuantity?: number; itemUom?: string; itemNeedByDate?: string; itemManufacturerName?: string; itemManufacturerPartNumber?: string; itemClassificationOfGoods?: string; itemExtendedDescription?: string; targetPrice?: number; itemImage?: string; doneBy: string; doneByName: string }): Promise<void> {
+  addItem(id: string, payload: { itemName: string; itemQuantity?: number; itemUom?: string; itemNeedByDate?: string; itemManufacturerName?: string; itemManufacturerPartNumber?: string; itemClassificationOfGoods?: string; itemExtendedDescription?: string; itemImage?: string; doneBy: string; doneByName: string }): Promise<void> {
     return firstValueFrom(this.http.post<void>(`${this.base}/${id}/items`, payload));
   }
 
   sendToPriceApproval(id: string, doneBy: string, doneByName: string, note?: string): Promise<void> {
     return firstValueFrom(this.http.post<void>(`${this.base}/${id}/send-to-price-approval`, { doneBy, doneByName, note }));
+  }
+
+  returnToSourcing(id: string, doneBy: string, doneByName: string): Promise<void> {
+    return firstValueFrom(this.http.post<void>(`${this.base}/${id}/return-to-sourcing`, { doneBy, doneByName }));
   }
 
   submitSourcingInfo(id: string, payload: SourcingInfo): Promise<void> {
@@ -83,7 +87,7 @@ export class InquiryService {
   }
 
   assignSourcing(id: string, sourcingPic: string | null, doneBy: string, doneByName: string, role: string): Promise<void> {
-    return firstValueFrom(this.http.post<void>(`${this.base}/${id}/assign-sourcing`, { sourcingPic, doneBy, doneByName, role }));
+    return firstValueFrom(this.http.patch<void>(`${this.base}/${id}/assign-sourcing`, { sourcingPic, doneBy, doneByName, role }));
   }
 
   getItemNotes(inquiryId: string, itemId: string): Promise<InquiryNote[]> {

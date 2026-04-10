@@ -10,12 +10,13 @@ import { Inquiry, InquiryItem, InquiryNote, PriceApproval } from '../../models/i
   styleUrls: ['./pricelist.component.scss'],
 })
 export class PricelistComponent implements OnInit {
+  activeTab: 'pending' | 'riwayat' = 'pending';
   pendingApproval: Inquiry[] = [];
   approved: Inquiry[] = [];
   error = '';
   success = '';
 
-  approvalForms: Record<string, Partial<PriceApproval>> = {};
+  approvalForms: Record<string, Partial<PriceApproval> & { marginPct?: number }> = {};
   private defaultMarginPct = 20;
 
   // Modal
@@ -56,7 +57,7 @@ export class PricelistComponent implements OnInit {
   }
 
   sortIcon(state: { col: string; dir: 'asc' | 'desc' }, col: string): string {
-    return state.col !== col ? '↕' : state.dir === 'asc' ? '↑' : '↓';
+    return state.col !== col ? '-' : state.dir === 'asc' ? '^' : 'v';
   }
 
   isUrgent(inquiry: Inquiry): boolean {
@@ -88,6 +89,7 @@ export class PricelistComponent implements OnInit {
         case 'items': av = a.items?.length ?? 0; bv = b.items?.length ?? 0; break;
         case 'pending': av = this.pendingItemCount(a); bv = this.pendingItemCount(b); break;
         case 'status': av = a.status ?? ''; bv = b.status ?? ''; break;
+        case 'tanggal': av = a.tanggal ?? ''; bv = b.tanggal ?? ''; break;
         case 'needByDate': av = this.earliestNeedByRaw(a); bv = this.earliestNeedByRaw(b); break;
       }
       const cmp = typeof av === 'number' ? av - (bv as number) : (av as string).localeCompare(bv as string);
@@ -242,19 +244,31 @@ export class PricelistComponent implements OnInit {
     return this.formatDate(iso.slice(0, 10));
   }
 
+  toggleApprove(item: InquiryItem): void {
+    if (!this.selectedInquiry || this.selectedInquiry.status !== 'price_approval') return;
+    if (this.isApproved(item)) return;
+    if (item.priceApproved) return;
+    if (this.editingItemId === item.id) {
+      this.cancelApprove();
+      return;
+    }
+    this.startApprove(item);
+    if (!this.itemNotesMap[item.id]) {
+      void this.loadItemNotes(this.selectedInquiry.id, item.id);
+    }
+  }
+
   startApprove(item: InquiryItem): void {
     this.editingItemId = item.id;
     this.itemNewNote = '';
     this.error = '';
-    if (!this.itemNotesMap[item.id]) {
-      this.loadItemNotes(this.selectedInquiry!.id, item.id);
-    }
     if (!this.approvalForms[item.id]) {
       const multiplier = 1 + this.defaultMarginPct / 100;
       this.approvalForms[item.id] = {
         hargaJual: item.hargaBeli ? Math.round(item.hargaBeli * multiplier) : undefined,
       };
     }
+    this.updateMarginPctFromHargaJual(item);
   }
 
   cancelApprove(): void {
@@ -285,6 +299,41 @@ export class PricelistComponent implements OnInit {
     this.editingItemId = null;
     this.success = `Item "${item.itemName}" approved.`;
     await this.refresh();
+  }
+
+  hasUnsourcedItems(inq: Inquiry): boolean {
+    return (inq.items ?? []).some((i) => !i.priceApproved && !i.hargaBeli);
+  }
+
+  async returnToSourcing(): Promise<void> {
+    if (!this.selectedInquiry) return;
+    const user = this.authService.getCurrentUser();
+    if (!user) return;
+    this.error = '';
+    this.success = '';
+    try {
+      await this.inquiryService.returnToSourcing(this.selectedInquiry.id, user.username, user.name);
+      this.success = 'Inquiry dikembalikan ke Sourcing.';
+      await this.refresh();
+      this.closeModal();
+    } catch (e: any) {
+      this.error = e?.error?.error ?? 'Gagal mengembalikan ke sourcing.';
+    }
+  }
+
+  updateMarginPctFromHargaJual(item: InquiryItem): void {
+    const form = this.approvalForms[item.id];
+    if (!form || !item.hargaBeli || !form.hargaJual) { if (form) form.marginPct = undefined; return; }
+    const pct = ((form.hargaJual - item.hargaBeli) / item.hargaBeli) * 100;
+    form.marginPct = Math.round(pct * 10) / 10;
+  }
+
+  updateHargaJualFromMargin(item: InquiryItem, value: number): void {
+    const form = this.approvalForms[item.id];
+    if (!form || !item.hargaBeli) return;
+    const pct = Number(value);
+    if (!Number.isFinite(pct)) return;
+    form.hargaJual = Math.round(item.hargaBeli * (1 + pct / 100));
   }
 
   private earliestNeedByRaw(inquiry: Inquiry): string {
@@ -329,8 +378,12 @@ export class PricelistComponent implements OnInit {
   }
 
   getMargin(item: InquiryItem, id: string): number {
-    const hargaJual = this.approvalForms[id]?.hargaJual ?? item.hargaJual ?? 0;
+    const hargaJual = this.approvalForms[id]?.hargaJual ?? this.getApprovedPrice(item) ?? 0;
     return hargaJual - (item.hargaBeli ?? 0);
+  }
+
+  getApprovedPrice(item: InquiryItem): number | undefined {
+    return item.approvedPrice ?? item.hargaJual;
   }
 
   getMarginPct(item: InquiryItem, id: string): number {
@@ -364,3 +417,5 @@ export class PricelistComponent implements OnInit {
     return map[status] ?? status;
   }
 }
+
+

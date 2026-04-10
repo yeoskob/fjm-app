@@ -16,7 +16,6 @@ export class SourcingComponent implements OnInit {
 
   selectedInquiry: Inquiry | null = null;
   itemNotesMap: Record<string, InquiryNote[]> = {};
-  openCommentItemId: string | null = null;
   itemNewNote = '';
   itemSubmittingNote = false;
   currentUser = this.authService.getCurrentUser();
@@ -28,27 +27,73 @@ export class SourcingComponent implements OnInit {
   salesUsers: Array<{ id: string; name: string; username: string; role: string }> = [];
   sourcingUsers: Array<{ id: string; name: string; username: string; role: string }> = [];
 
+  activeTab: 'rfq' | 'riwayat' = 'rfq';
   rfqPage = 1;
   donePage = 1;
   readonly pageSize = 10;
 
+  rfqFilter = '';
+  rfqSort: { col: string; dir: 'asc' | 'desc' } = { col: '', dir: 'asc' };
+  doneFilter = '';
+  doneSort: { col: string; dir: 'asc' | 'desc' } = { col: '', dir: 'asc' };
+
+  toggleSort(state: { col: string; dir: 'asc' | 'desc' }, col: string): void {
+    if (state.col === col) { state.dir = state.dir === 'asc' ? 'desc' : 'asc'; }
+    else { state.col = col; state.dir = 'asc'; }
+  }
+
+  sortIcon(state: { col: string; dir: 'asc' | 'desc' }, col: string): string {
+    return state.col !== col ? '-' : state.dir === 'asc' ? '^' : 'v';
+  }
+
+  private applyFS(items: Inquiry[], filter: string, sort: { col: string; dir: 'asc' | 'desc' }): Inquiry[] {
+    const q = filter.trim().toLowerCase();
+    let result = q
+      ? items.filter((i) =>
+          [i.rfqNo, i.customer, i.salesPic, i.sourcingPic ?? '', i.status]
+            .some((v) => v?.toLowerCase().includes(q))
+        )
+      : items;
+    if (!sort.col) return result;
+    const sortFn = (a: Inquiry, b: Inquiry): number => {
+      let av: string | number = '', bv: string | number = '';
+      switch (sort.col) {
+        case 'rfqNo': av = a.rfqNo ?? ''; bv = b.rfqNo ?? ''; break;
+        case 'customer': av = a.customer ?? ''; bv = b.customer ?? ''; break;
+        case 'salesPic': av = a.salesPic ?? ''; bv = b.salesPic ?? ''; break;
+        case 'sourcingPic': av = a.sourcingPic ?? ''; bv = b.sourcingPic ?? ''; break;
+        case 'items': av = this.itemCount(a); bv = this.itemCount(b); break;
+        case 'pending': av = this.pendingCount(a); bv = this.pendingCount(b); break;
+        case 'sourced': av = this.sourcedCount(a); bv = this.sourcedCount(b); break;
+        case 'status': av = a.status ?? ''; bv = b.status ?? ''; break;
+        case 'tanggal': av = a.tanggal ?? ''; bv = b.tanggal ?? ''; break;
+      }
+      const cmp = typeof av === 'number' ? av - (bv as number) : (av as string).localeCompare(bv as string);
+      return sort.dir === 'asc' ? cmp : -cmp;
+    };
+    return [...result].sort(sortFn);
+  }
+
+  get rfqFiltered(): Inquiry[] { return this.applyFS(this.rfqInquiries, this.rfqFilter, this.rfqSort); }
+  get doneFiltered(): Inquiry[] { return this.applyFS(this.doneInquiries, this.doneFilter, this.doneSort); }
+
   get pagedRfq(): Inquiry[] {
     const s = (this.rfqPage - 1) * this.pageSize;
-    return this.rfqInquiries.slice(s, s + this.pageSize);
+    return this.rfqFiltered.slice(s, s + this.pageSize);
   }
 
   get pagedDone(): Inquiry[] {
     const s = (this.donePage - 1) * this.pageSize;
-    return this.doneInquiries.slice(s, s + this.pageSize);
+    return this.doneFiltered.slice(s, s + this.pageSize);
   }
 
-  rfqPages(): number { return Math.ceil(this.rfqInquiries.length / this.pageSize); }
-  donePages(): number { return Math.ceil(this.doneInquiries.length / this.pageSize); }
+  rfqPages(): number { return Math.ceil(this.rfqFiltered.length / this.pageSize); }
+  donePages(): number { return Math.ceil(this.doneFiltered.length / this.pageSize); }
 
   fillingInquiryId: string | null = null;
   fillingItem: InquiryItem | null = null;
   editingItemId: string | null = null;
-  fillForm: Partial<SourcingInfo> = {};
+  fillForm: Partial<SourcingInfo> & { leadTimeNum?: number } = {};
   previewImageUrl: string | null = null;
 
   constructor(private inquiryService: InquiryService, private authService: AuthService) {}
@@ -71,11 +116,11 @@ export class SourcingComponent implements OnInit {
   async refresh(): Promise<void> {
     const all = await this.inquiryService.getAll();
     const user = this.currentUser;
-    const isSourcingOnly = user?.role === 'sourcing';
 
-    const visible = isSourcingOnly
-      ? all.filter((i) => !i.sourcingPic || i.sourcingPic === user!.name)
-      : all;
+    // Admin and manager see everything; sourcing users see only their own + unassigned
+    const visible = this.isAdminOrManager()
+      ? all
+      : all.filter((i) => !i.sourcingPic || i.sourcingPic === user!.name);
 
     this.rfqInquiries = visible.filter((i) => i.status === 'rfq');
     this.rfqPage = 1;
@@ -93,7 +138,6 @@ export class SourcingComponent implements OnInit {
   openModal(inquiry: Inquiry): void {
     this.selectedInquiry = inquiry;
     this.itemNotesMap = {};
-    this.openCommentItemId = null;
     this.itemNewNote = '';
     this.assigningSalesPic = false;
     this.assigningSourcingPic = false;
@@ -103,7 +147,6 @@ export class SourcingComponent implements OnInit {
   closeModal(): void {
     this.selectedInquiry = null;
     this.itemNotesMap = {};
-    this.openCommentItemId = null;
     this.itemNewNote = '';
     this.assigningSalesPic = false;
     this.assigningSourcingPic = false;
@@ -118,18 +161,6 @@ export class SourcingComponent implements OnInit {
     const isAdminOrManager = user.role === 'admin' || user.role === 'manager';
     const isAssigned = user.name === this.selectedInquiry.salesPic || user.name === this.selectedInquiry.sourcingPic;
     return isAdminOrManager || isAssigned;
-  }
-
-  async toggleItemComments(item: InquiryItem): Promise<void> {
-    if (this.openCommentItemId === item.id) {
-      this.openCommentItemId = null;
-    } else {
-      this.openCommentItemId = item.id;
-      this.itemNewNote = '';
-      if (!this.itemNotesMap[item.id]) {
-        await this.loadItemNotes(this.selectedInquiry!.id, item.id);
-      }
-    }
   }
 
   async loadItemNotes(inquiryId: string, itemId: string): Promise<void> {
@@ -160,14 +191,33 @@ export class SourcingComponent implements OnInit {
     this.fillingItem = item;
     this.editingItemId = item.id;
     this.error = '';
+    const storedLeadTime = item.leadTime ?? '';
+    const leadTimeNum = storedLeadTime ? parseInt(storedLeadTime, 10) || undefined : undefined;
     this.fillForm = {
       supplier: item.supplier,
       hargaBeli: item.hargaBeli,
       leadTime: item.leadTime,
+      leadTimeNum,
       moq: item.moq,
       stockAvailability: item.stockAvailability,
       termPembayaran: item.termPembayaran,
+      alternateName: item.alternateName,
     };
+  }
+
+  async toggleFill(item: InquiryItem): Promise<void> {
+    if (!this.selectedInquiry || this.selectedInquiry.status !== 'rfq') return;
+    if (this.editingItemId === item.id) {
+      this.cancelFill();
+      this.itemNewNote = '';
+      return;
+    }
+
+    this.startFill(this.selectedInquiry, item);
+    this.itemNewNote = '';
+    if (!this.itemNotesMap[item.id]) {
+      await this.loadItemNotes(this.selectedInquiry.id, item.id);
+    }
   }
 
   cancelFill(): void {
@@ -182,11 +232,12 @@ export class SourcingComponent implements OnInit {
     if (!this.fillingInquiryId || !this.fillingItem) return;
     this.error = '';
 
-    const { supplier, hargaBeli, leadTime } = this.fillForm;
-    if (!supplier?.trim() || hargaBeli == null || !leadTime?.trim()) {
+    const { supplier, hargaBeli, leadTimeNum } = this.fillForm;
+    if (!supplier?.trim() || hargaBeli == null || leadTimeNum == null) {
       this.error = 'Supplier, harga beli, dan lead time wajib diisi.';
       return;
     }
+    const leadTime = `${leadTimeNum} hari`;
 
     const user = this.authService.getCurrentUser();
     if (!user) { this.error = 'Not logged in.'; return; }
@@ -198,6 +249,7 @@ export class SourcingComponent implements OnInit {
       moq: this.fillForm.moq,
       stockAvailability: this.fillForm.stockAvailability?.trim(),
       termPembayaran: this.fillForm.termPembayaran?.trim(),
+      alternateName: this.fillForm.alternateName?.trim(),
       doneBy: user.username,
       doneByName: user.name,
     };
@@ -285,6 +337,23 @@ export class SourcingComponent implements OnInit {
       deal: 'Deal', lost: 'Lost',
     };
     return map[status] ?? status;
+  }
+
+  earliestNeedByDate(inq: Inquiry): string | null {
+    const dates = (inq.items ?? [])
+      .map((i) => i.itemNeedByDate)
+      .filter((d): d is string => !!d)
+      .sort();
+    return dates[0] ?? null;
+  }
+
+  daysLeft(dateStr: string | null): number | null {
+    if (!dateStr) return null;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const target = new Date(dateStr);
+    target.setHours(0, 0, 0, 0);
+    return Math.round((target.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
   }
 
   formatDate(iso?: string): string {

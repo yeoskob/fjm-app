@@ -10,21 +10,34 @@
   <div class="notice error" *ngIf="error && !selectedInquiry">{{ error }}</div>
   <div class="notice success" *ngIf="success && !selectedInquiry">{{ success }}</div>
 
-  <!-- Pending Approval -->
-  <div class="card">
-    <h2>Menunggu Approval <span class="count-badge">{{ pendingApproval.length }}</span></h2>
+  <!-- Tabs -->
+  <div class="tab-bar">
+    <button type="button" class="tab-btn" [class.active]="activeTab === 'pending'" (click)="activeTab = 'pending'">
+      Menunggu Approval <span class="tab-count">{{ pendingApproval.length }}</span>
+    </button>
+    <button type="button" class="tab-btn" [class.active]="activeTab === 'riwayat'" (click)="activeTab = 'riwayat'">
+      Riwayat <span class="tab-count">{{ approved.length }}</span>
+    </button>
+  </div>
+
+  <!-- Pending Tab -->
+  <div class="tab-content" *ngIf="activeTab === 'pending'">
     <div class="empty" *ngIf="pendingApproval.length === 0">Tidak ada yang perlu di-approve.</div>
+    <div class="table-toolbar" *ngIf="pendingApproval.length > 0">
+      <input class="table-filter" type="text" [(ngModel)]="pendingFilter"
+        placeholder="Filter RFQ, customer, PIC..." />
+    </div>
     <div class="rfq-table-wrap" *ngIf="pendingApproval.length > 0">
       <table class="rfq-table">
         <thead>
           <tr>
-            <th>RFQ No</th>
-            <th>Customer</th>
-            <th>Sales PIC</th>
-            <th>Sourcing PIC</th>
-            <th class="col-center">Items</th>
-            <th class="col-center">Pending</th>
-            <th>Tanggal</th>
+            <th (click)="toggleSort(pendingSort,'rfqNo')" class="sortable">RFQ No <span class="sort-icon">{{ sortIcon(pendingSort,'rfqNo') }}</span></th>
+            <th (click)="toggleSort(pendingSort,'customer')" class="sortable">Customer <span class="sort-icon">{{ sortIcon(pendingSort,'customer') }}</span></th>
+            <th (click)="toggleSort(pendingSort,'salesPic')" class="sortable">Sales PIC <span class="sort-icon">{{ sortIcon(pendingSort,'salesPic') }}</span></th>
+            <th (click)="toggleSort(pendingSort,'sourcingPic')" class="sortable">Sourcing PIC <span class="sort-icon">{{ sortIcon(pendingSort,'sourcingPic') }}</span></th>
+            <th (click)="toggleSort(pendingSort,'items')" class="sortable col-center">Items <span class="sort-icon">{{ sortIcon(pendingSort,'items') }}</span></th>
+            <th (click)="toggleSort(pendingSort,'pending')" class="sortable col-center">Pending <span class="sort-icon">{{ sortIcon(pendingSort,'pending') }}</span></th>
+            <th (click)="toggleSort(pendingSort,'needByDate')" class="sortable">Need By Date <span class="sort-icon">{{ sortIcon(pendingSort,'needByDate') }}</span></th>
           </tr>
         </thead>
         <tbody>
@@ -44,7 +57,7 @@
               <span class="pending-pill" *ngIf="pendingItemCount(inq) > 0">{{ pendingItemCount(inq) }}</span>
               <span class="done-pill" *ngIf="pendingItemCount(inq) === 0">✓ Done</span>
             </td>
-            <td class="muted">{{ formatDate(inq.tanggal) }}</td>
+            <td class="muted">{{ earliestNeedByDate(inq) }}</td>
           </tr>
         </tbody>
       </table>
@@ -56,20 +69,23 @@
     </div>
   </div>
 
-  <!-- Riwayat -->
-  <div class="card">
-    <h2>Riwayat</h2>
+  <!-- Riwayat Tab -->
+  <div class="tab-content" *ngIf="activeTab === 'riwayat'">
     <div class="empty" *ngIf="approved.length === 0">Belum ada riwayat.</div>
+    <div class="table-toolbar" *ngIf="approved.length > 0">
+      <input class="table-filter" type="text" [(ngModel)]="approvedFilter"
+        placeholder="Filter RFQ, customer, PIC..." />
+    </div>
     <div class="rfq-table-wrap" *ngIf="approved.length > 0">
       <table class="rfq-table">
         <thead>
           <tr>
-            <th>RFQ No</th>
-            <th>Customer</th>
-            <th>Sales PIC</th>
-            <th class="col-center">Items</th>
-            <th>Status</th>
-            <th>Tanggal</th>
+            <th (click)="toggleSort(approvedSort,'rfqNo')" class="sortable">RFQ No <span class="sort-icon">{{ sortIcon(approvedSort,'rfqNo') }}</span></th>
+            <th (click)="toggleSort(approvedSort,'customer')" class="sortable">Customer <span class="sort-icon">{{ sortIcon(approvedSort,'customer') }}</span></th>
+            <th (click)="toggleSort(approvedSort,'salesPic')" class="sortable">Sales PIC <span class="sort-icon">{{ sortIcon(approvedSort,'salesPic') }}</span></th>
+            <th (click)="toggleSort(approvedSort,'items')" class="sortable col-center">Items <span class="sort-icon">{{ sortIcon(approvedSort,'items') }}</span></th>
+            <th (click)="toggleSort(approvedSort,'status')" class="sortable">Status <span class="sort-icon">{{ sortIcon(approvedSort,'status') }}</span></th>
+            <th (click)="toggleSort(approvedSort,'tanggal')" class="sortable">Inquiry Date <span class="sort-icon">{{ sortIcon(approvedSort,'tanggal') }}</span></th>
           </tr>
         </thead>
         <tbody>
@@ -98,207 +114,174 @@
 <!-- Detail Modal -->
 <div class="modal-overlay" *ngIf="selectedInquiry" (click)="closeModal()">
   <div class="modal-card wide-modal" (click)="$event.stopPropagation()">
-    <div class="detail-two-col" [class.comments-hidden]="!showComments">
+    <div class="modal-header">
+      <div class="modal-header-row title-row">
+        <span class="mono-blue">{{ selectedInquiry.rfqNo }}</span>
+        <span class="coupa-badge" *ngIf="selectedInquiry.coupaSource">Coupa</span>
+        <span class="status-pill" [attr.data-status]="selectedInquiry.status">{{ statusLabel(selectedInquiry.status) }}</span>
+      </div>
+      <div class="modal-header-row">
+        <span class="header-label">Customer:</span>
+        <span>{{ selectedInquiry.customer }}</span>
+      </div>
+      <div class="modal-header-row">
+        <span class="header-label">Inquiry Date:</span>
+        <span>{{ formatDate(selectedInquiry.tanggal) }}</span>
+      </div>
+      <div class="modal-header-row">
+        <span class="header-label">Sales:</span>
+        <span>{{ selectedInquiry.salesPic }}</span>
+      </div>
+      <div class="modal-header-row">
+        <span class="header-label">Sourcing:</span>
+        <span>{{ selectedInquiry.sourcingPic || 'Unassigned' }}</span>
+      </div>
+    </div>
 
-      <!-- ── LEFT: Items ── -->
-      <div class="detail-left">
-        <div class="modal-header">
-          <div class="modal-header-top">
-            <div class="modal-title">
-              <span class="mono-blue">{{ selectedInquiry.rfqNo }}</span>
-              <span class="coupa-badge" *ngIf="selectedInquiry.coupaSource">Coupa</span>
-              <span class="status-pill" [attr.data-status]="selectedInquiry.status">{{ statusLabel(selectedInquiry.status) }}</span>
-            </div>
-          </div>
-          <div class="modal-meta">
-            <span><strong>Customer:</strong> {{ selectedInquiry.customer }}</span>
-            <span><strong>Tanggal:</strong> {{ formatDate(selectedInquiry.tanggal) }}</span>
-            <button type="button" class="ghost sm comments-toggle-btn"
-              (click)="toggleComments()">
-              💬 {{ showComments ? 'Hide Comments' : 'Show Comments' }}
-            </button>
-          </div>
-        </div>
+    <div class="notice error" style="margin: 0 1.5rem" *ngIf="error">{{ error }}</div>
+    <div class="notice success" style="margin: 0 1.5rem" *ngIf="success">{{ success }}</div>
 
-        <div class="notice error" style="margin: 0 1.5rem" *ngIf="error">{{ error }}</div>
-        <div class="notice success" style="margin: 0 1.5rem" *ngIf="success">{{ success }}</div>
+    <div class="items-wrap">
+      <table class="items-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Item / Description</th>
+            <th>Qty</th>
+            <th>UoM</th>
+            <th>Supplier</th>
+            <th>Harga Beli</th>
+            <th>Harga Jual</th>
+            <th>Margin</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          <ng-container *ngFor="let item of selectedInquiry.items; let i = index">
+            <tr class="item-row"
+              [class.approved-row]="isApproved(item)"
+              [class.editing-row]="editingItemId === item.id"
+              [class.clickable-row]="selectedInquiry.status === 'price_approval' && !isApproved(item)"
+              (click)="selectedInquiry.status === 'price_approval' && toggleApprove(item)">
+              <td class="muted">{{ i + 1 }}</td>
+              <td class="item-name">
+                <div class="item-short">{{ item.itemName || '-' }}</div>
+                <div class="item-desc" *ngIf="item.itemExtendedDescription">{{ item.itemExtendedDescription }}</div>
+              </td>
+              <td>{{ item.itemQuantity ?? '-' }}</td>
+              <td class="muted"><div class="clamp-cell">{{ item.itemUom || '-' }}</div></td>
+              <td><div class="clamp-cell" [title]="item.supplier || ''">{{ item.supplier || '-' }}</div></td>
+              <td>{{ formatCurrency(item.hargaBeli) }}</td>
+              <td>{{ isApproved(item) ? formatCurrency(getApprovedPrice(item)) : '-' }}</td>
+              <td>
+                <ng-container *ngIf="isApproved(item)">
+                  <div>{{ formatCurrency(getMargin(item, item.id)) }}</div>
+                  <div class="muted-pct">{{ getMarginPct(item, item.id) | number:'1.1-1' }}%</div>
+                </ng-container>
+                <span *ngIf="!isApproved(item)" class="muted">-</span>
+              </td>
+              <td>
+                <span class="approved-pill" *ngIf="isApproved(item)">Approved</span>
+                <span class="pending-pill" *ngIf="!isApproved(item)">Pending</span>
+              </td>
+            </tr>
 
-        <div class="items-wrap">
-          <table class="items-table">
-            <thead>
-              <tr>
-                <th>#</th>
-                <th>Item / Description</th>
-                <th>Qty</th>
-                <th>UoM</th>
-                <th>Supplier</th>
-                <th>Harga Beli</th>
-                <th>Harga Jual</th>
-                <th>Margin</th>
-                <th>Status</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>
-              <ng-container *ngFor="let item of selectedInquiry.items; let i = index">
-                <tr [class.approved-row]="isApproved(item)" [class.editing-row]="editingItemId === item.id">
-                  <td class="muted">{{ i + 1 }}</td>
-                  <td class="item-name">
-                    <div class="item-short">{{ item.itemName || '-' }}</div>
-                    <div class="item-desc" *ngIf="item.itemExtendedDescription">{{ item.itemExtendedDescription }}</div>
-                  </td>
-                  <td>{{ item.itemQuantity ?? '-' }}</td>
-                  <td class="muted">{{ item.itemUom || '-' }}</td>
-                  <td>{{ item.supplier || '-' }}</td>
-                  <td>{{ formatCurrency(item.hargaBeli) }}</td>
-                  <td>{{ isApproved(item) ? formatCurrency(item.hargaJual) : '-' }}</td>
-                  <td>
-                    <ng-container *ngIf="isApproved(item)">
-                      <div>{{ formatCurrency(getMargin(item, item.id)) }}</div>
-                      <div class="muted-pct">{{ getMarginPct(item, item.id) | number:'1.1-1' }}%</div>
-                    </ng-container>
-                    <span *ngIf="!isApproved(item)" class="muted">-</span>
-                  </td>
-                  <td>
-                    <span class="approved-pill" *ngIf="isApproved(item)">✓ Approved</span>
-                    <span class="pending-pill" *ngIf="!isApproved(item)">Pending</span>
-                  </td>
-                  <td>
-                    <button *ngIf="editingItemId !== item.id && !isApproved(item) && selectedInquiry.status === 'price_approval'"
-                      type="button" class="primary sm" (click)="startApprove(item)">Set Price</button>
-                    <button *ngIf="editingItemId === item.id"
-                      type="button" class="ghost sm" (click)="cancelApprove()">Batal</button>
-                  </td>
-                </tr>
-
-                <!-- Inline approval form -->
-                <tr *ngIf="editingItemId === item.id" class="inline-form-row">
-                  <td colspan="10" class="inline-form-cell">
-                    <div class="inline-form">
-                      <div class="inline-fields approval-fields">
-                        <label>Harga Jual (Rp) *
-                          <input type="number" [(ngModel)]="approvalForms[item.id].hargaJual"
-                            [ngModelOptions]="{standalone:true}" class="form-control" min="0" />
-                        </label>
-                        <label>Margin
-                          <div class="margin-preview">
-                            <span>{{ formatCurrency(getMargin(item, item.id)) }}</span>
-                            <span class="muted-pct">{{ getMarginPct(item, item.id) | number:'1.1-1' }}%</span>
-                          </div>
-                        </label>
-                        <label>Lead Time Customer
-                          <input type="text" [(ngModel)]="approvalForms[item.id].leadTimeCustomer"
-                            [ngModelOptions]="{standalone:true}" class="form-control" placeholder="cth: 7 hari" />
-                        </label>
-                        <label>Validitas Quotation
-                          <input type="text" [(ngModel)]="approvalForms[item.id].validitasQuotation"
-                            [ngModelOptions]="{standalone:true}" class="form-control" placeholder="cth: 30 hari" />
-                        </label>
-                        <label>Catatan
-                          <input type="text" [(ngModel)]="approvalForms[item.id].catatanQuotation"
-                            [ngModelOptions]="{standalone:true}" class="form-control" />
-                        </label>
-                        <div class="inline-actions">
-                          <button type="button" class="ghost sm" (click)="cancelApprove()">Batal</button>
-                          <button type="button" class="primary sm" (click)="approve(selectedInquiry, item)">Approve</button>
-                        </div>
+            <!-- Inline approval form -->
+            <tr *ngIf="editingItemId === item.id && selectedInquiry.status === 'price_approval'" class="inline-form-row" (click)="$event.stopPropagation()">
+              <td colspan="9" class="inline-form-cell">
+                <div class="inline-form">
+                  <div class="inline-field-list approval-grid">
+                    <div class="inline-field-row">
+                      <span class="field-label">Harga Beli</span>
+                      <span class="field-value">{{ formatCurrency(item.hargaBeli) }}</span>
+                    </div>
+                    <div class="inline-field-row">
+                      <span class="field-label">Approved Price (Rp) *</span>
+                      <input type="number" [(ngModel)]="approvalForms[item.id].hargaJual"
+                        (ngModelChange)="updateMarginPctFromHargaJual(item)"
+                        [ngModelOptions]="{standalone:true}" class="form-control" min="0" />
+                    </div>
+                    <div class="inline-field-row">
+                      <span class="field-label">Margin %</span>
+                      <div class="percent-input">
+                        <input type="number" [(ngModel)]="approvalForms[item.id].marginPct"
+                          (ngModelChange)="updateHargaJualFromMargin(item, $event)"
+                          [ngModelOptions]="{standalone:true}" class="form-control sm" />
+                        <span class="percent-suffix">%</span>
                       </div>
                     </div>
-                  </td>
-                </tr>
-              </ng-container>
-            </tbody>
-          </table>
-        </div>
+                    <div class="inline-field-row">
+                      <span class="field-label">Lead Time Customer</span>
+                      <input type="text" [(ngModel)]="approvalForms[item.id].leadTimeCustomer"
+                        [ngModelOptions]="{standalone:true}" class="form-control" placeholder="cth: 7 hari" />
+                    </div>
+                    <div class="inline-field-row">
+                      <span class="field-label">Validitas Quotation</span>
+                      <input type="text" [(ngModel)]="approvalForms[item.id].validitasQuotation"
+                        [ngModelOptions]="{standalone:true}" class="form-control" placeholder="cth: 30 hari" />
+                    </div>
+                    <div class="inline-field-row">
+                      <span class="field-label">Catatan</span>
+                      <input type="text" [(ngModel)]="approvalForms[item.id].catatanQuotation"
+                        [ngModelOptions]="{standalone:true}" class="form-control" />
+                    </div>
+                    <div class="inline-field-row inline-actions-row">
+                      <span></span>
+                      <div class="inline-actions">
+                        <button type="button" class="primary sm" (click)="approve(selectedInquiry, item); $event.stopPropagation()">Approve</button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </td>
+            </tr>
 
-        <div class="modal-footer">
-          <div class="all-sourced-notice" *ngIf="pendingItemCount(selectedInquiry) === 0">
-            ✓ Semua item sudah di-approve.
-          </div>
-          <div class="pending-notice" *ngIf="pendingItemCount(selectedInquiry) > 0">
-            {{ pendingItemCount(selectedInquiry) }} item belum di-approve.
-          </div>
-        </div>
-      </div><!-- /detail-left -->
+            <!-- Comments row -->
+            <tr *ngIf="editingItemId === item.id && selectedInquiry.status === 'price_approval'" class="item-comment-row" (click)="$event.stopPropagation()">
+              <td colspan="9">
+                <div class="item-comments-feed">
+                  <div class="empty-comments" *ngIf="(itemNotesMap[item.id]?.length ?? 0) === 0">No comments yet.</div>
+                  <div class="comment-bubble" *ngFor="let n of (itemNotesMap[item.id] ?? [])"
+                    [class.mine]="n.createdBy === currentUser?.username">
+                    <div class="comment-author">{{ n.createdByName }}</div>
+                    <div class="comment-text">{{ n.note }}</div>
+                    <div class="comment-time">{{ formatDate(n.createdAt) }}</div>
+                  </div>
+                </div>
+                <div class="item-comment-input" *ngIf="canComment()">
+                  <textarea class="comment-textarea" [(ngModel)]="itemNewNote" [ngModelOptions]="{standalone:true}"
+                    placeholder="Add a comment..." rows="2"
+                    (keydown.control.enter)="submitItemNote(item)"></textarea>
+                  <div class="comment-send-row">
+                    <span class="comment-hint">Ctrl+Enter to send</span>
+                    <button type="button" class="primary sm"
+                      [disabled]="!itemNewNote.trim() || itemSubmittingNote"
+                      (click)="submitItemNote(item)">
+                      {{ itemSubmittingNote ? '...' : 'Send' }}
+                    </button>
+                  </div>
+                </div>
+              </td>
+            </tr>
+          </ng-container>
+        </tbody>
+      </table>
+    </div>
 
-      <!-- ── RIGHT: Comments ── -->
-      <div class="detail-right" *ngIf="showComments">
-        <div class="comments-panel-header">
-          <div class="comments-panel-meta">
-            <!-- Sales PIC -->
-            <div class="assign-row">
-              <strong>Sales:</strong>
-              <ng-container *ngIf="!assigningSalesPic">
-                <span [class.clickable-pic]="isAdminOrManager()"
-                  (click)="isAdminOrManager() && (assigningSalesPic = true) && (newSalesPic = selectedInquiry!.salesPic)"
-                  [title]="isAdminOrManager() ? 'Click to reassign' : ''">{{ selectedInquiry!.salesPic }}</span>
-                <span class="edit-hint" *ngIf="isAdminOrManager()">✏</span>
-              </ng-container>
-              <ng-container *ngIf="assigningSalesPic">
-                <select [(ngModel)]="newSalesPic" [ngModelOptions]="{standalone:true}" class="inline-select">
-                  <option *ngFor="let u of salesUsers" [value]="u.name">{{ u.name }}</option>
-                </select>
-                <button type="button" class="primary xs" (click)="saveSalesPic()">Save</button>
-                <button type="button" class="ghost xs" (click)="assigningSalesPic = false">Cancel</button>
-              </ng-container>
-            </div>
-            <!-- Sourcing PIC -->
-            <div class="assign-row">
-              <strong>Sourcing:</strong>
-              <ng-container *ngIf="!assigningSourcingPic">
-                <span [class.clickable-pic]="isAdminOrManager()"
-                  (click)="isAdminOrManager() && (assigningSourcingPic = true) && (newSourcingPic = selectedInquiry!.sourcingPic || '')"
-                  [title]="isAdminOrManager() ? 'Click to reassign' : ''">
-                  <span class="sourcing-assigned" *ngIf="selectedInquiry!.sourcingPic">{{ selectedInquiry!.sourcingPic }}</span>
-                  <span class="muted" *ngIf="!selectedInquiry!.sourcingPic">Unassigned</span>
-                </span>
-                <span class="edit-hint" *ngIf="isAdminOrManager()">✏</span>
-              </ng-container>
-              <ng-container *ngIf="assigningSourcingPic">
-                <select [(ngModel)]="newSourcingPic" [ngModelOptions]="{standalone:true}" class="inline-select">
-                  <option value="">— Unassign —</option>
-                  <option *ngFor="let u of sourcingUsers" [value]="u.name">{{ u.name }}</option>
-                </select>
-                <button type="button" class="primary xs" (click)="saveSourcingPic()">Save</button>
-                <button type="button" class="ghost xs" (click)="assigningSourcingPic = false">Cancel</button>
-              </ng-container>
-            </div>
-          </div>
-          <div class="comments-header">
-            <h3>Comments</h3>
-            <span class="comments-count" *ngIf="notes.length > 0">{{ notes.length }}</span>
-          </div>
-        </div>
-
-        <div class="comments-feed">
-          <div class="empty-comments" *ngIf="notes.length === 0">No comments yet.</div>
-          <div class="comment-bubble" *ngFor="let n of notes"
-            [class.mine]="n.createdBy === currentUser?.username">
-            <div class="comment-author">{{ n.createdByName }}</div>
-            <div class="comment-text">{{ n.note }}</div>
-            <div class="comment-time">{{ formatDate(n.createdAt) }}</div>
-          </div>
-        </div>
-
-        <div class="comment-input-area" *ngIf="canComment()">
-          <textarea class="comment-textarea"
-            [(ngModel)]="newNote" [ngModelOptions]="{standalone:true}"
-            placeholder="Add a comment..." rows="3"
-            (keydown.control.enter)="submitNote()"></textarea>
-          <div class="comment-send-row">
-            <span class="comment-hint">Ctrl+Enter to send</span>
-            <button type="button" class="primary sm"
-              [disabled]="!newNote.trim() || submittingNote"
-              (click)="submitNote()">
-              {{ submittingNote ? 'Sending...' : 'Send' }}
-            </button>
-          </div>
-        </div>
-        <div class="comment-no-access" *ngIf="!canComment()">
-          Only assigned users can comment.
-        </div>
-      </div><!-- /detail-right -->
-
-    </div><!-- /detail-two-col -->
+    <div class="modal-footer">
+      <div class="all-sourced-notice" *ngIf="pendingItemCount(selectedInquiry) === 0">
+        Semua item sudah di-approve.
+      </div>
+      <div class="pending-notice" *ngIf="pendingItemCount(selectedInquiry) > 0">
+        {{ pendingItemCount(selectedInquiry) }} item belum di-approve.
+      </div>
+      <button type="button" class="ghost danger"
+        *ngIf="selectedInquiry.status === 'price_approval' && hasUnsourcedItems(selectedInquiry)"
+        (click)="returnToSourcing()">
+        Kembalikan ke Sourcing
+      </button>
+    </div>
   </div>
 </div>
+
+

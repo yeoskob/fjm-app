@@ -84,33 +84,27 @@ export class PurchasingComponent implements OnInit {
     return this.sortInquiries(filtered, sort);
   }
 
-  get rtpItemRows(): Array<{ inquiry: Inquiry; item: InquiryItem }> {
+  get rtpGroups(): Array<{ inquiry: Inquiry; items: InquiryItem[] }> {
     const f = this.filter.trim().toLowerCase();
-    const rows = this.inquiries
+    const groups = this.inquiries
       .filter((i) => i.status === 'ready_to_purchase')
-      .flatMap((inq) => inq.items.map((item) => ({ inquiry: inq, item })))
-      .filter(({ inquiry, item }) => {
-        if (!f) return true;
-        return (
-          (inquiry.rfqNo ?? '').toLowerCase().includes(f) ||
-          inquiry.customer.toLowerCase().includes(f) ||
-          (item.itemName ?? '').toLowerCase().includes(f) ||
-          (item.alternateName ?? '').toLowerCase().includes(f) ||
-          (item.supplier ?? '').toLowerCase().includes(f)
-        );
-      });
+      .map((inq) => ({
+        inquiry: inq,
+        items: f
+          ? inq.items.filter(
+              (item) =>
+                (inq.rfqNo ?? '').toLowerCase().includes(f) ||
+                inq.customer.toLowerCase().includes(f) ||
+                (item.itemName ?? '').toLowerCase().includes(f) ||
+                (item.alternateName ?? '').toLowerCase().includes(f) ||
+                (item.supplier ?? '').toLowerCase().includes(f)
+            )
+          : inq.items,
+      }))
+      .filter((g) => g.items.length > 0);
 
-    if (!this.rtpSort.col) return rows;
-    return [...rows].sort((a, b) => {
-      let av: string | number = '', bv: string | number = '';
-      if (this.rtpSort.col === 'rfqNo') { av = a.inquiry.rfqNo ?? ''; bv = b.inquiry.rfqNo ?? ''; }
-      else if (this.rtpSort.col === 'customer') { av = a.inquiry.customer; bv = b.inquiry.customer; }
-      else if (this.rtpSort.col === 'itemName') { av = this.itemDisplayName(a.item); bv = this.itemDisplayName(b.item); }
-      else if (this.rtpSort.col === 'qty') { av = a.item.itemQuantity ?? 0; bv = b.item.itemQuantity ?? 0; }
-      else if (this.rtpSort.col === 'supplier') { av = a.item.supplier ?? ''; bv = b.item.supplier ?? ''; }
-      else if (this.rtpSort.col === 'approvedPrice') { av = a.item.approvedPrice ?? 0; bv = b.item.approvedPrice ?? 0; }
-      return av < bv ? (this.rtpSort.dir === 'asc' ? -1 : 1) : av > bv ? (this.rtpSort.dir === 'asc' ? 1 : -1) : 0;
-    });
+    return this.sortInquiries(groups.map((g) => g.inquiry), this.rtpSort)
+      .map((inq) => groups.find((g) => g.inquiry.id === inq.id)!);
   }
 
   toggleExpand(id: string): void {

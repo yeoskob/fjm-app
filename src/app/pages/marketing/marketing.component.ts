@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { AuthService } from '../../services/auth.service';
 import { InquiryService } from '../../services/inquiry.service';
 import { Inquiry, InquiryCreate, InquiryItem, InquiryNote, InquiryStatus, INQUIRY_STATUS_LABELS } from '../../models/inquiry';
+import { todayLocalISO } from '../../utils/date';
 
 @Component({
   selector: 'app-marketing',
@@ -16,6 +17,10 @@ export class MarketingComponent implements OnInit {
 
   showCreate = false;
   form: Partial<InquiryCreate> = {};
+  createCustomer = '';
+  createNeedByDate = '';
+  createItems: Array<{ itemName: string; itemQuantity?: number; itemUom?: string; itemExtendedDescription?: string; itemImage?: string }> = [];
+  submittingCreate = false;
   showImport = false;
   importFile: File | null = null;
   importing = false;
@@ -35,24 +40,31 @@ export class MarketingComponent implements OnInit {
   rfqNote = '';
 
   reviewingItemId: string | null = null;
-  reviewItemForm: { targetPrice?: number; itemImage?: string } = {};
+  reviewItemForm: { itemImage?: string } = {};
   editingHargaJualId: string | null = null;
   hargaJualInput: number | null = null;
   viewingItemId: string | null = null;
   showAddItem = false;
-  addItemForm: { itemName?: string; itemQuantity?: number; itemUom?: string; itemNeedByDate?: string; itemManufacturerName?: string; itemManufacturerPartNumber?: string; itemClassificationOfGoods?: string; itemExtendedDescription?: string; targetPrice?: number; itemImage?: string } = {};
+  addItemForm: { itemName?: string; itemQuantity?: number; itemUom?: string; itemNeedByDate?: string; itemManufacturerName?: string; itemManufacturerPartNumber?: string; itemClassificationOfGoods?: string; itemExtendedDescription?: string; itemImage?: string } = {};
   previewImageUrl: string | null = null;
 
   activeTab: 'rfq' | 'quotation' | 'deals' = 'rfq';
+
+  readonly today = todayLocalISO();
 
   readonly STATUS_LABELS = INQUIRY_STATUS_LABELS;
   readonly PIPELINE_STAGES: InquiryStatus[] = [
     'new_inquiry', 'rfq', 'price_approval', 'quotation_sent', 'deal', 'lost'
   ];
 
-  rfqFilter = ''; rfqSort = { col: '', dir: 'asc' as 'asc'|'desc' };
-  quotationFilter = ''; quotationSort = { col: '', dir: 'asc' as 'asc'|'desc' };
-  dealsFilter = ''; dealsSort = { col: '', dir: 'asc' as 'asc'|'desc' };
+  rfqFilter = ''; rfqSort = { col: 'needByDate', dir: 'asc' as 'asc'|'desc' };
+  quotationFilter = ''; quotationSort = { col: 'needByDate', dir: 'asc' as 'asc'|'desc' };
+  dealsFilter = ''; dealsSort = { col: 'needByDate', dir: 'asc' as 'asc'|'desc' };
+  expandedDealId: string | null = null;
+
+  toggleDeal(id: string): void {
+    this.expandedDealId = this.expandedDealId === id ? null : id;
+  }
 
   toggleSort(state: { col: string; dir: 'asc'|'desc' }, col: string): void {
     if (state.col === col) state.dir = state.dir === 'asc' ? 'desc' : 'asc';
@@ -86,7 +98,13 @@ export class MarketingComponent implements OnInit {
         else if (sort.col === 'tanggal') { av = a.tanggal; bv = b.tanggal; }
         else if (sort.col === 'updatedAt') { av = a.updatedAt ?? ''; bv = b.updatedAt ?? ''; }
         else if (sort.col === 'items') { av = a.items.length; bv = b.items.length; }
-        else if (sort.col === 'needByDate') { av = a.items[0]?.itemNeedByDate ?? ''; bv = b.items[0]?.itemNeedByDate ?? ''; }
+        else if (sort.col === 'needByDate') {
+          const earliest = (inq: Inquiry) => inq.items.map(i => i.itemNeedByDate).filter(Boolean).sort()[0] ?? '';
+          av = earliest(a); bv = earliest(b);
+          // push empty dates to the bottom regardless of direction
+          if (!av) return 1;
+          if (!bv) return -1;
+        }
         return av < bv ? (sort.dir === 'asc' ? -1 : 1) : av > bv ? (sort.dir === 'asc' ? 1 : -1) : 0;
       });
     }
@@ -185,13 +203,31 @@ export class MarketingComponent implements OnInit {
   openCreate(): void {
     this.showCreate = true;
     this.showImport = false;
-    this.form = {};
+    this.createCustomer = '';
+    this.createNeedByDate = '';
+    this.createItems = [{ itemName: '' }];
+    this.error = '';
     this.detailInquiry = null;
     this.editInquiry = null;
   }
 
   cancelCreate(): void {
     this.showCreate = false;
+  }
+
+  addCreateItem(): void {
+    this.createItems.push({ itemName: '' });
+  }
+
+  removeCreateItem(index: number): void {
+    if (this.createItems.length > 1) this.createItems.splice(index, 1);
+  }
+
+  async onCreateItemImage(event: Event, index: number): Promise<void> {
+    const file = (event.target as HTMLInputElement).files?.[0];
+    if (!file) return;
+    const result = await this.processImage(file);
+    if (result) this.createItems[index].itemImage = result;
   }
 
   openImport(): void {
@@ -211,29 +247,46 @@ export class MarketingComponent implements OnInit {
     this.error = '';
     const user = this.authService.getCurrentUser();
     if (!user) { this.error = 'Not logged in.'; return; }
-    if (!this.form.customer?.trim() || !this.form.namaBarang?.trim()) {
-      this.error = 'Customer and nama barang are required.';
-      return;
+    if (!this.createCustomer.trim()) { this.error = 'Customer is required.'; return; }
+    const validItems = this.createItems.filter(i => i.itemName.trim());
+    if (validItems.length === 0) { this.error = 'Add at least one item with a name.'; return; }
+
+    this.submittingCreate = true;
+    try {
+      const first = validItems[0];
+      const { id } = await this.inquiryService.create({
+        customer: this.createCustomer.trim(),
+        salesPic: user.name,
+        namaBarang: first.itemName.trim(),
+        spesifikasi: first.itemExtendedDescription?.trim(),
+        qty: first.itemQuantity,
+        itemUom: first.itemUom?.trim(),
+        itemNeedByDate: this.createNeedByDate || undefined,
+        itemImage: first.itemImage,
+        createdBy: user.username,
+        createdByName: user.name,
+      });
+      // Add remaining items
+      for (const item of validItems.slice(1)) {
+        await this.inquiryService.addItem(id, {
+          itemName: item.itemName.trim(),
+          itemQuantity: item.itemQuantity,
+          itemUom: item.itemUom?.trim(),
+          itemExtendedDescription: item.itemExtendedDescription?.trim(),
+          itemImage: item.itemImage,
+          itemNeedByDate: this.createNeedByDate || undefined,
+          doneBy: user.username,
+          doneByName: user.name,
+        });
+      }
+      this.success = 'Inquiry created.';
+      this.showCreate = false;
+      await this.refresh();
+    } catch {
+      this.error = 'Failed to create inquiry.';
+    } finally {
+      this.submittingCreate = false;
     }
-    const payload: InquiryCreate = {
-      customer: this.form.customer!.trim(),
-      salesPic: user.name,
-      namaBarang: this.form.namaBarang!.trim(),
-      spesifikasi: this.form.spesifikasi?.trim(),
-      qty: this.form.qty,
-      itemUom: this.form.itemUom?.trim(),
-      itemNeedByDate: this.form.itemNeedByDate,
-      itemManufacturerName: this.form.itemManufacturerName?.trim(),
-      itemManufacturerPartNumber: this.form.itemManufacturerPartNumber?.trim(),
-      itemClassificationOfGoods: this.form.itemClassificationOfGoods?.trim(),
-      targetPrice: this.form.targetPrice,
-      createdBy: user.username,
-      createdByName: user.name,
-    };
-    await this.inquiryService.create(payload);
-    this.success = 'Inquiry created.';
-    this.showCreate = false;
-    await this.refresh();
   }
 
   onImportFileChange(event: Event): void {
@@ -336,12 +389,12 @@ export class MarketingComponent implements OnInit {
   async toggleItemComments(item: InquiryItem): Promise<void> {
     if (this.openCommentItemId === item.id) {
       this.openCommentItemId = null;
-    } else {
-      this.openCommentItemId = item.id;
-      this.itemNewNote = '';
-      if (!this.itemNotesMap[item.id]) {
-        await this.loadItemNotes(this.detailInquiry!.id, item.id);
-      }
+      return;
+    }
+    this.openCommentItemId = item.id;
+    this.itemNewNote = '';
+    if (!this.itemNotesMap[item.id]) {
+      await this.loadItemNotes(this.detailInquiry!.id, item.id);
     }
   }
 
@@ -364,23 +417,34 @@ export class MarketingComponent implements OnInit {
   }
 
   toggleViewItem(itemId: string): void {
-    this.viewingItemId = this.viewingItemId === itemId ? null : itemId;
+    if (this.viewingItemId === itemId) {
+      this.viewingItemId = null;
+      this.openCommentItemId = null;
+      return;
+    }
+    this.viewingItemId = itemId;
+    const item = this.detailInquiry?.items.find((i) => i.id === itemId);
+    if (item) {
+      void this.toggleItemComments(item);
+    }
   }
 
   startReviewItem(item: InquiryItem): void {
     this.reviewingItemId = item.id;
-    this.reviewItemForm = { targetPrice: item.targetPrice, itemImage: item.itemImage };
+    this.reviewItemForm = { itemImage: item.itemImage };
     this.showAddItem = false;
+    void this.toggleItemComments(item);
   }
 
   cancelReviewItem(): void {
     this.reviewingItemId = null;
     this.reviewItemForm = {};
+    this.openCommentItemId = null;
   }
 
   startEditHargaJual(item: InquiryItem): void {
     this.editingHargaJualId = item.id;
-    this.hargaJualInput = item.hargaJual ?? null;
+    this.hargaJualInput = this.getApprovedPrice(item) ?? null;
   }
 
   cancelEditHargaJual(): void {
@@ -402,7 +466,6 @@ export class MarketingComponent implements OnInit {
     if (!user || !this.reviewingItemId) return;
     this.error = '';
     await this.inquiryService.reviewItem(inquiry.id, this.reviewingItemId, {
-      targetPrice: this.reviewItemForm.targetPrice,
       itemImage: this.reviewItemForm.itemImage,
       doneBy: user.username,
       doneByName: user.name,
@@ -456,7 +519,6 @@ export class MarketingComponent implements OnInit {
       itemManufacturerPartNumber: this.addItemForm.itemManufacturerPartNumber?.trim(),
       itemClassificationOfGoods: this.addItemForm.itemClassificationOfGoods?.trim(),
       itemExtendedDescription: this.addItemForm.itemExtendedDescription?.trim(),
-      targetPrice: this.addItemForm.targetPrice,
       itemImage: this.addItemForm.itemImage,
       doneBy: user.username,
       doneByName: user.name,
@@ -473,12 +535,12 @@ export class MarketingComponent implements OnInit {
   }
 
   private processImage(file: File): Promise<string | null> {
-    const MAX_RAW_BYTES = 1024 * 1024;       // 1 MB hard cap
+    const MAX_RAW_BYTES = 20 * 1024 * 1024;  // 20 MB input cap
     const MAX_EDGE = 1280;                    // longest edge
     const TARGET_MAX_BYTES = 500 * 1024;     // 500 KB target ceiling
 
     if (file.size > MAX_RAW_BYTES) {
-      this.error = 'Image must be under 1 MB.';
+      this.error = 'Image must be under 20 MB.';
       return Promise.resolve(null);
     }
 
@@ -554,7 +616,6 @@ export class MarketingComponent implements OnInit {
       itemManufacturerName: item?.itemManufacturerName,
       itemManufacturerPartNumber: item?.itemManufacturerPartNumber,
       itemClassificationOfGoods: item?.itemClassificationOfGoods,
-      targetPrice: item?.targetPrice,
     };
     this.detailInquiry = null;
   }
@@ -614,6 +675,10 @@ export class MarketingComponent implements OnInit {
   formatCurrency(value?: number): string {
     if (value == null) return '-';
     return 'Rp ' + value.toLocaleString('id-ID');
+  }
+
+  getApprovedPrice(item: InquiryItem): number | undefined {
+    return item.approvedPrice ?? item.hargaJual;
   }
 
   itemCount(inquiry: Inquiry): number {

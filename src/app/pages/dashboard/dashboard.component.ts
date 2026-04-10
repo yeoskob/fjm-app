@@ -11,6 +11,7 @@ import { DashboardStats, UserStats } from '../../models/inquiry';
 export class DashboardComponent implements OnInit {
   dashboard: DashboardStats | null = null;
   isAdmin = false;
+  activeTab: 'sales' | 'sourcing' = 'sales';
 
   // User search
   users: Array<{ id: string; name: string; username: string; role: string }> = [];

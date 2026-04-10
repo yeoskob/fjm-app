@@ -15,13 +15,13 @@
 
   <!-- Tabs -->
   <div class="tab-bar">
-    <button type="button" class="tab-btn" [class.active]="activeTab === 'rfq'" (click)="activeTab = 'rfq'">
+    <button type="button" class="tab-btn" [class.active]="activeTab === 'rfq'" (click)="activeTab = 'rfq'; expandedDealId = null">
       New Inquiry <span class="tab-count">{{ rfqTabInquiries.length }}</span>
     </button>
-    <button type="button" class="tab-btn" [class.active]="activeTab === 'quotation'" (click)="activeTab = 'quotation'">
+    <button type="button" class="tab-btn" [class.active]="activeTab === 'quotation'" (click)="activeTab = 'quotation'; expandedDealId = null">
       Quotation Sent <span class="tab-count">{{ quotationTabInquiries.length }}</span>
     </button>
-    <button type="button" class="tab-btn" [class.active]="activeTab === 'deals'" (click)="activeTab = 'deals'">
+    <button type="button" class="tab-btn" [class.active]="activeTab === 'deals'" (click)="activeTab = 'deals'; expandedDealId = null">
       Deals <span class="tab-count">{{ dealsTabInquiries.length }}</span>
     </button>
   </div>
@@ -104,6 +104,7 @@
     <table class="pipeline-table">
       <thead>
         <tr>
+          <th style="width:24px"></th>
           <th (click)="toggleSort(dealsSort,'rfqNo')" class="sortable">RFQ ID <span class="sort-icon">{{ sortIcon(dealsSort,'rfqNo') }}</span></th>
           <th (click)="toggleSort(dealsSort,'customer')" class="sortable">Customer <span class="sort-icon">{{ sortIcon(dealsSort,'customer') }}</span></th>
           <th (click)="toggleSort(dealsSort,'salesPic')" class="sortable">Sales <span class="sort-icon">{{ sortIcon(dealsSort,'salesPic') }}</span></th>
@@ -114,17 +115,41 @@
         </tr>
       </thead>
       <tbody>
-        <tr *ngFor="let inq of dealsTabFiltered" (click)="openDetail(inq)" class="clickable-row">
-          <td><span class="mono-cell">{{ inq.rfqNo || '-' }}</span><span class="coupa-badge" *ngIf="inq.coupaSource">Coupa</span></td>
-          <td>{{ inq.customer }}</td>
-          <td>{{ inq.salesPic }}</td>
-          <td>{{ inq.sourcingPic || '-' }}</td>
-          <td>{{ itemCount(inq) }}</td>
-          <td>{{ formatDate(inq.tanggal) }}</td>
-          <td>{{ inq.updatedAt ? formatDate(inq.updatedAt) : '-' }}</td>
-        </tr>
+        <ng-container *ngFor="let inq of dealsTabFiltered">
+          <tr (click)="toggleDeal(inq.id)" class="clickable-row" [class.expanded-row]="expandedDealId === inq.id">
+            <td class="chevron-cell">{{ expandedDealId === inq.id ? '▾' : '▸' }}</td>
+            <td><span class="mono-cell">{{ inq.rfqNo || '-' }}</span><span class="coupa-badge" *ngIf="inq.coupaSource">Coupa</span></td>
+            <td>{{ inq.customer }}</td>
+            <td>{{ inq.salesPic }}</td>
+            <td>{{ inq.sourcingPic || '-' }}</td>
+            <td><span class="item-count-pill">{{ itemCount(inq) }}</span></td>
+            <td>{{ formatDate(inq.tanggal) }}</td>
+            <td>{{ inq.updatedAt ? formatDate(inq.updatedAt) : '-' }}</td>
+          </tr>
+          <tr *ngIf="expandedDealId === inq.id" class="item-expand-row">
+            <td colspan="8" class="item-expand-cell">
+              <table class="item-sub-table">
+                <thead>
+                  <tr><th>#</th><th>Item</th><th>Qty</th><th>Supplier</th><th>Harga Jual</th></tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let item of inq.items; let i = index">
+                    <td class="muted-num">{{ i + 1 }}</td>
+                    <td>{{ item.alternateName || item.itemName || '-' }}</td>
+                    <td>{{ item.itemQuantity || '-' }} {{ item.itemUom || '' }}</td>
+                    <td>{{ item.supplier || '-' }}</td>
+                    <td><strong class="price-val">{{ getApprovedPrice(item) ? formatCurrency(getApprovedPrice(item)) : '-' }}</strong></td>
+                  </tr>
+                  <tr *ngIf="!inq.items?.length">
+                    <td colspan="5" class="empty-row">No items.</td>
+                  </tr>
+                </tbody>
+              </table>
+            </td>
+          </tr>
+        </ng-container>
         <tr *ngIf="dealsTabFiltered.length === 0">
-          <td colspan="7" class="empty-row">No results.</td>
+          <td colspan="8" class="empty-row">No results.</td>
         </tr>
       </tbody>
     </table>
@@ -133,47 +158,66 @@
 
 <!-- Create Inquiry Modal -->
 <div class="modal-overlay" *ngIf="showCreate" (click)="cancelCreate()">
-  <div class="modal-card" (click)="$event.stopPropagation()">
+  <div class="modal-card create-modal" (click)="$event.stopPropagation()">
     <div class="form-header">
       <h2>New Inquiry</h2>
-      <button type="button" class="ghost" (click)="cancelCreate()">Cancel</button>
+      <button type="button" class="ghost" (click)="cancelCreate()">✕</button>
     </div>
-    <label>Customer *
-      <input type="text" [(ngModel)]="form.customer" [ngModelOptions]="{standalone:true}" class="form-control" placeholder="Nama perusahaan / customer" />
-    </label>
-    <label>Item Name *
-      <input type="text" [(ngModel)]="form.namaBarang" [ngModelOptions]="{standalone:true}" class="form-control" placeholder="Nama produk yang diminta" />
-    </label>
-    <div class="form-row">
-      <label>Expected Quantity
-        <input type="number" [(ngModel)]="form.qty" [ngModelOptions]="{standalone:true}" class="form-control" min="0" />
+
+    <div class="create-top-fields">
+      <label>Customer *
+        <input type="text" [(ngModel)]="createCustomer" [ngModelOptions]="{standalone:true}"
+          class="form-control" placeholder="Nama perusahaan / customer" />
       </label>
-      <label>Unit of Measurement
-        <input type="text" [(ngModel)]="form.itemUom" [ngModelOptions]="{standalone:true}" class="form-control" placeholder="cth: Each, MeterSquared" />
+      <label>Need by Date
+        <input type="date" [(ngModel)]="createNeedByDate" [ngModelOptions]="{standalone:true}" class="form-control" [min]="today" />
       </label>
     </div>
-    <label>Need by Date
-      <input type="date" [(ngModel)]="form.itemNeedByDate" [ngModelOptions]="{standalone:true}" class="form-control" />
-    </label>
-    <div class="form-row">
-      <label>Manufacturer Name
-        <input type="text" [(ngModel)]="form.itemManufacturerName" [ngModelOptions]="{standalone:true}" class="form-control" placeholder="Opsional" />
-      </label>
-      <label>Manufacturer Part Number
-        <input type="text" [(ngModel)]="form.itemManufacturerPartNumber" [ngModelOptions]="{standalone:true}" class="form-control" placeholder="Opsional" />
-      </label>
+
+    <div class="create-items-section">
+      <div class="create-items-header">
+        <span class="create-items-title">Items</span>
+        <button type="button" class="ghost sm" (click)="addCreateItem()">+ Add Item</button>
+      </div>
+
+      <div class="create-item-card" *ngFor="let item of createItems; let i = index">
+        <div class="create-item-top">
+          <span class="create-item-num">{{ i + 1 }}</span>
+          <button type="button" class="remove-item-btn" *ngIf="createItems.length > 1"
+            (click)="removeCreateItem(i)" title="Remove item">✕</button>
+        </div>
+        <label>Item Name *
+          <input type="text" [(ngModel)]="item.itemName" [ngModelOptions]="{standalone:true}"
+            class="form-control" placeholder="Nama produk yang diminta" />
+        </label>
+        <div class="form-row">
+          <label>Expected Quantity
+            <input type="number" [(ngModel)]="item.itemQuantity" [ngModelOptions]="{standalone:true}"
+              class="form-control" min="0" placeholder="0" />
+          </label>
+          <label>Unit of Measurement
+            <input type="text" [(ngModel)]="item.itemUom" [ngModelOptions]="{standalone:true}"
+              class="form-control" placeholder="Each, Pcs, Kg…" />
+          </label>
+        </div>
+        <label>Description
+          <textarea [(ngModel)]="item.itemExtendedDescription" [ngModelOptions]="{standalone:true}"
+            class="form-control" rows="2" placeholder="Spesifikasi / extended description"></textarea>
+        </label>
+        <label>Image
+          <input type="file" (change)="onCreateItemImage($event, i)" class="form-control" accept="image/*" />
+          <img *ngIf="item.itemImage" [src]="item.itemImage" class="item-thumb-preview" />
+        </label>
+      </div>
     </div>
-    <label>Classification of Goods
-      <input type="text" [(ngModel)]="form.itemClassificationOfGoods" [ngModelOptions]="{standalone:true}" class="form-control" placeholder="Opsional" />
-    </label>
-    <label>Description
-      <textarea [(ngModel)]="form.spesifikasi" [ngModelOptions]="{standalone:true}" class="form-control" rows="2" placeholder="Detail spesifikasi / extended description"></textarea>
-    </label>
-    <label>Target Price (Rp)
-      <input type="number" [(ngModel)]="form.targetPrice" [ngModelOptions]="{standalone:true}" class="form-control" min="0" />
-    </label>
+
+    <div class="notice error" *ngIf="error">{{ error }}</div>
+
     <div class="actions">
-      <button type="button" class="primary" (click)="submitCreate()">Submit Inquiry</button>
+      <button type="button" class="ghost" (click)="cancelCreate()">Cancel</button>
+      <button type="button" class="primary" [disabled]="submittingCreate" (click)="submitCreate()">
+        {{ submittingCreate ? 'Creating...' : 'Submit Inquiry' }}
+      </button>
     </div>
   </div>
 </div>
@@ -218,7 +262,7 @@
       </label>
     </div>
     <label>Need by Date
-      <input type="date" [(ngModel)]="editForm.itemNeedByDate" [ngModelOptions]="{standalone:true}" class="form-control" />
+      <input type="date" [(ngModel)]="editForm.itemNeedByDate" [ngModelOptions]="{standalone:true}" class="form-control" [min]="today" />
     </label>
     <div class="form-row">
       <label>Manufacturer Name
@@ -233,9 +277,6 @@
     </label>
     <label>Description
       <textarea [(ngModel)]="editForm.spesifikasi" [ngModelOptions]="{standalone:true}" class="form-control" rows="2"></textarea>
-    </label>
-    <label>Target Price (Rp)
-      <input type="number" [(ngModel)]="editForm.targetPrice" [ngModelOptions]="{standalone:true}" class="form-control" />
     </label>
     <div class="actions">
       <button type="button" class="primary" (click)="saveEdit()">Save</button>
@@ -326,7 +367,7 @@
           </div>
           <label>Need by Date
             <input type="date" [(ngModel)]="addItemForm.itemNeedByDate" [ngModelOptions]="{standalone:true}"
-              class="form-control" />
+              class="form-control" [min]="today" />
           </label>
           <div class="form-row">
             <label>Manufacturer Name
@@ -345,10 +386,6 @@
           <label>Description
             <textarea [(ngModel)]="addItemForm.itemExtendedDescription" [ngModelOptions]="{standalone:true}"
               class="form-control" rows="2"></textarea>
-          </label>
-          <label>Target Price (Rp)
-            <input type="number" [(ngModel)]="addItemForm.targetPrice" [ngModelOptions]="{standalone:true}"
-              class="form-control" min="0" />
           </label>
           <label>Image
             <input type="file" (change)="onAddItemImageChange($event)" class="form-control" accept="image/*" />
@@ -369,17 +406,11 @@
                 (click)="openImagePreview(item.itemImage!, $event); $event.stopPropagation()" title="Click to preview" />
               <div class="item-review-info">
                 <div class="item-name-text" [title]="item.itemName || ''">{{ item.itemName || '-' }}</div>
-                <div class="item-meta-text" [title]="(item.itemQuantity ?? '') + ' ' + (item.itemUom || '') + (item.targetPrice ? ' · Target: ' + formatCurrency(item.targetPrice) : '') + (item.hargaJual ? ' · Jual: ' + formatCurrency(item.hargaJual) : '')">
+                <div class="item-meta-text" [title]="(item.itemQuantity ?? '') + ' ' + (item.itemUom || '') + (getApprovedPrice(item) ? ' · Jual: ' + formatCurrency(getApprovedPrice(item)) : '')">
                   {{ item.itemQuantity ?? '-' }} {{ item.itemUom }}
-                  <span *ngIf="item.targetPrice"> · Target: {{ formatCurrency(item.targetPrice) }}</span>
-                  <span *ngIf="item.hargaJual"> · Jual: {{ formatCurrency(item.hargaJual) }}</span>
+                  <span *ngIf="getApprovedPrice(item)"> · Jual: {{ formatCurrency(getApprovedPrice(item)) }}</span>
                 </div>
               </div>
-              <button type="button" class="item-comment-toggle" [class.active]="openCommentItemId === item.id"
-                (click)="toggleItemComments(item); $event.stopPropagation()">
-                💬
-                <span class="item-comment-count" *ngIf="(itemNotesMap[item.id]?.length ?? 0) > 0">{{ itemNotesMap[item.id].length }}</span>
-              </button>
             </div>
 
             <!-- Read-only detail panel -->
@@ -405,10 +436,10 @@
                         <button type="button" class="ghost sm" (click)="cancelEditHargaJual(); $event.stopPropagation()">Cancel</button>
                       </ng-container>
                       <ng-template #hjDisplay>
-                        <span class="editable-value" (click)="startEditHargaJual(item)" title="Click to edit">{{ item.hargaJual ? formatCurrency(item.hargaJual) : '—' }} ✎</span>
+                        <span class="editable-value" (click)="startEditHargaJual(item)" title="Click to edit">{{ getApprovedPrice(item) ? formatCurrency(getApprovedPrice(item)) : '—' }} ✎</span>
                       </ng-template>
                     </ng-container>
-                    <ng-template #hjReadOnly>{{ item.hargaJual ? formatCurrency(item.hargaJual) : '—' }}</ng-template>
+                    <ng-template #hjReadOnly>{{ getApprovedPrice(item) ? formatCurrency(getApprovedPrice(item)) : '—' }}</ng-template>
                   </td>
                 </tr>
               </table>
@@ -442,10 +473,6 @@
                   <span class="coupa-detail-value">{{ item.itemExtendedDescription }}</span>
                 </div>
               </div>
-              <label>Target Price (Rp)
-                <input type="number" [(ngModel)]="reviewItemForm.targetPrice" [ngModelOptions]="{standalone:true}"
-                  class="form-control" min="0" />
-              </label>
               <label>Image
                 <input type="file" (change)="onReviewImageChange($event)" class="form-control" accept="image/*" />
                 <div *ngIf="reviewItemForm.itemImage" class="image-preview-wrap">
@@ -459,7 +486,7 @@
             </div>
 
             <!-- Per-item comments panel -->
-            <div *ngIf="openCommentItemId === item.id" class="item-comments-panel">
+            <div *ngIf="openCommentItemId === item.id" class="item-comments-panel" (click)="$event.stopPropagation()">
               <div class="item-comments-feed">
                 <div class="empty-comments" *ngIf="(itemNotesMap[item.id]?.length ?? 0) === 0">No comments yet.</div>
                 <div class="comment-bubble" *ngFor="let n of (itemNotesMap[item.id] ?? [])"
@@ -539,3 +566,4 @@
 
   </div>
 </div>
+
