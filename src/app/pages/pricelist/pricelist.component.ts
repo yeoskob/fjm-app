@@ -26,6 +26,7 @@ export class PricelistComponent implements OnInit {
   itemSubmittingNote = false;
   currentUser = this.authService.getCurrentUser();
   editingItemId: string | null = null;
+  previewImageUrl: string | null = null;
 
   // Comments panel (inquiry-level)
   showComments = false;
@@ -405,6 +406,15 @@ export class PricelistComponent implements OnInit {
     const h = d.getUTCHours(), m = d.getUTCMinutes();
     const time = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
     return `${datePart}, ${time}`;
+  }
+
+  openImagePreview(url: string, event: Event): void {
+    event.stopPropagation();
+    this.previewImageUrl = url;
+  }
+
+  closeImagePreview(): void {
+    this.previewImageUrl = null;
   }
 
   statusLabel(status: string): string {

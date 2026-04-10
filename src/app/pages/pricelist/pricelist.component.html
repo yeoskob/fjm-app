@@ -165,6 +165,8 @@
               (click)="selectedInquiry.status === 'price_approval' && toggleApprove(item)">
               <td class="muted">{{ i + 1 }}</td>
               <td class="item-name">
+                <img *ngIf="item.itemImage" [src]="item.itemImage" class="item-thumb clickable"
+                  (click)="openImagePreview(item.itemImage, $event)" title="Click to preview" />
                 <div class="item-short">{{ item.itemName || '-' }}</div>
                 <div class="item-desc" *ngIf="item.itemExtendedDescription">{{ item.itemExtendedDescription }}</div>
               </td>
@@ -284,4 +286,11 @@
   </div>
 </div>
 
+<!-- Image Preview -->
+<div class="modal-overlay img-preview-overlay" *ngIf="previewImageUrl" (click)="closeImagePreview()">
+  <div class="img-preview-box" (click)="$event.stopPropagation()">
+    <button type="button" class="img-preview-close" (click)="closeImagePreview()">✕</button>
+    <img [src]="previewImageUrl" class="img-preview-full" />
+  </div>
+</div>
 

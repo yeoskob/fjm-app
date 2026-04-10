@@ -14,6 +14,7 @@ export class MarketingComponent implements OnInit {
   error = '';
   success = '';
   isAdmin = false;
+  busy: Record<string, boolean> = {};
 
   showCreate = false;
   form: Partial<InquiryCreate> = {};
@@ -50,7 +51,26 @@ export class MarketingComponent implements OnInit {
 
   activeTab: 'rfq' | 'quotation' | 'deals' = 'rfq';
 
+  canSeeTab(tab: string): boolean {
+    return this.authService.hasTab('marketing', tab);
+  }
+
   readonly today = todayLocalISO();
+
+  readonly UOM_OPTIONS = [
+    // Count
+    'Pcs', 'Unit', 'Set', 'Pair', 'Dozen',
+    // Weight
+    'Kg', 'g', 'Ton', 'Lbs',
+    // Length
+    'm', 'cm', 'mm', 'ft', 'inch',
+    // Area
+    'm²', 'cm²',
+    // Volume
+    'L', 'mL', 'm³',
+    // Packaging
+    'Box', 'Carton', 'Pack', 'Roll', 'Sheet', 'Drum', 'Pallet', 'Bundle', 'Bag', 'Spool',
+  ];
 
   readonly STATUS_LABELS = INQUIRY_STATUS_LABELS;
   readonly PIPELINE_STAGES: InquiryStatus[] = [
@@ -154,6 +174,9 @@ export class MarketingComponent implements OnInit {
 
   ngOnInit(): void {
     this.isAdmin = this.authService.hasRole('admin');
+    // Set initial tab to first one the user can see
+    const tabs: Array<'rfq' | 'quotation' | 'deals'> = ['rfq', 'quotation', 'deals'];
+    this.activeTab = tabs.find((t) => this.canSeeTab(t)) ?? 'rfq';
     void this.refresh();
     const user = this.authService.getCurrentUser();
     if (user?.role === 'admin' || user?.role === 'manager') {
@@ -654,6 +677,16 @@ export class MarketingComponent implements OnInit {
     this.success = `Closed as ${outcome}.`;
     this.detailInquiry = null;
     await this.refresh();
+  }
+
+  async moveToReadyToPurchase(inquiry: Inquiry, event: Event): Promise<void> {
+    event.stopPropagation();
+    if (this.busy[inquiry.id]) return;
+    this.busy[inquiry.id] = true;
+    const user = this.authService.getCurrentUser();
+    await this.inquiryService.readyToPurchase(inquiry.id, user?.id ?? '', user?.name ?? '');
+    await this.refresh();
+    this.busy[inquiry.id] = false;
   }
 
   formatDateOnly(iso?: string): string {

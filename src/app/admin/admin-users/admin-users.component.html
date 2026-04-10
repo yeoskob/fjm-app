@@ -107,6 +107,16 @@
               <input type="checkbox" [(ngModel)]="roleForm.menus[m.key]" [ngModelOptions]="{standalone:true}" />
               {{ m.label }}
             </label>
+            <!-- Tab access sub-options -->
+            <div class="tab-access-list" *ngIf="roleForm.menus[m.key] && moduleTabs[m.key]?.length">
+              <span class="tab-access-label">Tab access:</span>
+              <label class="checkbox-label tab-checkbox" *ngFor="let t of moduleTabs[m.key]">
+                <input type="checkbox"
+                  [(ngModel)]="roleForm.tabs[m.key][t.key]"
+                  [ngModelOptions]="{standalone:true}" />
+                {{ t.label }}
+              </label>
+            </div>
           </div>
         </div>
 

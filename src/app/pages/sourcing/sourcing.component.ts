@@ -191,12 +191,12 @@ export class SourcingComponent implements OnInit {
     this.fillingItem = item;
     this.editingItemId = item.id;
     this.error = '';
-    const storedLeadTime = item.leadTime ?? '';
-    const leadTimeNum = storedLeadTime ? parseInt(storedLeadTime, 10) || undefined : undefined;
+    const storedLeadTime = item.leadTime ?? item.bidLeadTime ?? '';
+    const leadTimeNum = storedLeadTime ? parseInt(String(storedLeadTime), 10) || undefined : undefined;
     this.fillForm = {
       supplier: item.supplier,
-      hargaBeli: item.hargaBeli,
-      leadTime: item.leadTime,
+      hargaBeli: item.hargaBeli ?? item.bidPriceAmount ?? undefined,
+      leadTime: item.leadTime ?? (storedLeadTime ? String(storedLeadTime) : undefined),
       leadTimeNum,
       moq: item.moq,
       stockAvailability: item.stockAvailability,

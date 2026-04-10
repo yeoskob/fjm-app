@@ -479,3 +479,32 @@ button.sm { padding: 0.3rem 0.65rem; font-size: 0.78rem; }
 @media (max-width: 860px) {
   .items-wrap { padding: 0 1rem; }
 }
+
+.item-thumb {
+  width: 36px;
+  height: 36px;
+  object-fit: cover;
+  border-radius: 5px;
+  display: block;
+  border: 1px solid #e2e8f0;
+  margin-bottom: 0.25rem;
+  &.clickable { cursor: zoom-in; transition: opacity 0.15s; &:hover { opacity: 0.75; } }
+}
+
+.img-preview-overlay { z-index: 200; background: rgba(0,0,0,0.85); align-items: center; justify-content: center; }
+
+.img-preview-box {
+  position: relative; max-width: 90vw; max-height: 90vh;
+  display: flex; align-items: center; justify-content: center;
+}
+
+.img-preview-full { max-width: 90vw; max-height: 90vh; object-fit: contain; border-radius: 8px; box-shadow: 0 8px 32px rgba(0,0,0,0.6); }
+
+.img-preview-close {
+  position: absolute; top: -14px; right: -14px;
+  width: 32px; height: 32px; border-radius: 50%;
+  background: #fff; border: none; font-size: 0.85rem; font-weight: 700;
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3); z-index: 1;
+  &:hover { background: #f1f5f9; }
+}

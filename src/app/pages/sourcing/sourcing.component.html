@@ -93,6 +93,7 @@
             <th (click)="toggleSort(doneSort,'rfqNo')" class="sortable">RFQ No <span class="sort-icon">{{ sortIcon(doneSort,'rfqNo') }}</span></th>
             <th (click)="toggleSort(doneSort,'customer')" class="sortable">Customer <span class="sort-icon">{{ sortIcon(doneSort,'customer') }}</span></th>
             <th (click)="toggleSort(doneSort,'salesPic')" class="sortable">Sales PIC <span class="sort-icon">{{ sortIcon(doneSort,'salesPic') }}</span></th>
+            <th (click)="toggleSort(doneSort,'sourcingPic')" class="sortable">Sourcing PIC <span class="sort-icon">{{ sortIcon(doneSort,'sourcingPic') }}</span></th>
             <th (click)="toggleSort(doneSort,'items')" class="sortable col-center">Items <span class="sort-icon">{{ sortIcon(doneSort,'items') }}</span></th>
             <th (click)="toggleSort(doneSort,'sourced')" class="sortable col-center">Sourced <span class="sort-icon">{{ sortIcon(doneSort,'sourced') }}</span></th>
             <th (click)="toggleSort(doneSort,'status')" class="sortable">Status <span class="sort-icon">{{ sortIcon(doneSort,'status') }}</span></th>
@@ -107,6 +108,10 @@
             </td>
             <td><strong>{{ inq.customer }}</strong></td>
             <td class="muted">{{ inq.salesPic }}</td>
+            <td>
+              <span class="sourcing-assigned" *ngIf="inq.sourcingPic">{{ inq.sourcingPic }}</span>
+              <span class="muted" *ngIf="!inq.sourcingPic">Unassigned</span>
+            </td>
             <td class="col-center">{{ itemCount(inq) }}</td>
             <td class="col-center">{{ sourcedCount(inq) }} / {{ itemCount(inq) }}</td>
             <td><span class="status-pill" [attr.data-status]="inq.status">{{ statusLabel(inq.status) }}</span></td>
@@ -224,6 +229,8 @@
               (click)="!item.priceApproved && toggleFill(item)">
               <td class="muted">{{ i + 1 }}</td>
               <td class="item-name">
+                <img *ngIf="item.itemImage" [src]="item.itemImage" class="item-thumb clickable"
+                  (click)="openImagePreview(item.itemImage, $event)" title="Click to preview" />
                 <div class="item-short" [title]="item.itemName || ''">{{ item.itemName || '-' }}</div>
                 <div class="item-desc" *ngIf="item.itemExtendedDescription" [title]="item.itemExtendedDescription">{{ item.itemExtendedDescription }}</div>
               </td>
@@ -342,4 +349,12 @@
     </div>
 
   </div><!-- /modal-card -->
+</div>
+
+<!-- Image Preview -->
+<div class="modal-overlay img-preview-overlay" *ngIf="previewImageUrl" (click)="closeImagePreview()">
+  <div class="img-preview-box" (click)="$event.stopPropagation()">
+    <button type="button" class="img-preview-close" (click)="closeImagePreview()">✕</button>
+    <img [src]="previewImageUrl" class="img-preview-full" />
+  </div>
 </div>

@@ -182,6 +182,30 @@
 .muted-num { color: #94a3b8; font-size: 0.78rem; }
 .price-val { color: #166534; }
 
+.harga-jual-input {
+  width: 120px;
+  padding: 0.2rem 0.4rem;
+  border: 1px solid #c7d2fe;
+  border-radius: 4px;
+  font-size: 0.82rem;
+  margin-right: 0.25rem;
+}
+
+.btn-xs {
+  padding: 0.15rem 0.5rem;
+  font-size: 0.75rem;
+  border-radius: 4px;
+  border: none;
+  cursor: pointer;
+  margin-left: 0.2rem;
+  line-height: 1.4;
+}
+
+.btn-save { background: #4f46e5; color: #fff; }
+.btn-save:hover { background: #4338ca; }
+.btn-cancel { background: #e5e7eb; color: #374151; }
+.btn-cancel:hover { background: #d1d5db; }
+
 .urgent-badge {
   display: inline-flex;
   align-items: center;
@@ -327,13 +351,13 @@
 }
 
 .create-item-card {
-  border: 1px solid #e2e8f0;
+  border: 1px dashed #6366f1;
   border-radius: 10px;
+  background: #f5f3ff;
   padding: 0.85rem 1rem;
   margin-bottom: 0.75rem;
   display: grid;
   gap: 0.6rem;
-  background: #f8fafc;
 
   &:last-child { margin-bottom: 0; }
 }

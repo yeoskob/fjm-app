@@ -59,6 +59,16 @@ export class AuthService {
     return this.currentUser?.menus?.includes(menu) ?? this.currentUser?.role === 'admin';
   }
 
+  hasTab(module: string, tab: string): boolean {
+    if (!this.currentUser) return false;
+    // admin and manager always see everything
+    if (this.currentUser.role === 'admin' || this.currentUser.role === 'manager') return true;
+    const moduleTabs = this.currentUser.tabs?.[module];
+    // if no tab restrictions configured for this module, allow all tabs
+    if (!moduleTabs || moduleTabs.length === 0) return true;
+    return moduleTabs.includes(tab);
+  }
+
   hasRole(role: Role): boolean {
     return this.currentUser?.role === role;
   }

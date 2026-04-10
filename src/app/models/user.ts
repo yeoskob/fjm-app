@@ -8,6 +8,7 @@ export interface User {
   role: Role;
   token?: string;
   menus?: string[];
+  tabs?: Record<string, string[]>;
 }
 
 export interface UserCreate {

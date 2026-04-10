@@ -13,6 +13,19 @@ export const ALL_MODULES: { key: string; label: string }[] = [
   { key: 'purchasing', label: 'Purchasing' },
 ];
 
+export const MODULE_TABS: Record<string, { key: string; label: string }[]> = {
+  marketing: [
+    { key: 'rfq',       label: 'New Inquiry' },
+    { key: 'quotation', label: 'Quotation Sent' },
+    { key: 'deals',     label: 'Deals' },
+  ],
+  purchasing: [
+    { key: 'deal',             label: 'Deals' },
+    { key: 'ready_to_purchase', label: 'Ready to Purchase' },
+    { key: 'lost',             label: 'Lost' },
+  ],
+};
+
 type AdminTab = 'users' | 'roles';
 
 @Component({
@@ -42,12 +55,14 @@ export class AdminUsersComponent implements OnInit {
   roleSuccess = '';
   roleBusy = false;
 
-  roleForm: { name: string; menus: Record<string, boolean> } = {
+  roleForm: { name: string; menus: Record<string, boolean>; tabs: Record<string, Record<string, boolean>> } = {
     name: '',
     menus: {},
+    tabs: {},
   };
 
   readonly modules = ALL_MODULES;
+  readonly moduleTabs = MODULE_TABS;
 
   constructor(
     private userService: UserService,
@@ -134,10 +149,19 @@ export class AdminUsersComponent implements OnInit {
 
   // ── Role methods ──
 
+  private defaultTabForm(): Record<string, Record<string, boolean>> {
+    const tabs: Record<string, Record<string, boolean>> = {};
+    for (const [mod, modTabs] of Object.entries(this.moduleTabs)) {
+      tabs[mod] = {};
+      for (const t of modTabs) tabs[mod][t.key] = true;
+    }
+    return tabs;
+  }
+
   startAddRole(): void {
     this.isAddingRole = true;
     this.editingRoleName = null;
-    this.roleForm = { name: '', menus: {} };
+    this.roleForm = { name: '', menus: {}, tabs: this.defaultTabForm() };
     this.roleError = '';
     this.roleSuccess = '';
   }
@@ -147,7 +171,16 @@ export class AdminUsersComponent implements OnInit {
     this.isAddingRole = false;
     const menus: Record<string, boolean> = {};
     for (const m of this.modules) menus[m.key] = role.menus.includes(m.key);
-    this.roleForm = { name: role.name, menus };
+    const tabs: Record<string, Record<string, boolean>> = {};
+    for (const [mod, modTabs] of Object.entries(this.moduleTabs)) {
+      tabs[mod] = {};
+      const allowed = role.tabs?.[mod] ?? [];
+      for (const t of modTabs) {
+        // if no tabs configured for this module, default all to true
+        tabs[mod][t.key] = allowed.length === 0 ? true : allowed.includes(t.key);
+      }
+    }
+    this.roleForm = { name: role.name, menus, tabs };
     this.roleError = '';
     this.roleSuccess = '';
   }
@@ -155,13 +188,24 @@ export class AdminUsersComponent implements OnInit {
   cancelRoleEdit(): void {
     this.editingRoleName = null;
     this.isAddingRole = false;
-    this.roleForm = { name: '', menus: {} };
+    this.roleForm = { name: '', menus: {}, tabs: this.defaultTabForm() };
     this.roleError = '';
     this.roleSuccess = '';
   }
 
   selectedMenus(): string[] {
     return this.modules.filter((m) => this.roleForm.menus[m.key]).map((m) => m.key);
+  }
+
+  selectedTabs(): Record<string, string[]> {
+    const result: Record<string, string[]> = {};
+    for (const [mod, tabMap] of Object.entries(this.roleForm.tabs)) {
+      const allowed = Object.entries(tabMap).filter(([, v]) => v).map(([k]) => k);
+      // only store if not all tabs selected (all selected = no restriction)
+      const allTabs = this.moduleTabs[mod] ?? [];
+      if (allowed.length < allTabs.length) result[mod] = allowed;
+    }
+    return result;
   }
 
   async saveRole(): Promise<void> {
@@ -171,15 +215,16 @@ export class AdminUsersComponent implements OnInit {
     const menus = this.selectedMenus();
     if (menus.length === 0) { this.roleError = 'Select at least one module.'; return; }
 
+    const tabs = this.selectedTabs();
     this.roleBusy = true;
     try {
       if (this.isAddingRole) {
         const name = this.roleForm.name.trim();
         if (!name) { this.roleError = 'Role name is required.'; return; }
-        await this.roleService.create(name, menus);
+        await this.roleService.create(name, menus, tabs);
         this.roleSuccess = `Role "${name}" created.`;
       } else if (this.editingRoleName) {
-        await this.roleService.update(this.editingRoleName, menus);
+        await this.roleService.update(this.editingRoleName, menus, tabs);
         this.roleSuccess = `Role "${this.editingRoleName}" updated.`;
       }
       await this.refresh();

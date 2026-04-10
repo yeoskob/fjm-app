@@ -8,13 +8,13 @@
   </div>
 
   <div class="tab-bar">
-    <button type="button" class="tab-btn" [class.active]="activeTab === 'deal'" (click)="setTab('deal')">
+    <button type="button" class="tab-btn" *ngIf="canSeeTab('deal')" [class.active]="activeTab === 'deal'" (click)="setTab('deal')">
       Deals <span class="tab-count">{{ countOf('deal') }}</span>
     </button>
-    <button type="button" class="tab-btn" [class.active]="activeTab === 'ready_to_purchase'" (click)="setTab('ready_to_purchase')">
+    <button type="button" class="tab-btn" *ngIf="canSeeTab('ready_to_purchase')" [class.active]="activeTab === 'ready_to_purchase'" (click)="setTab('ready_to_purchase')">
       Ready to Purchase <span class="tab-count">{{ countOf('ready_to_purchase') }}</span>
     </button>
-    <button type="button" class="tab-btn" [class.active]="activeTab === 'lost'" (click)="setTab('lost')">
+    <button type="button" class="tab-btn" *ngIf="canSeeTab('lost')" [class.active]="activeTab === 'lost'" (click)="setTab('lost')">
       Lost <span class="tab-count">{{ countOf('lost') }}</span>
     </button>
   </div>

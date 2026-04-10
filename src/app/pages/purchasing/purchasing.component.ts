@@ -13,6 +13,10 @@ type SortState = { col: string; dir: 'asc' | 'desc' };
 })
 export class PurchasingComponent implements OnInit {
   activeTab: Tab = 'deal';
+
+  canSeeTab(tab: string): boolean {
+    return this.authService.hasTab('purchasing', tab);
+  }
   inquiries: Inquiry[] = [];
   loading = false;
   busy: Record<string, boolean> = {};
@@ -26,6 +30,8 @@ export class PurchasingComponent implements OnInit {
   constructor(private inquiryService: InquiryService, private authService: AuthService) {}
 
   ngOnInit(): void {
+    const tabs: Tab[] = ['deal', 'ready_to_purchase', 'lost'];
+    this.activeTab = tabs.find((t) => this.canSeeTab(t)) ?? 'deal';
     void this.load();
   }
 
