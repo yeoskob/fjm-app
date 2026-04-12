@@ -2,6 +2,7 @@ export type InquiryStatus =
   | 'new_inquiry'
   | 'rfq'
   | 'price_approval'
+  | 'price_approved'
   | 'quotation_sent'
   | 'follow_up'
   | 'deal'
@@ -12,6 +13,7 @@ export const INQUIRY_STATUS_LABELS: Record<InquiryStatus, string> = {
   new_inquiry: 'New Inquiry',
   rfq: 'RFQ to Sourcing',
   price_approval: 'Price Approval',
+  price_approved: 'Price Approved',
   quotation_sent: 'Quotation Sent',
   follow_up: 'Negotiation',
   deal: 'Deal',
@@ -73,6 +75,8 @@ export interface InquiryItem {
   validitasQuotation?: string;
   catatanQuotation?: string;
   priceApproved?: boolean;
+  needsPriceReview?: boolean;
+  sourcingMissed?: boolean;
 }
 
 export interface Inquiry {
@@ -159,6 +163,9 @@ export interface DashboardStats {
   sourcingItemsThisMonth: number;
   sourcingItemsTotal: number;
   topSourcers: Array<{ sourcing_pic: string; items_count: number }>;
+  itemsTerisi: number;
+  itemsTidakTerisi: number;
+  itemsMissed: number;
 }
 
 export interface UserStats {
@@ -175,6 +182,9 @@ export interface UserStats {
     itemsSourced: number;
     inquiriesContributed: number;
     thisMonth: number;
+    itemsTerisi: number;
+    itemsMissed: number;
+    itemsTidakTerisi: number;
   };
   managerStats: {
     approvalsTotal: number;

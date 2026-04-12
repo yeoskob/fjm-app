@@ -15,14 +15,14 @@
 
   <!-- Tabs -->
   <div class="tab-bar">
-    <button type="button" class="tab-btn" *ngIf="canSeeTab('rfq')" [class.active]="activeTab === 'rfq'" (click)="activeTab = 'rfq'; expandedDealId = null">
-      New Inquiry <span class="tab-count">{{ rfqTabInquiries.length }}</span>
+    <button type="button" class="tab-btn" *ngIf="canSeeTab('rfq')" [class.active]="activeTab === 'rfq'" (click)="activeTab = 'rfq'">
+      New Inquiry
     </button>
-    <button type="button" class="tab-btn" *ngIf="canSeeTab('quotation')" [class.active]="activeTab === 'quotation'" (click)="activeTab = 'quotation'; expandedDealId = null">
-      Quotation Sent <span class="tab-count">{{ quotationTabInquiries.length }}</span>
+    <button type="button" class="tab-btn" *ngIf="canSeeTab('price_approved')" [class.active]="activeTab === 'price_approved'" (click)="activeTab = 'price_approved'">
+      Price Approved
     </button>
-    <button type="button" class="tab-btn" *ngIf="canSeeTab('deals')" [class.active]="activeTab === 'deals'" (click)="activeTab = 'deals'; expandedDealId = null">
-      Deals <span class="tab-count">{{ dealsTabInquiries.length }}</span>
+    <button type="button" class="tab-btn" *ngIf="canSeeTab('sent')" [class.active]="activeTab === 'sent'" (click)="activeTab = 'sent'">
+      Sent
     </button>
   </div>
 
@@ -58,10 +58,48 @@
         </tr>
       </tbody>
     </table>
+    <div class="table-total">Total: {{ rfqTabFiltered.length }} items</div>
   </div>
 
-  <!-- Quotation Sent Tab -->
-  <div class="tab-content" *ngIf="activeTab === 'quotation'">
+  <!-- Price Approved Tab -->
+  <div class="tab-content" *ngIf="activeTab === 'price_approved'">
+    <div class="table-toolbar">
+      <input class="table-filter" [(ngModel)]="priceApprovedFilter" [ngModelOptions]="{standalone:true}" placeholder="Filter..." />
+    </div>
+    <table class="pipeline-table">
+      <thead>
+        <tr>
+          <th (click)="toggleSort(priceApprovedSort,'rfqNo')" class="sortable">RFQ ID <span class="sort-icon">{{ sortIcon(priceApprovedSort,'rfqNo') }}</span></th>
+          <th (click)="toggleSort(priceApprovedSort,'customer')" class="sortable">Customer <span class="sort-icon">{{ sortIcon(priceApprovedSort,'customer') }}</span></th>
+          <th (click)="toggleSort(priceApprovedSort,'needByDate')" class="sortable">Need by Date <span class="sort-icon">{{ sortIcon(priceApprovedSort,'needByDate') }}</span></th>
+          <th (click)="toggleSort(priceApprovedSort,'tanggal')" class="sortable">Inquiry Date <span class="sort-icon">{{ sortIcon(priceApprovedSort,'tanggal') }}</span></th>
+          <th (click)="toggleSort(priceApprovedSort,'salesPic')" class="sortable">Sales <span class="sort-icon">{{ sortIcon(priceApprovedSort,'salesPic') }}</span></th>
+          <th (click)="toggleSort(priceApprovedSort,'sourcingPic')" class="sortable">Sourcing <span class="sort-icon">{{ sortIcon(priceApprovedSort,'sourcingPic') }}</span></th>
+          <th (click)="toggleSort(priceApprovedSort,'items')" class="sortable">Items <span class="sort-icon">{{ sortIcon(priceApprovedSort,'items') }}</span></th>
+          <th (click)="toggleSort(priceApprovedSort,'status')" class="sortable">Status <span class="sort-icon">{{ sortIcon(priceApprovedSort,'status') }}</span></th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let inq of priceApprovedTabFiltered" (click)="openDetail(inq)" class="clickable-row">
+          <td><span class="mono-cell">{{ inq.rfqNo || '-' }}</span><span class="coupa-badge" *ngIf="inq.coupaSource">Coupa</span></td>
+          <td>{{ inq.customer }}</td>
+          <td>{{ formatDateOnly(inq.items[0]?.itemNeedByDate) }}</td>
+          <td>{{ formatDate(inq.tanggal) }}</td>
+          <td>{{ inq.salesPic }}</td>
+          <td>{{ inq.sourcingPic || '-' }}</td>
+          <td>{{ itemCount(inq) }}</td>
+          <td><span class="badge" [ngClass]="statusClass(inq.status)">{{ STATUS_LABELS[inq.status] }}</span></td>
+        </tr>
+        <tr *ngIf="priceApprovedTabFiltered.length === 0">
+          <td colspan="8" class="empty-row">No results.</td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="table-total">Total: {{ priceApprovedTabFiltered.length }} items</div>
+  </div>
+
+  <!-- Sent Tab -->
+  <div class="tab-content" *ngIf="activeTab === 'sent'">
     <div class="table-toolbar">
       <input class="table-filter" [(ngModel)]="quotationFilter" [ngModelOptions]="{standalone:true}" placeholder="Filter..." />
     </div>
@@ -94,81 +132,9 @@
         </tr>
       </tbody>
     </table>
+    <div class="table-total">Total: {{ quotationTabFiltered.length }} items</div>
   </div>
 
-  <!-- Deals Tab -->
-  <div class="tab-content" *ngIf="activeTab === 'deals'">
-    <div class="table-toolbar">
-      <input class="table-filter" [(ngModel)]="dealsFilter" [ngModelOptions]="{standalone:true}" placeholder="Filter..." />
-    </div>
-    <table class="pipeline-table">
-      <thead>
-        <tr>
-          <th style="width:24px"></th>
-          <th (click)="toggleSort(dealsSort,'rfqNo')" class="sortable">RFQ ID <span class="sort-icon">{{ sortIcon(dealsSort,'rfqNo') }}</span></th>
-          <th (click)="toggleSort(dealsSort,'customer')" class="sortable">Customer <span class="sort-icon">{{ sortIcon(dealsSort,'customer') }}</span></th>
-          <th (click)="toggleSort(dealsSort,'salesPic')" class="sortable">Sales <span class="sort-icon">{{ sortIcon(dealsSort,'salesPic') }}</span></th>
-          <th (click)="toggleSort(dealsSort,'sourcingPic')" class="sortable">Sourcing <span class="sort-icon">{{ sortIcon(dealsSort,'sourcingPic') }}</span></th>
-          <th (click)="toggleSort(dealsSort,'items')" class="sortable">Items <span class="sort-icon">{{ sortIcon(dealsSort,'items') }}</span></th>
-          <th (click)="toggleSort(dealsSort,'tanggal')" class="sortable">Inquiry Date <span class="sort-icon">{{ sortIcon(dealsSort,'tanggal') }}</span></th>
-          <th (click)="toggleSort(dealsSort,'updatedAt')" class="sortable">Closed Date <span class="sort-icon">{{ sortIcon(dealsSort,'updatedAt') }}</span></th>
-          <th>Action</th>
-        </tr>
-      </thead>
-      <tbody>
-        <ng-container *ngFor="let inq of dealsTabFiltered">
-          <tr (click)="toggleDeal(inq.id)" class="clickable-row" [class.expanded-row]="expandedDealId === inq.id">
-            <td class="chevron-cell">{{ expandedDealId === inq.id ? '▾' : '▸' }}</td>
-            <td><span class="mono-cell">{{ inq.rfqNo || '-' }}</span><span class="coupa-badge" *ngIf="inq.coupaSource">Coupa</span></td>
-            <td>{{ inq.customer }}</td>
-            <td>{{ inq.salesPic }}</td>
-            <td>{{ inq.sourcingPic || '-' }}</td>
-            <td><span class="item-count-pill">{{ itemCount(inq) }}</span></td>
-            <td>{{ formatDate(inq.tanggal) }}</td>
-            <td>{{ inq.updatedAt ? formatDate(inq.updatedAt) : '-' }}</td>
-            <td (click)="$event.stopPropagation()">
-              <button type="button" class="primary btn-sm" [disabled]="busy[inq.id]" (click)="moveToReadyToPurchase(inq, $event)">
-                {{ busy[inq.id] ? '...' : 'Ready to Purchase' }}
-              </button>
-            </td>
-          </tr>
-          <tr *ngIf="expandedDealId === inq.id" class="item-expand-row">
-            <td colspan="9" class="item-expand-cell">
-              <table class="item-sub-table">
-                <thead>
-                  <tr><th>#</th><th>Item</th><th>Qty</th><th>Supplier</th><th>Harga Jual</th></tr>
-                </thead>
-                <tbody>
-                  <tr *ngFor="let item of inq.items; let i = index">
-                    <td class="muted-num">{{ i + 1 }}</td>
-                    <td>{{ item.alternateName || item.itemName || '-' }}</td>
-                    <td>{{ item.itemQuantity || '-' }} {{ item.itemUom || '' }}</td>
-                    <td>{{ item.supplier || '-' }}</td>
-                    <td>
-                      <ng-container *ngIf="editingHargaJualId === item.id; else hargaJualDisplay">
-                        <input type="number" class="harga-jual-input" [(ngModel)]="hargaJualInput" [ngModelOptions]="{standalone:true}" min="0" (click)="$event.stopPropagation()" />
-                        <button class="btn-xs btn-save" (click)="$event.stopPropagation(); saveHargaJual(inq)">Save</button>
-                        <button class="btn-xs btn-cancel" (click)="$event.stopPropagation(); cancelEditHargaJual()">✕</button>
-                      </ng-container>
-                      <ng-template #hargaJualDisplay>
-                        <span class="editable-value" (click)="$event.stopPropagation(); startEditHargaJual(item)" title="Click to edit">{{ getApprovedPrice(item) ? formatCurrency(getApprovedPrice(item)) : '—' }} ✎</span>
-                      </ng-template>
-                    </td>
-                  </tr>
-                  <tr *ngIf="!inq.items?.length">
-                    <td colspan="5" class="empty-row">No items.</td>
-                  </tr>
-                </tbody>
-              </table>
-            </td>
-          </tr>
-        </ng-container>
-        <tr *ngIf="dealsTabFiltered.length === 0">
-          <td colspan="9" class="empty-row">No results.</td>
-        </tr>
-      </tbody>
-    </table>
-  </div>
 </section>
 
 <!-- Create Inquiry Modal -->
@@ -403,16 +369,23 @@
         <div class="item-review-list">
           <div class="item-review-row clickable-row" *ngFor="let item of detailInquiry.items"
             [class.is-editing]="reviewingItemId === item.id"
+            [class.is-below-approved-floor]="detailInquiry.status === 'price_approved' && isItemBelowApprovedFloor(item)"
+            [class.is-reviewed]="detailInquiry.status === 'price_approved' && isItemReviewed(item)"
+            [class.is-not-reviewed]="detailInquiry.status === 'price_approved' && !isItemReviewed(item)"
             (click)="detailInquiry.status === 'new_inquiry' ? (reviewingItemId === item.id ? cancelReviewItem() : startReviewItem(item)) : toggleViewItem(item.id)">
             <div class="item-review-main">
               <img *ngIf="item.itemImage" [src]="item.itemImage" class="item-thumb clickable"
                 (click)="openImagePreview(item.itemImage!, $event); $event.stopPropagation()" title="Click to preview" />
               <div class="item-review-info">
                 <div class="item-name-text" [title]="item.itemName || ''">{{ item.itemName || '-' }}</div>
-                <div class="item-meta-text" [title]="(item.itemQuantity ?? '') + ' ' + (item.itemUom || '') + (getApprovedPrice(item) ? ' · Jual: ' + formatCurrency(getApprovedPrice(item)) : '')">
+                <div class="item-meta-text">
                   {{ item.itemQuantity ?? '-' }} {{ item.itemUom }}
                   <span *ngIf="getApprovedPrice(item)"> · Jual: {{ formatCurrency(getApprovedPrice(item)) }}</span>
                 </div>
+              </div>
+              <div class="item-review-state" *ngIf="detailInquiry.status === 'price_approved'">
+                <span class="review-state-pill reviewed" *ngIf="isItemReviewed(item)">Reviewed</span>
+                <span class="review-state-pill not-reviewed" *ngIf="!isItemReviewed(item)">Not reviewed</span>
               </div>
             </div>
 
@@ -429,20 +402,39 @@
                 <tr *ngIf="item.moq"><td>MOQ</td><td>{{ item.moq }}</td></tr>
                 <tr *ngIf="item.stockAvailability"><td>Stock</td><td>{{ item.stockAvailability }}</td></tr>
                 <tr *ngIf="item.termPembayaran"><td>Term Pembayaran</td><td>{{ item.termPembayaran }}</td></tr>
-                <tr>
+                <tr *ngIf="item.hargaJual || getApprovedPrice(item)">
                   <td>Harga Jual</td>
                   <td>
-                    <ng-container *ngIf="['quotation_sent','deal'].includes(detailInquiry.status); else hjReadOnly">
-                      <ng-container *ngIf="editingHargaJualId === item.id; else hjDisplay">
-                        <input type="number" [(ngModel)]="hargaJualInput" [ngModelOptions]="{standalone:true}" class="form-control" style="width:120px;display:inline-block" min="0" (click)="$event.stopPropagation()" />
-                        <button type="button" class="primary sm" (click)="saveHargaJual(detailInquiry!); $event.stopPropagation()">Save</button>
-                        <button type="button" class="ghost sm" (click)="cancelEditHargaJual(); $event.stopPropagation()">Cancel</button>
+                    <ng-container *ngIf="detailInquiry.status === 'price_approved'; else hjLegacyEdit">
+                      <ng-container *ngIf="editingPriceApprovedItemId === item.id; else paDisplay">
+                        <div (click)="$event.stopPropagation()">
+                          <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+                            <input type="number" [(ngModel)]="priceApprovedInput" [ngModelOptions]="{standalone:true}" class="form-control" style="width:130px" [class.input-error]="isPriceApprovedBelowMin()" />
+                            <button type="button" class="primary sm" (click)="savePriceApproved(detailInquiry!)">Save</button>
+                            <button type="button" class="ghost sm" (click)="cancelEditPriceApproved()">Cancel</button>
+                          </div>
+                          <div class="field-hint">Harga disetujui: {{ formatCurrency(priceApprovedMinPrice ?? 0) }}</div>
+                          <div class="field-error" *ngIf="isPriceApprovedBelowMin()">Harga di bawah harga yang disetujui — item ini akan memerlukan Price Review.</div>
+                        </div>
                       </ng-container>
-                      <ng-template #hjDisplay>
-                        <span class="editable-value" (click)="startEditHargaJual(item)" title="Click to edit">{{ getApprovedPrice(item) ? formatCurrency(getApprovedPrice(item)) : '—' }} ✎</span>
+                      <ng-template #paDisplay>
+                        <span class="editable-value" (click)="startEditPriceApproved(item); $event.stopPropagation()" title="Click to edit">{{ getApprovedPrice(item) ? formatCurrency(getApprovedPrice(item)) : '—' }} ✎</span>
+                        <span class="field-hint" *ngIf="getApprovedFloor(item)"> (min: {{ formatCurrency(getApprovedFloor(item)) }})</span>
                       </ng-template>
                     </ng-container>
-                    <ng-template #hjReadOnly>{{ getApprovedPrice(item) ? formatCurrency(getApprovedPrice(item)) : '—' }}</ng-template>
+                    <ng-template #hjLegacyEdit>
+                      <ng-container *ngIf="['quotation_sent','deal'].includes(detailInquiry.status); else hjReadOnly">
+                        <ng-container *ngIf="editingHargaJualId === item.id; else hjDisplay">
+                          <input type="number" [(ngModel)]="hargaJualInput" [ngModelOptions]="{standalone:true}" class="form-control" style="width:120px;display:inline-block" min="0" (click)="$event.stopPropagation()" />
+                          <button type="button" class="primary sm" (click)="saveHargaJual(detailInquiry!); $event.stopPropagation()">Save</button>
+                          <button type="button" class="ghost sm" (click)="cancelEditHargaJual(); $event.stopPropagation()">Cancel</button>
+                        </ng-container>
+                        <ng-template #hjDisplay>
+                          <span class="editable-value" (click)="startEditHargaJual(item)" title="Click to edit">{{ getApprovedPrice(item) ? formatCurrency(getApprovedPrice(item)) : '—' }} ✎</span>
+                        </ng-template>
+                      </ng-container>
+                      <ng-template #hjReadOnly>{{ getApprovedPrice(item) ? formatCurrency(getApprovedPrice(item)) : '—' }}</ng-template>
+                    </ng-template>
                   </td>
                 </tr>
               </table>
@@ -556,6 +548,21 @@
         </ng-container>
         <ng-container *ngSwitchCase="'price_approval'">
           <span class="status-info">Waiting for manager price approval.</span>
+        </ng-container>
+        <ng-container *ngSwitchCase="'price_approved'">
+          <ng-container *ngIf="itemsBelowApprovedFloor(detailInquiry!) as badItems">
+            <div class="footer-warning muted-warning" *ngIf="!hasReviewedAllItems(detailInquiry!)">
+              Review all items first before sending.
+              {{ unreviewedItemCount(detailInquiry!) }} item{{ unreviewedItemCount(detailInquiry!) > 1 ? 's' : '' }} not reviewed yet.
+            </div>
+            <div class="footer-warning" *ngIf="badItems.length > 0">
+              {{ badItems.length }} item{{ badItems.length > 1 ? 's have' : ' has' }} a price below the approved floor — send for Price Review.
+            </div>
+            <div class="footer-actions">
+              <button type="button" class="ghost sm review-action-btn" [disabled]="!hasReviewedAllItems(detailInquiry!) || badItems.length === 0" (click)="returnToPriceApproval(detailInquiry!)">Price Review</button>
+              <button type="button" class="primary sm sent-action-btn" [disabled]="badItems.length > 0 || !hasReviewedAllItems(detailInquiry!)" (click)="sendToSent(detailInquiry!)">Sent</button>
+            </div>
+          </ng-container>
         </ng-container>
         <ng-container *ngSwitchCase="'quotation_sent'">
           <div class="footer-actions">

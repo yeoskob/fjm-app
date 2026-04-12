@@ -179,6 +179,13 @@
   color: #475569;
 }
 
+.table-total {
+  margin-top: 0.45rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #475569;
+}
+
 .sourcing-assigned { font-weight: 600; color: #1d4ed8; }
 
 /* ── Modal ── */
@@ -317,9 +324,12 @@
 
   tr:last-child td { border-bottom: none; }
   tr.approved-row td { background: #f0fdf4; }
+  tr.review-row td { background: #fff7ed; }
   tr.editing-row td { background: #eff6ff; }
+  tr.review-row.editing-row td { background: #eff6ff; }
   tr.item-row.clickable-row { cursor: pointer; }
   tr.item-row.clickable-row:hover td { background: #f1f5f9; }
+  tr.item-row.review-row.clickable-row:hover td { background: #ffedd5; }
 }
 
 .item-name { overflow: hidden; white-space: normal !important; }
@@ -335,6 +345,22 @@
   font-size: 0.75rem;
   font-weight: 700;
   white-space: nowrap;
+}
+
+.review-pill {
+  display: inline-block;
+  background: #fee2e2;
+  color: #b91c1c;
+  border-radius: 999px;
+  padding: 0.15rem 0.55rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.review-price-cell {
+  color: #b91c1c;
+  font-weight: 700;
 }
 
 .muted-pct { font-size: 0.78rem; color: #64748b; }
@@ -366,6 +392,10 @@
   border-bottom: 1px solid #e2e8f0;
 }
 
+.under-approved-price {
+  grid-column: 2;
+}
+
 .field-label {
   font-size: 0.82rem;
   font-weight: 600;
@@ -378,6 +408,10 @@
   font-size: 0.82rem;
   color: #1e293b;
   font-weight: 600;
+}
+
+.review-floor {
+  color: #92400e;
 }
 
 .inline-actions-row {

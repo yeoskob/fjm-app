@@ -13,10 +13,10 @@
   <!-- Tabs -->
   <div class="tab-bar">
     <button type="button" class="tab-btn" [class.active]="activeTab === 'pending'" (click)="activeTab = 'pending'">
-      Menunggu Approval <span class="tab-count">{{ pendingApproval.length }}</span>
+      Menunggu Approval
     </button>
     <button type="button" class="tab-btn" [class.active]="activeTab === 'riwayat'" (click)="activeTab = 'riwayat'">
-      Riwayat <span class="tab-count">{{ approved.length }}</span>
+      Riwayat
     </button>
   </div>
 
@@ -61,6 +61,7 @@
           </tr>
         </tbody>
       </table>
+      <div class="table-total">Total: {{ pendingFiltered.length }} items</div>
     </div>
     <div class="pager" *ngIf="pendingPages() > 1">
       <button class="ghost sm" (click)="pendingPage = pendingPage - 1" [disabled]="pendingPage === 1">‹ Prev</button>
@@ -102,6 +103,7 @@
           </tr>
         </tbody>
       </table>
+      <div class="table-total">Total: {{ approvedFiltered.length }} items</div>
     </div>
     <div class="pager" *ngIf="approvedPages() > 1">
       <button class="ghost sm" (click)="approvedPage = approvedPage - 1" [disabled]="approvedPage === 1">‹ Prev</button>
@@ -160,6 +162,7 @@
           <ng-container *ngFor="let item of selectedInquiry.items; let i = index">
             <tr class="item-row"
               [class.approved-row]="isApproved(item)"
+              [class.review-row]="isNeedsReview(item)"
               [class.editing-row]="editingItemId === item.id"
               [class.clickable-row]="selectedInquiry.status === 'price_approval' && !isApproved(item)"
               (click)="selectedInquiry.status === 'price_approval' && toggleApprove(item)">
@@ -174,7 +177,7 @@
               <td class="muted"><div class="clamp-cell">{{ item.itemUom || '-' }}</div></td>
               <td><div class="clamp-cell" [title]="item.supplier || ''">{{ item.supplier || '-' }}</div></td>
               <td>{{ formatCurrency(item.hargaBeli) }}</td>
-              <td>{{ isApproved(item) ? formatCurrency(getApprovedPrice(item)) : '-' }}</td>
+              <td [class.review-price-cell]="isNeedsReview(item)">{{ getApprovedPrice(item) ? formatCurrency(getApprovedPrice(item)) : '-' }}</td>
               <td>
                 <ng-container *ngIf="isApproved(item)">
                   <div>{{ formatCurrency(getMargin(item, item.id)) }}</div>
@@ -184,7 +187,8 @@
               </td>
               <td>
                 <span class="approved-pill" *ngIf="isApproved(item)">Approved</span>
-                <span class="pending-pill" *ngIf="!isApproved(item)">Pending</span>
+                <span class="review-pill" *ngIf="!isApproved(item) && isNeedsReview(item)">Review</span>
+                <span class="pending-pill" *ngIf="!isApproved(item) && !isNeedsReview(item)">Pending</span>
               </td>
             </tr>
 
@@ -202,6 +206,10 @@
                       <input type="number" [(ngModel)]="approvalForms[item.id].hargaJual"
                         (ngModelChange)="updateMarginPctFromHargaJual(item)"
                         [ngModelOptions]="{standalone:true}" class="form-control" min="0" />
+                    </div>
+                    <div class="inline-field-row under-approved-price" *ngIf="isNeedsReview(item) && getApprovedFloor(item) != null">
+                      <span class="field-label">Previous Approved Floor</span>
+                      <span class="field-value review-floor">{{ formatCurrency(getApprovedFloor(item)) }}</span>
                     </div>
                     <div class="inline-field-row">
                       <span class="field-label">Margin %</span>

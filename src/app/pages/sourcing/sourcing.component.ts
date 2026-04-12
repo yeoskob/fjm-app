@@ -67,6 +67,11 @@ export class SourcingComponent implements OnInit {
         case 'sourced': av = this.sourcedCount(a); bv = this.sourcedCount(b); break;
         case 'status': av = a.status ?? ''; bv = b.status ?? ''; break;
         case 'tanggal': av = a.tanggal ?? ''; bv = b.tanggal ?? ''; break;
+        case 'daysLeft': {
+          const da = this.daysLeft(this.earliestNeedByDate(a));
+          const db2 = this.daysLeft(this.earliestNeedByDate(b));
+          av = da ?? 999999; bv = db2 ?? 999999; break;
+        }
       }
       const cmp = typeof av === 'number' ? av - (bv as number) : (av as string).localeCompare(bv as string);
       return sort.dir === 'asc' ? cmp : -cmp;
@@ -117,17 +122,25 @@ export class SourcingComponent implements OnInit {
     const all = await this.inquiryService.getAll();
     const user = this.currentUser;
 
-    // Admin and manager see everything; sourcing users see only their own + unassigned
-    const visible = this.isAdminOrManager()
-      ? all
-      : all.filter((i) => !i.sourcingPic || i.sourcingPic === user!.name);
+    const doneStatuses = ['price_approval', 'price_approved', 'quotation_sent', 'follow_up', 'deal', 'lost'];
 
-    this.rfqInquiries = visible.filter((i) => i.status === 'rfq');
+    if (this.isAdminOrManager()) {
+      // Admin/manager see everything
+      this.rfqInquiries = all.filter((i) => i.status === 'rfq');
+      this.doneInquiries = all.filter((i) => doneStatuses.includes(i.status));
+    } else {
+      // RFQ tab: own + unassigned (so users can pick up new work)
+      this.rfqInquiries = all.filter(
+        (i) => i.status === 'rfq' && (!i.sourcingPic || i.sourcingPic === user!.name)
+      );
+      // Riwayat tab: strictly only assigned to this user (no unassigned)
+      this.doneInquiries = all.filter(
+        (i) => doneStatuses.includes(i.status) && i.sourcingPic === user!.name
+      );
+    }
+
     this.rfqPage = 1;
     this.donePage = 1;
-    this.doneInquiries = visible.filter((i) =>
-      ['price_approval', 'quotation_sent', 'deal', 'lost'].includes(i.status)
-    );
     // Keep modal in sync after refresh
     if (this.selectedInquiry) {
       const updated = all.find((i) => i.id === this.selectedInquiry!.id);
@@ -319,6 +332,10 @@ export class SourcingComponent implements OnInit {
     return !!(item.supplier && item.hargaBeli != null && item.leadTime);
   }
 
+  isMissed(item: InquiryItem): boolean {
+    return !!item.sourcingMissed;
+  }
+
   itemCount(inquiry: Inquiry): number {
     return inquiry.items?.length ?? 0;
   }
@@ -328,7 +345,11 @@ export class SourcingComponent implements OnInit {
   }
 
   sourcedCount(inquiry: Inquiry): number {
-    return inquiry.items?.filter((i) => this.isSourced(i)).length ?? 0;
+    return inquiry.items?.filter((i) => this.isSourced(i) && !this.isMissed(i)).length ?? 0;
+  }
+
+  missedCount(inquiry: Inquiry): number {
+    return inquiry.items?.filter((i) => this.isMissed(i)).length ?? 0;
   }
 
   statusLabel(status: string): string {

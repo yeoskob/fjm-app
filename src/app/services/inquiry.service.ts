@@ -50,6 +50,14 @@ export class InquiryService {
     return firstValueFrom(this.http.post<void>(`${this.base}/${id}/return-to-sourcing`, { doneBy, doneByName }));
   }
 
+  sendToSent(id: string, doneBy: string, doneByName: string): Promise<void> {
+    return firstValueFrom(this.http.post<void>(`${this.base}/${id}/send-to-sent`, { doneBy, doneByName }));
+  }
+
+  returnToPriceApproval(id: string, doneBy: string, doneByName: string): Promise<void> {
+    return firstValueFrom(this.http.post<void>(`${this.base}/${id}/return-to-price-approval`, { doneBy, doneByName }));
+  }
+
   submitSourcingInfo(id: string, payload: SourcingInfo): Promise<void> {
     return firstValueFrom(this.http.post<void>(`${this.base}/${id}/sourcing-info`, payload));
   }

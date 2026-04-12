@@ -143,7 +143,7 @@ export class PricelistComponent implements OnInit {
     const all = await this.inquiryService.getAll();
     this.pendingApproval = all.filter((i) => i.status === 'price_approval');
     this.approved = all.filter((i) =>
-      ['quotation_sent', 'deal', 'lost'].includes(i.status)
+      ['price_approved', 'quotation_sent', 'deal', 'lost'].includes(i.status)
     );
     this.pendingPage = 1;
     this.approvedPage = 1;
@@ -151,9 +151,10 @@ export class PricelistComponent implements OnInit {
     for (const inq of this.pendingApproval) {
       for (const item of inq.items ?? []) {
         if (!this.approvalForms[item.id] && !item.priceApproved) {
+          const proposedPrice = this.getProposedPrice(item);
           const multiplier = 1 + this.defaultMarginPct / 100;
           this.approvalForms[item.id] = {
-            hargaJual: item.hargaBeli ? Math.round(item.hargaBeli * multiplier) : undefined,
+            hargaJual: proposedPrice ?? (item.hargaBeli ? Math.round(item.hargaBeli * multiplier) : undefined),
           };
         }
       }
@@ -264,9 +265,10 @@ export class PricelistComponent implements OnInit {
     this.itemNewNote = '';
     this.error = '';
     if (!this.approvalForms[item.id]) {
+      const proposedPrice = this.getProposedPrice(item);
       const multiplier = 1 + this.defaultMarginPct / 100;
       this.approvalForms[item.id] = {
-        hargaJual: item.hargaBeli ? Math.round(item.hargaBeli * multiplier) : undefined,
+        hargaJual: proposedPrice ?? (item.hargaBeli ? Math.round(item.hargaBeli * multiplier) : undefined),
       };
     }
     this.updateMarginPctFromHargaJual(item);
@@ -379,12 +381,24 @@ export class PricelistComponent implements OnInit {
   }
 
   getMargin(item: InquiryItem, id: string): number {
-    const hargaJual = this.approvalForms[id]?.hargaJual ?? this.getApprovedPrice(item) ?? 0;
+    const hargaJual = this.approvalForms[id]?.hargaJual ?? this.getProposedPrice(item) ?? 0;
     return hargaJual - (item.hargaBeli ?? 0);
   }
 
+  isNeedsReview(item: InquiryItem): boolean {
+    return item.needsPriceReview === true;
+  }
+
+  getProposedPrice(item: InquiryItem): number | undefined {
+    return item.hargaJual ?? item.approvedPrice;
+  }
+
+  getApprovedFloor(item: InquiryItem): number | undefined {
+    return item.approvedPrice;
+  }
+
   getApprovedPrice(item: InquiryItem): number | undefined {
-    return item.approvedPrice ?? item.hargaJual;
+    return this.getProposedPrice(item);
   }
 
   getMarginPct(item: InquiryItem, id: string): number {
@@ -420,6 +434,7 @@ export class PricelistComponent implements OnInit {
   statusLabel(status: string): string {
     const map: Record<string, string> = {
       price_approval: 'Price Approval',
+      price_approved: 'Price Approved',
       quotation_sent: 'Quotation Sent',
       deal: 'Deal',
       lost: 'Lost',

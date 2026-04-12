@@ -9,13 +9,13 @@
 
   <div class="tab-bar">
     <button type="button" class="tab-btn" *ngIf="canSeeTab('deal')" [class.active]="activeTab === 'deal'" (click)="setTab('deal')">
-      Deals <span class="tab-count">{{ countOf('deal') }}</span>
+      Deals
     </button>
     <button type="button" class="tab-btn" *ngIf="canSeeTab('ready_to_purchase')" [class.active]="activeTab === 'ready_to_purchase'" (click)="setTab('ready_to_purchase')">
-      Ready to Purchase <span class="tab-count">{{ countOf('ready_to_purchase') }}</span>
+      Ready to Purchase
     </button>
     <button type="button" class="tab-btn" *ngIf="canSeeTab('lost')" [class.active]="activeTab === 'lost'" (click)="setTab('lost')">
-      Lost <span class="tab-count">{{ countOf('lost') }}</span>
+      Lost
     </button>
   </div>
 
@@ -80,6 +80,7 @@
           <tr *ngIf="tabRows.length === 0"><td colspan="8" class="empty-row">No results.</td></tr>
         </tbody>
       </table>
+      <div class="table-total">Total: {{ tabRows.length }} items</div>
     </div>
 
     <!-- Lost tab -->
@@ -130,6 +131,7 @@
           <tr *ngIf="tabRows.length === 0"><td colspan="7" class="empty-row">No results.</td></tr>
         </tbody>
       </table>
+      <div class="table-total">Total: {{ tabRows.length }} items</div>
     </div>
 
     <!-- Ready to Purchase tab: grouped by RFQ with accordion -->
@@ -178,6 +180,7 @@
           <tr *ngIf="rtpGroups.length === 0"><td colspan="6" class="empty-row">No results.</td></tr>
         </tbody>
       </table>
+      <div class="table-total">Total: {{ rtpGroups.length }} items</div>
     </div>
   </ng-container>
 </section>

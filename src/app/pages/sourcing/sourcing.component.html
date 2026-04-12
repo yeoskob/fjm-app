@@ -13,10 +13,10 @@
   <!-- Tabs -->
   <div class="tab-bar">
     <button type="button" class="tab-btn" [class.active]="activeTab === 'rfq'" (click)="activeTab = 'rfq'">
-      RFQ <span class="tab-count">{{ rfqInquiries.length }}</span>
+      RFQ
     </button>
     <button type="button" class="tab-btn" [class.active]="activeTab === 'riwayat'" (click)="activeTab = 'riwayat'">
-      Riwayat <span class="tab-count">{{ doneInquiries.length }}</span>
+      Riwayat
     </button>
   </div>
 
@@ -36,8 +36,9 @@
             <th (click)="toggleSort(rfqSort,'salesPic')" class="sortable">Sales PIC <span class="sort-icon">{{ sortIcon(rfqSort,'salesPic') }}</span></th>
             <th (click)="toggleSort(rfqSort,'sourcingPic')" class="sortable">Sourcing PIC <span class="sort-icon">{{ sortIcon(rfqSort,'sourcingPic') }}</span></th>
             <th (click)="toggleSort(rfqSort,'items')" class="sortable col-center">Items <span class="sort-icon">{{ sortIcon(rfqSort,'items') }}</span></th>
-            <th (click)="toggleSort(rfqSort,'pending')" class="sortable col-center">Pending <span class="sort-icon">{{ sortIcon(rfqSort,'pending') }}</span></th>
+            <th (click)="toggleSort(rfqSort,'pending')" class="sortable col-center">Tidak Terisi <span class="sort-icon">{{ sortIcon(rfqSort,'pending') }}</span></th>
             <th (click)="toggleSort(rfqSort,'tanggal')" class="sortable">Need By Date <span class="sort-icon">{{ sortIcon(rfqSort,'tanggal') }}</span></th>
+            <th (click)="toggleSort(rfqSort,'daysLeft')" class="sortable col-center">Days Left <span class="sort-icon">{{ sortIcon(rfqSort,'daysLeft') }}</span></th>
           </tr>
         </thead>
         <tbody>
@@ -55,22 +56,29 @@
             <td class="col-center">{{ itemCount(inq) }}</td>
             <td class="col-center">
               <span class="pending-pill" *ngIf="pendingCount(inq) > 0">{{ pendingCount(inq) }}</span>
-              <span class="done-pill" *ngIf="pendingCount(inq) === 0">✓ Done</span>
+              <span class="missed-pill" *ngIf="pendingCount(inq) === 0 && missedCount(inq) > 0">{{ missedCount(inq) }} Missed</span>
+              <span class="done-pill" *ngIf="pendingCount(inq) === 0 && missedCount(inq) === 0">✓ Done</span>
             </td>
             <td>
               <ng-container *ngIf="earliestNeedByDate(inq) as nbd; else noNbd">
                 <span class="muted">{{ formatDate(nbd) }}</span>
+              </ng-container>
+              <ng-template #noNbd><span class="muted">-</span></ng-template>
+            </td>
+            <td class="col-center">
+              <ng-container *ngIf="earliestNeedByDate(inq) as nbd; else noDays">
                 <span class="days-left-badge"
                   [class.urgent]="(daysLeft(nbd) ?? 99) <= 3"
                   [class.warning]="(daysLeft(nbd) ?? 99) > 3 && (daysLeft(nbd) ?? 99) <= 7">
-                  {{ daysLeft(nbd) }} days left
+                  {{ daysLeft(nbd) }}
                 </span>
               </ng-container>
-              <ng-template #noNbd><span class="muted">-</span></ng-template>
+              <ng-template #noDays><span class="muted">-</span></ng-template>
             </td>
           </tr>
         </tbody>
       </table>
+      <div class="table-total">Total: {{ rfqFiltered.length }} items</div>
     </div>
     <div class="pager" *ngIf="rfqPages() > 1">
       <button class="ghost sm" (click)="rfqPage = rfqPage - 1" [disabled]="rfqPage === 1">‹ Prev</button>
@@ -95,7 +103,7 @@
             <th (click)="toggleSort(doneSort,'salesPic')" class="sortable">Sales PIC <span class="sort-icon">{{ sortIcon(doneSort,'salesPic') }}</span></th>
             <th (click)="toggleSort(doneSort,'sourcingPic')" class="sortable">Sourcing PIC <span class="sort-icon">{{ sortIcon(doneSort,'sourcingPic') }}</span></th>
             <th (click)="toggleSort(doneSort,'items')" class="sortable col-center">Items <span class="sort-icon">{{ sortIcon(doneSort,'items') }}</span></th>
-            <th (click)="toggleSort(doneSort,'sourced')" class="sortable col-center">Sourced <span class="sort-icon">{{ sortIcon(doneSort,'sourced') }}</span></th>
+            <th (click)="toggleSort(doneSort,'sourced')" class="sortable col-center">Terisi <span class="sort-icon">{{ sortIcon(doneSort,'sourced') }}</span></th>
             <th (click)="toggleSort(doneSort,'status')" class="sortable">Status <span class="sort-icon">{{ sortIcon(doneSort,'status') }}</span></th>
             <th (click)="toggleSort(doneSort,'tanggal')" class="sortable">Inquiry Date <span class="sort-icon">{{ sortIcon(doneSort,'tanggal') }}</span></th>
           </tr>
@@ -119,6 +127,7 @@
           </tr>
         </tbody>
       </table>
+      <div class="table-total">Total: {{ doneFiltered.length }} items</div>
     </div>
     <div class="pager" *ngIf="donePages() > 1">
       <button class="ghost sm" (click)="donePage = donePage - 1" [disabled]="donePage === 1">‹ Prev</button>
@@ -241,8 +250,9 @@
               <td [title]="item.leadTime || ''">{{ item.leadTime || '-' }}</td>
               <td>
                 <span class="approved-pill" *ngIf="item.priceApproved">Price Approved</span>
-                <span class="sourced-pill" *ngIf="!item.priceApproved && isSourced(item)">Sourced</span>
-                <span class="unsourced-pill" *ngIf="!item.priceApproved && !isSourced(item)">Belum</span>
+                <span class="missed-pill" *ngIf="!item.priceApproved && isSourced(item) && isMissed(item)">Missed</span>
+                <span class="sourced-pill" *ngIf="!item.priceApproved && isSourced(item) && !isMissed(item)">Terisi</span>
+                <span class="unsourced-pill" *ngIf="!item.priceApproved && !isSourced(item)">Tidak Terisi</span>
               </td>
               <td class="action-cell">
                 <button *ngIf="editingItemId === item.id"
@@ -338,6 +348,7 @@
     <div class="modal-footer" *ngIf="selectedInquiry.status === 'rfq'">
       <div class="all-sourced-notice" *ngIf="pendingCount(selectedInquiry) === 0">
         ✓ Semua item sudah terisi. Siap dikirim ke Price Approval.
+        <span *ngIf="missedCount(selectedInquiry) > 0" class="missed-notice">({{ missedCount(selectedInquiry) }} item melewati need-by date)</span>
       </div>
       <div class="pending-notice" *ngIf="pendingCount(selectedInquiry) > 0">
         {{ pendingCount(selectedInquiry) }} item belum terisi.

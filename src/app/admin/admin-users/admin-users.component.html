@@ -1,17 +1,17 @@
 <section class="page">
   <div class="page-header">
     <div>
-      <h1>Admin</h1>
+      <h1>Settings</h1>
       <p>Manage users and roles.</p>
     </div>
   </div>
 
   <div class="tab-bar">
     <button type="button" class="tab-btn" [class.active]="activeTab === 'users'" (click)="setTab('users')">
-      Users <span class="tab-count">{{ users.length }}</span>
+      Users
     </button>
     <button type="button" class="tab-btn" [class.active]="activeTab === 'roles'" (click)="setTab('roles')">
-      Roles <span class="tab-count">{{ roles.length }}</span>
+      Roles
     </button>
   </div>
 
@@ -84,6 +84,7 @@
             </tr>
           </tbody>
         </table>
+        <div class="table-total">Total: {{ users.length }} items</div>
       </div>
     </div>
   </div>
@@ -164,6 +165,7 @@
             </tr>
           </tbody>
         </table>
+        <div class="table-total">Total: {{ roles.length }} items</div>
       </div>
     </div>
   </div>

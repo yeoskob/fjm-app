@@ -1,3 +1,32 @@
+.footer-warning {
+  font-size: 0.8rem;
+  color: #dc2626;
+  font-weight: 500;
+  margin-bottom: 6px;
+}
+
+.muted-warning {
+  color: #9a3412;
+}
+
+.field-hint {
+  font-size: 0.75rem;
+  color: #6b7280;
+  margin-top: 3px;
+}
+
+.field-error {
+  font-size: 0.75rem;
+  color: #dc2626;
+  margin-top: 3px;
+  font-weight: 500;
+}
+
+.input-error {
+  border-color: #dc2626 !important;
+  outline-color: #dc2626;
+}
+
 .clickable-pic {
   cursor: pointer;
   color: #fff;
@@ -234,6 +263,13 @@
   text-align: center;
   color: #94a3b8;
   padding: 2rem !important;
+}
+
+.table-total {
+  margin-top: 0.45rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #475569;
 }
 
 .coupa-badge {
@@ -512,6 +548,24 @@
   flex-wrap: wrap;
 }
 
+.sent-action-btn:disabled {
+  background: #cbd5e1;
+  color: #64748b;
+  border: 1px solid #94a3b8;
+  cursor: not-allowed;
+  box-shadow: none;
+  opacity: 1;
+}
+
+.review-action-btn:disabled {
+  background: #e2e8f0;
+  color: #64748b;
+  border-color: #cbd5e1;
+  cursor: not-allowed;
+  box-shadow: none;
+  opacity: 1;
+}
+
 .detail-single-col {
   flex: 1;
   overflow-y: auto;
@@ -732,13 +786,24 @@ textarea.form-control { resize: vertical; }
   border: 1px solid #e2e8f0;
   border-radius: 8px;
   overflow: hidden;
+  &.is-reviewed:not(.is-below-approved-floor) { border-color: #16a34a; }
+  &.is-not-reviewed:not(.is-below-approved-floor) { border-color: #f59e0b; }
   &.is-editing { border-color: #6366f1; }
+  &.is-below-approved-floor {
+    border-color: #dc2626;
+    background: #fef2f2;
+  }
+  &.is-below-approved-floor.is-editing {
+    border-color: #dc2626;
+    box-shadow: inset 0 0 0 1px rgba(99, 102, 241, 0.45);
+  }
 }
 
 .item-review-main {
   display: flex;
   align-items: center;
   gap: 0.75rem;
+  justify-content: space-between;
   padding: 0.6rem 0.75rem;
 }
 
@@ -811,6 +876,30 @@ textarea.form-control { resize: vertical; }
 }
 
 .item-review-info { flex: 1; min-width: 0; }
+
+.item-review-state {
+  flex-shrink: 0;
+}
+
+.review-state-pill {
+  display: inline-block;
+  border-radius: 999px;
+  padding: 0.14rem 0.5rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 1.2;
+  white-space: nowrap;
+
+  &.reviewed {
+    background: #dcfce7;
+    color: #15803d;
+  }
+
+  &.not-reviewed {
+    background: #fef3c7;
+    color: #92400e;
+  }
+}
 
 .item-name-text {
   font-weight: 600;

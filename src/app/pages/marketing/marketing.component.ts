@@ -45,11 +45,12 @@ export class MarketingComponent implements OnInit {
   editingHargaJualId: string | null = null;
   hargaJualInput: number | null = null;
   viewingItemId: string | null = null;
+  reviewedItemIds = new Set<string>();
   showAddItem = false;
   addItemForm: { itemName?: string; itemQuantity?: number; itemUom?: string; itemNeedByDate?: string; itemManufacturerName?: string; itemManufacturerPartNumber?: string; itemClassificationOfGoods?: string; itemExtendedDescription?: string; itemImage?: string } = {};
   previewImageUrl: string | null = null;
 
-  activeTab: 'rfq' | 'quotation' | 'deals' = 'rfq';
+  activeTab: 'rfq' | 'price_approved' | 'sent' = 'rfq';
 
   canSeeTab(tab: string): boolean {
     return this.authService.hasTab('marketing', tab);
@@ -74,17 +75,18 @@ export class MarketingComponent implements OnInit {
 
   readonly STATUS_LABELS = INQUIRY_STATUS_LABELS;
   readonly PIPELINE_STAGES: InquiryStatus[] = [
-    'new_inquiry', 'rfq', 'price_approval', 'quotation_sent', 'deal', 'lost'
+    'new_inquiry', 'rfq', 'price_approval', 'price_approved', 'quotation_sent', 'deal', 'lost'
   ];
 
   rfqFilter = ''; rfqSort = { col: 'needByDate', dir: 'asc' as 'asc'|'desc' };
+  priceApprovedFilter = ''; priceApprovedSort = { col: 'needByDate', dir: 'asc' as 'asc'|'desc' };
   quotationFilter = ''; quotationSort = { col: 'needByDate', dir: 'asc' as 'asc'|'desc' };
-  dealsFilter = ''; dealsSort = { col: 'needByDate', dir: 'asc' as 'asc'|'desc' };
-  expandedDealId: string | null = null;
 
-  toggleDeal(id: string): void {
-    this.expandedDealId = this.expandedDealId === id ? null : id;
-  }
+  // Price editing for price_approved status
+  editingPriceApprovedItemId: string | null = null;
+  priceApprovedInput: number | null = null;
+  priceApprovedMinPrice: number | null = null;
+  priceApprovedError = '';
 
   toggleSort(state: { col: string; dir: 'asc'|'desc' }, col: string): void {
     if (state.col === col) state.dir = state.dir === 'asc' ? 'desc' : 'asc';
@@ -135,17 +137,18 @@ export class MarketingComponent implements OnInit {
     return this.inquiries.filter((i) => i.status === 'new_inquiry');
   }
 
+  get priceApprovedTabInquiries(): Inquiry[] {
+    return this.inquiries.filter((i) => i.status === 'price_approved');
+  }
+
   get quotationTabInquiries(): Inquiry[] {
     return this.inquiries.filter((i) => i.status === 'quotation_sent');
   }
 
-  get dealsTabInquiries(): Inquiry[] {
-    return this.inquiries.filter((i) => i.status === 'deal');
-  }
 
   get rfqTabFiltered(): Inquiry[] { return this.applyFS(this.rfqTabInquiries, this.rfqFilter, this.rfqSort); }
+  get priceApprovedTabFiltered(): Inquiry[] { return this.applyFS(this.priceApprovedTabInquiries, this.priceApprovedFilter, this.priceApprovedSort); }
   get quotationTabFiltered(): Inquiry[] { return this.applyFS(this.quotationTabInquiries, this.quotationFilter, this.quotationSort); }
-  get dealsTabFiltered(): Inquiry[] { return this.applyFS(this.dealsTabInquiries, this.dealsFilter, this.dealsSort); }
 
   earliestNeedByDate(inq: Inquiry): string {
     const dates = inq.items
@@ -157,7 +160,7 @@ export class MarketingComponent implements OnInit {
 
   /** Columns where marketing/sales can take action */
   isActionable(stage: InquiryStatus): boolean {
-    return ['new_inquiry', 'quotation_sent'].includes(stage);
+    return ['new_inquiry', 'price_approved', 'quotation_sent'].includes(stage);
   }
 
   /** Columns where marketing is waiting on another team */
@@ -175,7 +178,7 @@ export class MarketingComponent implements OnInit {
   ngOnInit(): void {
     this.isAdmin = this.authService.hasRole('admin');
     // Set initial tab to first one the user can see
-    const tabs: Array<'rfq' | 'quotation' | 'deals'> = ['rfq', 'quotation', 'deals'];
+    const tabs: Array<'rfq' | 'price_approved' | 'sent'> = ['rfq', 'price_approved', 'sent'];
     this.activeTab = tabs.find((t) => this.canSeeTab(t)) ?? 'rfq';
     void this.refresh();
     const user = this.authService.getCurrentUser();
@@ -214,7 +217,8 @@ export class MarketingComponent implements OnInit {
       new_inquiry: 'badge-blue',
       rfq: 'badge-yellow',
       price_approval: 'badge-orange',
-      quotation_sent: 'badge-teal',
+      price_approved: 'badge-teal',
+      quotation_sent: 'badge-purple',
       follow_up: 'badge-purple',
       deal: 'badge-green',
       lost: 'badge-red',
@@ -360,6 +364,9 @@ export class MarketingComponent implements OnInit {
     this.showLog = false;
     this.editingHargaJualId = null;
     this.hargaJualInput = null;
+    this.editingPriceApprovedItemId = null;
+    this.priceApprovedInput = null;
+    this.priceApprovedMinPrice = null;
     this.editInquiry = null;
     this.showCreate = false;
     this.showImport = false;
@@ -373,6 +380,7 @@ export class MarketingComponent implements OnInit {
     this.cancelReviewItem();
     this.cancelAddItem();
     this.viewingItemId = null;
+    this.reviewedItemIds = new Set<string>();
   }
 
   closeDetail(): void {
@@ -383,6 +391,7 @@ export class MarketingComponent implements OnInit {
     this.cancelReviewItem();
     this.cancelAddItem();
     this.viewingItemId = null;
+    this.reviewedItemIds = new Set<string>();
   }
 
   isAdminOrManager(): boolean {
@@ -446,6 +455,7 @@ export class MarketingComponent implements OnInit {
       return;
     }
     this.viewingItemId = itemId;
+    this.reviewedItemIds.add(itemId);
     const item = this.detailInquiry?.items.find((i) => i.id === itemId);
     if (item) {
       void this.toggleItemComments(item);
@@ -670,6 +680,88 @@ export class MarketingComponent implements OnInit {
     await this.refresh();
   }
 
+  async sendToSent(inquiry: Inquiry): Promise<void> {
+    const user = this.authService.getCurrentUser();
+    if (!user) return;
+    this.error = '';
+    try {
+      await this.inquiryService.sendToSent(inquiry.id, user.username, user.name);
+      this.success = 'Quotation sent to customer.';
+      this.detailInquiry = null;
+      await this.refresh();
+    } catch (e: any) {
+      this.error = e?.error?.error ?? 'Failed to send quotation.';
+    }
+  }
+
+  async returnToPriceApproval(inquiry: Inquiry): Promise<void> {
+    const user = this.authService.getCurrentUser();
+    if (!user) return;
+    this.error = '';
+    try {
+      await this.inquiryService.returnToPriceApproval(inquiry.id, user.username, user.name);
+      this.success = 'Sent back to Price Approval for review.';
+      this.detailInquiry = null;
+      await this.refresh();
+    } catch (e: any) {
+      this.error = e?.error?.error ?? 'Failed to return to price approval.';
+    }
+  }
+
+  startEditPriceApproved(item: InquiryItem): void {
+    this.editingPriceApprovedItemId = item.id;
+    this.priceApprovedMinPrice = this.getApprovedFloor(item) ?? 0;
+    this.priceApprovedInput = this.getSellingPrice(item) ?? null;
+    this.priceApprovedError = '';
+  }
+
+  cancelEditPriceApproved(): void {
+    this.editingPriceApprovedItemId = null;
+    this.priceApprovedInput = null;
+    this.priceApprovedMinPrice = null;
+    this.priceApprovedError = '';
+  }
+
+  isPriceApprovedBelowMin(): boolean {
+    if (this.priceApprovedInput == null || this.priceApprovedMinPrice == null) return false;
+    return this.priceApprovedInput < this.priceApprovedMinPrice;
+  }
+
+  itemsBelowApprovedFloor(inquiry: Inquiry): InquiryItem[] {
+    return inquiry.items.filter((item) => this.isItemBelowApprovedFloor(item));
+  }
+
+  isItemBelowApprovedFloor(item: InquiryItem): boolean {
+    const currentSellingPrice = this.getSellingPrice(item);
+    const approvedFloor = this.getApprovedFloor(item);
+    return (
+      currentSellingPrice != null &&
+      approvedFloor != null &&
+      currentSellingPrice < approvedFloor
+    );
+  }
+
+  hasReviewedAllItems(inquiry: Inquiry): boolean {
+    return inquiry.items.every((item) => this.reviewedItemIds.has(item.id));
+  }
+
+  unreviewedItemCount(inquiry: Inquiry): number {
+    return inquiry.items.filter((item) => !this.reviewedItemIds.has(item.id)).length;
+  }
+
+  isItemReviewed(item: InquiryItem): boolean {
+    return this.reviewedItemIds.has(item.id);
+  }
+
+  async savePriceApproved(inquiry: Inquiry): Promise<void> {
+    const user = this.authService.getCurrentUser();
+    if (!user || !this.editingPriceApprovedItemId || this.priceApprovedInput == null) return;
+    this.priceApprovedError = '';
+    await this.inquiryService.updateHargaJual(inquiry.id, this.editingPriceApprovedItemId, this.priceApprovedInput, user.username, user.name);
+    this.cancelEditPriceApproved();
+    await this.refreshDetail(inquiry.id);
+  }
+
   async close(inquiry: Inquiry, outcome: 'deal' | 'lost'): Promise<void> {
     const user = this.authService.getCurrentUser();
     if (!user) return;
@@ -710,8 +802,16 @@ export class MarketingComponent implements OnInit {
     return 'Rp ' + value.toLocaleString('id-ID');
   }
 
-  getApprovedPrice(item: InquiryItem): number | undefined {
+  getSellingPrice(item: InquiryItem): number | undefined {
+    return item.hargaJual ?? item.approvedPrice;
+  }
+
+  getApprovedFloor(item: InquiryItem): number | undefined {
     return item.approvedPrice ?? item.hargaJual;
+  }
+
+  getApprovedPrice(item: InquiryItem): number | undefined {
+    return this.getSellingPrice(item);
   }
 
   itemCount(inquiry: Inquiry): number {
