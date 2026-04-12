@@ -23,6 +23,20 @@ export class DashboardComponent implements OnInit {
   readonly PIE_R = 40;
   readonly PIE_C = 2 * Math.PI * 40;
 
+  get marketingBreakdown() {
+    const rows = this.dashboard?.statusBreakdown ?? [];
+    return rows.filter((s) => !['deal', 'lost'].includes(s.status));
+  }
+
+  userMarketingBreakdown(stats: UserStats) {
+    return (stats.salesStats.statusBreakdown ?? []).filter((s) => !['deal', 'lost'].includes(s.status));
+  }
+
+  get marketingPieData() {
+    const rows = this.dashboard?.statusBreakdown ?? [];
+    return this.buildMarketingPie(rows);
+  }
+
   get itemPieData() {
     if (!this.dashboard) return null;
     const terisi = this.dashboard.itemsTerisi ?? 0;
@@ -77,6 +91,41 @@ export class DashboardComponent implements OnInit {
     };
   }
 
+  userMarketingPieData(stats: UserStats) {
+    return this.buildMarketingPie(stats.salesStats.statusBreakdown ?? []);
+  }
+
+  private buildMarketingPie(rows: Array<{ status: string; count: number }>) {
+    const get = (status: string) => rows.find((r) => r.status === status)?.count ?? 0;
+
+    const newInquiry = get('new_inquiry');
+    const inProgress = get('rfq') + get('price_approval') + get('price_approved') + get('follow_up');
+    const sent = get('quotation_sent');
+    const total = newInquiry + inProgress + sent;
+    if (total === 0) return null;
+
+    const C = this.PIE_C;
+    const newDash = (newInquiry / total) * C;
+    const progressDash = (inProgress / total) * C;
+    const sentDash = (sent / total) * C;
+
+    return {
+      total,
+      newInquiry,
+      inProgress,
+      sent,
+      newDash,
+      newGap: C - newDash,
+      newOffset: 0,
+      progressDash,
+      progressGap: C - progressDash,
+      progressOffset: C - newDash,
+      sentDash,
+      sentGap: C - sentDash,
+      sentOffset: C - (newDash + progressDash),
+    };
+  }
+
   get filteredUsers() {
     const q = this.searchQuery.toLowerCase();
     const tabRole = this.activeTab === 'sales' ? 'marketing' : 'sourcing';
@@ -127,6 +176,7 @@ export class DashboardComponent implements OnInit {
       new_inquiry: 'New Inquiry',
       rfq: 'RFQ to Sourcing',
       price_approval: 'Price Approval',
+      price_approved: 'Price Approved',
       quotation_sent: 'Quotation Sent',
       follow_up: 'Negotiation',
       deal: 'Deal',

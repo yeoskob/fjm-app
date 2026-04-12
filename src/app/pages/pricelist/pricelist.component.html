@@ -163,6 +163,7 @@
             <tr class="item-row"
               [class.approved-row]="isApproved(item)"
               [class.review-row]="isNeedsReview(item)"
+              [class.rejected-row]="isRejected(item)"
               [class.editing-row]="editingItemId === item.id"
               [class.clickable-row]="selectedInquiry.status === 'price_approval' && !isApproved(item)"
               (click)="selectedInquiry.status === 'price_approval' && toggleApprove(item)">
@@ -187,8 +188,9 @@
               </td>
               <td>
                 <span class="approved-pill" *ngIf="isApproved(item)">Approved</span>
+                <span class="rejected-pill" *ngIf="!isApproved(item) && isRejected(item)">Rejected</span>
                 <span class="review-pill" *ngIf="!isApproved(item) && isNeedsReview(item)">Review</span>
-                <span class="pending-pill" *ngIf="!isApproved(item) && !isNeedsReview(item)">Pending</span>
+                <span class="pending-pill" *ngIf="!isApproved(item) && !isNeedsReview(item) && !isRejected(item)">Pending</span>
               </td>
             </tr>
 
@@ -239,6 +241,8 @@
                       <span></span>
                       <div class="inline-actions">
                         <button type="button" class="primary sm" (click)="approve(selectedInquiry, item); $event.stopPropagation()">Approve</button>
+                        <button type="button" class="ghost danger sm" *ngIf="item.needsPriceReview === true"
+                          (click)="reject(selectedInquiry, item); $event.stopPropagation()">Reject</button>
                       </div>
                     </div>
                   </div>
@@ -285,6 +289,11 @@
       <div class="pending-notice" *ngIf="pendingItemCount(selectedInquiry) > 0">
         {{ pendingItemCount(selectedInquiry) }} item belum di-approve.
       </div>
+      <button type="button" class="primary"
+        *ngIf="selectedInquiry.status === 'price_approval'"
+        (click)="sendToPriceApproved()">
+        Send to Price Approved
+      </button>
       <button type="button" class="ghost danger"
         *ngIf="selectedInquiry.status === 'price_approval' && hasUnsourcedItems(selectedInquiry)"
         (click)="returnToSourcing()">

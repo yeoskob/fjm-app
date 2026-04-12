@@ -130,6 +130,9 @@
   height: 12px;
   border-radius: 50%;
   flex-shrink: 0;
+  &.new-inquiry  { background: #1d4ed8; }
+  &.in-progress  { background: #f59e0b; }
+  &.sent         { background: #15803d; }
   &.terisi       { background: #15803d; }
   &.tidak-terisi { background: #f59e0b; }
   &.missed       { background: #b91c1c; }

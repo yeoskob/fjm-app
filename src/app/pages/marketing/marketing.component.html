@@ -370,6 +370,7 @@
           <div class="item-review-row clickable-row" *ngFor="let item of detailInquiry.items"
             [class.is-editing]="reviewingItemId === item.id"
             [class.is-below-approved-floor]="detailInquiry.status === 'price_approved' && isItemBelowApprovedFloor(item)"
+            [class.is-rejected]="detailInquiry.status === 'price_approved' && item.reviewStatus === 'rejected'"
             [class.is-reviewed]="detailInquiry.status === 'price_approved' && isItemReviewed(item)"
             [class.is-not-reviewed]="detailInquiry.status === 'price_approved' && !isItemReviewed(item)"
             (click)="detailInquiry.status === 'new_inquiry' ? (reviewingItemId === item.id ? cancelReviewItem() : startReviewItem(item)) : toggleViewItem(item.id)">
@@ -384,6 +385,7 @@
                 </div>
               </div>
               <div class="item-review-state" *ngIf="detailInquiry.status === 'price_approved'">
+                <span class="review-state-pill rejected" *ngIf="item.reviewStatus === 'rejected'">Rejected</span>
                 <span class="review-state-pill reviewed" *ngIf="isItemReviewed(item)">Reviewed</span>
                 <span class="review-state-pill not-reviewed" *ngIf="!isItemReviewed(item)">Not reviewed</span>
               </div>
@@ -551,6 +553,8 @@
         </ng-container>
         <ng-container *ngSwitchCase="'price_approved'">
           <ng-container *ngIf="itemsBelowApprovedFloor(detailInquiry!) as badItems">
+          <ng-container *ngIf="rejectedItems(detailInquiry!) as rejected">
+          <ng-container *ngIf="unresolvedItems(detailInquiry!) as unresolved">
             <div class="footer-warning muted-warning" *ngIf="!hasReviewedAllItems(detailInquiry!)">
               Review all items first before sending.
               {{ unreviewedItemCount(detailInquiry!) }} item{{ unreviewedItemCount(detailInquiry!) > 1 ? 's' : '' }} not reviewed yet.
@@ -558,17 +562,20 @@
             <div class="footer-warning" *ngIf="badItems.length > 0">
               {{ badItems.length }} item{{ badItems.length > 1 ? 's have' : ' has' }} a price below the approved floor — send for Price Review.
             </div>
-            <div class="footer-actions">
-              <button type="button" class="ghost sm review-action-btn" [disabled]="!hasReviewedAllItems(detailInquiry!) || badItems.length === 0" (click)="returnToPriceApproval(detailInquiry!)">Price Review</button>
-              <button type="button" class="primary sm sent-action-btn" [disabled]="badItems.length > 0 || !hasReviewedAllItems(detailInquiry!)" (click)="sendToSent(detailInquiry!)">Sent</button>
+            <div class="footer-warning muted-warning" *ngIf="unresolved.length > 0 && hasReviewedAllItems(detailInquiry!)">
+              Sending now will mark this RFQ as incomplete.
             </div>
+            <div class="footer-actions">
+              <button type="button" class="ghost sm review-action-btn" [disabled]="!hasReviewedAllItems(detailInquiry!) || (badItems.length === 0 && rejected.length === 0)" (click)="openPriceReviewModal(detailInquiry!)">Price Review</button>
+              <button type="button" class="primary sm sent-action-btn" [disabled]="!hasReviewedAllItems(detailInquiry!)" (click)="sendToSent(detailInquiry!)">Sent</button>
+            </div>
+          </ng-container>
+          </ng-container>
           </ng-container>
         </ng-container>
         <ng-container *ngSwitchCase="'quotation_sent'">
           <div class="footer-actions">
             <button type="button" class="ghost sm" (click)="exportCoupa(detailInquiry!)">Export Coupa Excel</button>
-            <button type="button" class="primary sm" (click)="close(detailInquiry!, 'deal')">Close as Deal</button>
-            <button type="button" class="danger sm" (click)="close(detailInquiry!, 'lost')">Close as Lost</button>
           </div>
         </ng-container>
       </ng-container>
@@ -577,3 +584,33 @@
   </div>
 </div>
 
+<!-- Price Review Reason Modal -->
+<div class="modal-overlay" *ngIf="showPriceReviewModal" (click)="closePriceReviewModal()">
+  <div class="modal-card" (click)="$event.stopPropagation()">
+    <div class="form-header">
+      <h2>Send To Price Review</h2>
+      <button type="button" class="ghost" (click)="closePriceReviewModal()">Cancel</button>
+    </div>
+    <div class="notice error" *ngIf="error">{{ error }}</div>
+
+    <div *ngIf="detailInquiry">
+      <label>Reason for review *</label>
+      <textarea class="form-control" rows="3" [(ngModel)]="priceReviewReason" [ngModelOptions]="{standalone:true}"
+        placeholder="Type reason for sending these items back to Price Approval"></textarea>
+
+      <div class="price-review-preview">
+        <div class="price-review-preview-title">Items to review:</div>
+        <ul class="price-review-item-list">
+          <li *ngFor="let item of itemsForPriceReview(detailInquiry)">
+            {{ item.itemName || '-' }}
+          </li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="actions">
+      <button type="button" class="ghost" (click)="closePriceReviewModal()">Cancel</button>
+      <button type="button" class="primary" [disabled]="!priceReviewReason.trim()" (click)="confirmReturnToPriceApproval()">Send To Price Review</button>
+    </div>
+  </div>
+</div>

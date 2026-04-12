@@ -46,6 +46,8 @@ export class MarketingComponent implements OnInit {
   hargaJualInput: number | null = null;
   viewingItemId: string | null = null;
   reviewedItemIds = new Set<string>();
+  showPriceReviewModal = false;
+  priceReviewReason = '';
   showAddItem = false;
   addItemForm: { itemName?: string; itemQuantity?: number; itemUom?: string; itemNeedByDate?: string; itemManufacturerName?: string; itemManufacturerPartNumber?: string; itemClassificationOfGoods?: string; itemExtendedDescription?: string; itemImage?: string } = {};
   previewImageUrl: string | null = null;
@@ -390,6 +392,7 @@ export class MarketingComponent implements OnInit {
     this.itemNewNote = '';
     this.cancelReviewItem();
     this.cancelAddItem();
+    this.closePriceReviewModal();
     this.viewingItemId = null;
     this.reviewedItemIds = new Set<string>();
   }
@@ -685,7 +688,17 @@ export class MarketingComponent implements OnInit {
     if (!user) return;
     this.error = '';
     try {
-      await this.inquiryService.sendToSent(inquiry.id, user.username, user.name);
+      const unresolved = this.unresolvedItems(inquiry);
+      let incompleteReason: string | undefined;
+      if (unresolved.length > 0) {
+        const reason = window.prompt(`You are sending with ${unresolved.length} unresolved item(s). Please enter reason for incomplete send:`);
+        if (!reason || !reason.trim()) {
+          this.error = 'Reason is required to send incomplete quotation.';
+          return;
+        }
+        incompleteReason = reason.trim();
+      }
+      await this.inquiryService.sendToSent(inquiry.id, user.username, user.name, incompleteReason);
       this.success = 'Quotation sent to customer.';
       this.detailInquiry = null;
       await this.refresh();
@@ -694,13 +707,35 @@ export class MarketingComponent implements OnInit {
     }
   }
 
-  async returnToPriceApproval(inquiry: Inquiry): Promise<void> {
+  openPriceReviewModal(_inquiry: Inquiry): void {
+    this.priceReviewReason = '';
+    this.showPriceReviewModal = true;
+    this.error = '';
+  }
+
+  closePriceReviewModal(): void {
+    this.showPriceReviewModal = false;
+    this.priceReviewReason = '';
+  }
+
+  async confirmReturnToPriceApproval(): Promise<void> {
+    if (!this.detailInquiry) return;
+    const reason = this.priceReviewReason.trim();
+    if (!reason) {
+      this.error = 'Reason for Price Review is required.';
+      return;
+    }
+    await this.returnToPriceApproval(this.detailInquiry, reason);
+  }
+
+  async returnToPriceApproval(inquiry: Inquiry, reviewReason: string): Promise<void> {
     const user = this.authService.getCurrentUser();
     if (!user) return;
     this.error = '';
     try {
-      await this.inquiryService.returnToPriceApproval(inquiry.id, user.username, user.name);
+      await this.inquiryService.returnToPriceApproval(inquiry.id, user.username, user.name, reviewReason);
       this.success = 'Sent back to Price Approval for review.';
+      this.closePriceReviewModal();
       this.detailInquiry = null;
       await this.refresh();
     } catch (e: any) {
@@ -729,6 +764,26 @@ export class MarketingComponent implements OnInit {
 
   itemsBelowApprovedFloor(inquiry: Inquiry): InquiryItem[] {
     return inquiry.items.filter((item) => this.isItemBelowApprovedFloor(item));
+  }
+
+  rejectedItems(inquiry: Inquiry): InquiryItem[] {
+    return inquiry.items.filter((item) => item.reviewStatus === 'rejected');
+  }
+
+  unresolvedItems(inquiry: Inquiry): InquiryItem[] {
+    return inquiry.items.filter((item) =>
+      item.priceApproved !== true ||
+      item.reviewStatus === 'rejected' ||
+      this.isItemBelowApprovedFloor(item)
+    );
+  }
+
+  itemsForPriceReview(inquiry: Inquiry): InquiryItem[] {
+    return inquiry.items.filter((item) =>
+      item.reviewStatus === 'rejected' ||
+      item.needsPriceReview === true ||
+      this.isItemBelowApprovedFloor(item)
+    );
   }
 
   isItemBelowApprovedFloor(item: InquiryItem): boolean {

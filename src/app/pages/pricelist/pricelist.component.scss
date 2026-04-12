@@ -184,6 +184,7 @@
   font-size: 0.82rem;
   font-weight: 600;
   color: #475569;
+  text-align: right;
 }
 
 .sourcing-assigned { font-weight: 600; color: #1d4ed8; }
@@ -325,6 +326,7 @@
   tr:last-child td { border-bottom: none; }
   tr.approved-row td { background: #f0fdf4; }
   tr.review-row td { background: #fff7ed; }
+  tr.rejected-row td { background: #fef2f2; }
   tr.editing-row td { background: #eff6ff; }
   tr.review-row.editing-row td { background: #eff6ff; }
   tr.item-row.clickable-row { cursor: pointer; }
@@ -348,6 +350,17 @@
 }
 
 .review-pill {
+  display: inline-block;
+  background: #ffedd5;
+  color: #c2410c;
+  border-radius: 999px;
+  padding: 0.15rem 0.55rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.rejected-pill {
   display: inline-block;
   background: #fee2e2;
   color: #b91c1c;

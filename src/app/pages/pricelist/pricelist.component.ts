@@ -304,6 +304,26 @@ export class PricelistComponent implements OnInit {
     await this.refresh();
   }
 
+  async reject(inq: Inquiry, item: InquiryItem): Promise<void> {
+    const user = this.authService.getCurrentUser();
+    if (!user) return;
+    const reason = window.prompt('Enter reject reason:');
+    if (!reason || !reason.trim()) {
+      this.error = 'Reject reason is required.';
+      return;
+    }
+    this.error = '';
+    this.success = '';
+    try {
+      await this.inquiryService.rejectItem(inq.id, item.id, user.username, user.name, reason.trim());
+      this.editingItemId = null;
+      this.success = `Item "${item.itemName}" rejected.`;
+      await this.refresh();
+    } catch (e: any) {
+      this.error = e?.error?.error ?? 'Failed to reject item.';
+    }
+  }
+
   hasUnsourcedItems(inq: Inquiry): boolean {
     return (inq.items ?? []).some((i) => !i.priceApproved && !i.hargaBeli);
   }
@@ -321,6 +341,22 @@ export class PricelistComponent implements OnInit {
       this.closeModal();
     } catch (e: any) {
       this.error = e?.error?.error ?? 'Gagal mengembalikan ke sourcing.';
+    }
+  }
+
+  async sendToPriceApproved(): Promise<void> {
+    if (!this.selectedInquiry || this.selectedInquiry.status !== 'price_approval') return;
+    const user = this.authService.getCurrentUser();
+    if (!user) return;
+    this.error = '';
+    this.success = '';
+    try {
+      await this.inquiryService.sendToPriceApproved(this.selectedInquiry.id, user.username, user.name);
+      this.success = 'Inquiry sent to Price Approved.';
+      await this.refresh();
+      this.closeModal();
+    } catch (e: any) {
+      this.error = e?.error?.error ?? 'Failed to send to Price Approved.';
     }
   }
 
@@ -386,7 +422,11 @@ export class PricelistComponent implements OnInit {
   }
 
   isNeedsReview(item: InquiryItem): boolean {
-    return item.needsPriceReview === true;
+    return item.reviewStatus === 'review' || item.needsPriceReview === true;
+  }
+
+  isRejected(item: InquiryItem): boolean {
+    return item.reviewStatus === 'rejected';
   }
 
   getProposedPrice(item: InquiryItem): number | undefined {

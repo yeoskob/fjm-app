@@ -76,6 +76,8 @@ export interface InquiryItem {
   catatanQuotation?: string;
   priceApproved?: boolean;
   needsPriceReview?: boolean;
+  reviewStatus?: 'pending' | 'approved' | 'review' | 'rejected';
+  reviewRound?: number;
   sourcingMissed?: boolean;
 }
 
@@ -95,6 +97,8 @@ export interface Inquiry {
   needByDate?: string;
   updatedAt?: string;
   updatedBy?: string;
+  sentIncomplete?: boolean;
+  sentIncompleteReason?: string | null;
   activityLog?: ActivityLog[];
 }
 
@@ -154,6 +158,8 @@ export interface DashboardStats {
   total: number;
   thisMonth: number;
   quotationSent: number;
+  sentIncomplete: number;
+  sentIncompleteRate: number;
   deals: number;
   lost: number;
   conversionRate: number;
@@ -172,6 +178,9 @@ export interface UserStats {
   salesStats: {
     total: number;
     thisMonth: number;
+    quotationSent: number;
+    sentIncomplete: number;
+    sentIncompleteRate: number;
     deals: number;
     lost: number;
     active: number;

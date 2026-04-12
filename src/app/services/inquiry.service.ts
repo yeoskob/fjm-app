@@ -50,12 +50,16 @@ export class InquiryService {
     return firstValueFrom(this.http.post<void>(`${this.base}/${id}/return-to-sourcing`, { doneBy, doneByName }));
   }
 
-  sendToSent(id: string, doneBy: string, doneByName: string): Promise<void> {
-    return firstValueFrom(this.http.post<void>(`${this.base}/${id}/send-to-sent`, { doneBy, doneByName }));
+  sendToPriceApproved(id: string, doneBy: string, doneByName: string): Promise<void> {
+    return firstValueFrom(this.http.post<void>(`${this.base}/${id}/send-to-price-approved`, { doneBy, doneByName }));
   }
 
-  returnToPriceApproval(id: string, doneBy: string, doneByName: string): Promise<void> {
-    return firstValueFrom(this.http.post<void>(`${this.base}/${id}/return-to-price-approval`, { doneBy, doneByName }));
+  sendToSent(id: string, doneBy: string, doneByName: string, incompleteReason?: string): Promise<void> {
+    return firstValueFrom(this.http.post<void>(`${this.base}/${id}/send-to-sent`, { doneBy, doneByName, incompleteReason }));
+  }
+
+  returnToPriceApproval(id: string, doneBy: string, doneByName: string, reviewReason?: string): Promise<void> {
+    return firstValueFrom(this.http.post<void>(`${this.base}/${id}/return-to-price-approval`, { doneBy, doneByName, reviewReason }));
   }
 
   submitSourcingInfo(id: string, payload: SourcingInfo): Promise<void> {
@@ -72,6 +76,10 @@ export class InquiryService {
 
   approveItem(id: string, itemId: string, payload: PriceApproval): Promise<void> {
     return firstValueFrom(this.http.post<void>(`${this.base}/${id}/items/${itemId}/approve`, payload));
+  }
+
+  rejectItem(id: string, itemId: string, doneBy: string, doneByName: string, reason: string): Promise<void> {
+    return firstValueFrom(this.http.post<void>(`${this.base}/${id}/items/${itemId}/reject`, { doneBy, doneByName, reason }));
   }
 
   exportCoupa(id: string): Promise<Blob> {
