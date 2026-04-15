@@ -291,9 +291,10 @@
   th:nth-child(4)  { width: 90px; }   /* uom */
   th:nth-child(5)  { width: 100px; }  /* supplier */
   th:nth-child(6)  { width: 100px; }  /* harga beli */
-  th:nth-child(7)  { width: 100px; }  /* harga jual */
-  th:nth-child(8)  { width: 90px; }   /* margin */
-  th:nth-child(9)  { width: 90px; }   /* status */
+  th:nth-child(7)  { width: 90px; }   /* lead time */
+  th:nth-child(8)  { width: 100px; }  /* harga jual */
+  th:nth-child(9)  { width: 90px; }   /* margin */
+  th:nth-child(10) { width: 90px; }   /* status */
 
   th {
     padding: 0.4rem 0.4rem;
@@ -374,6 +375,67 @@
 .review-price-cell {
   color: #b91c1c;
   font-weight: 700;
+}
+
+.reject-modal {
+  width: min(700px, 96vw);
+}
+
+.reject-modal .form-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid #e2e8f0;
+  background: #f8fafc;
+
+  h2 {
+    margin: 0;
+    font-size: 1.45rem;
+    line-height: 1.2;
+    color: #0f172a;
+  }
+}
+
+.reject-modal-body {
+  padding: 1rem 1.25rem 1.1rem;
+  display: grid;
+  gap: 0.75rem;
+}
+
+.reject-modal .actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 0.35rem;
+}
+
+.reject-modal label {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #334155;
+}
+
+.reject-review-preview {
+  margin-bottom: 0.75rem;
+  padding: 0.65rem 0.75rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #f8fafc;
+}
+
+.reject-review-label {
+  font-size: 0.8rem;
+  color: #64748b;
+  font-weight: 700;
+  margin-bottom: 0.2rem;
+}
+
+.reject-review-item {
+  font-size: 0.85rem;
+  color: #1e293b;
+  font-weight: 600;
 }
 
 .muted-pct { font-size: 0.78rem; color: #64748b; }

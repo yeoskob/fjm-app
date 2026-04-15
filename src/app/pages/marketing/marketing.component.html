@@ -45,13 +45,22 @@
       </thead>
       <tbody>
         <tr *ngFor="let inq of rfqTabFiltered" (click)="openDetail(inq)" class="clickable-row">
-          <td><span class="mono-cell">{{ inq.rfqNo || '-' }}</span><span class="coupa-badge" *ngIf="inq.coupaSource">Coupa</span></td>
+          <td>
+            <span class="mono-cell">{{ inq.rfqNo || '-' }}</span>
+            <span class="coupa-badge" *ngIf="inq.coupaSource">Coupa</span>
+            <span class="org-badge" [ngClass]="organizationClass(inq.organization)">{{ inq.organization || 'FJM' }}</span>
+          </td>
           <td>{{ inq.customer }}</td>
           <td>{{ formatDateOnly(inq.items[0]?.itemNeedByDate) }}</td>
           <td>{{ formatDate(inq.tanggal) }}</td>
           <td>{{ inq.salesPic }}</td>
           <td>{{ itemCount(inq) }}</td>
-          <td><span class="badge" [ngClass]="statusClass(inq.status)">{{ STATUS_LABELS[inq.status] }}</span></td>
+          <td>
+            <div class="status-stack">
+              <span class="badge" [ngClass]="statusClass(inq.status)">{{ STATUS_LABELS[inq.status] }}</span>
+              <span class="badge badge-orange" *ngIf="inq.sentIncomplete">Incomplete</span>
+            </div>
+          </td>
         </tr>
         <tr *ngIf="rfqTabFiltered.length === 0">
           <td colspan="7" class="empty-row">No results.</td>
@@ -81,14 +90,23 @@
       </thead>
       <tbody>
         <tr *ngFor="let inq of priceApprovedTabFiltered" (click)="openDetail(inq)" class="clickable-row">
-          <td><span class="mono-cell">{{ inq.rfqNo || '-' }}</span><span class="coupa-badge" *ngIf="inq.coupaSource">Coupa</span></td>
+          <td>
+            <span class="mono-cell">{{ inq.rfqNo || '-' }}</span>
+            <span class="coupa-badge" *ngIf="inq.coupaSource">Coupa</span>
+            <span class="org-badge" [ngClass]="organizationClass(inq.organization)">{{ inq.organization || 'FJM' }}</span>
+          </td>
           <td>{{ inq.customer }}</td>
           <td>{{ formatDateOnly(inq.items[0]?.itemNeedByDate) }}</td>
           <td>{{ formatDate(inq.tanggal) }}</td>
           <td>{{ inq.salesPic }}</td>
           <td>{{ inq.sourcingPic || '-' }}</td>
           <td>{{ itemCount(inq) }}</td>
-          <td><span class="badge" [ngClass]="statusClass(inq.status)">{{ STATUS_LABELS[inq.status] }}</span></td>
+          <td>
+            <div class="status-stack">
+              <span class="badge" [ngClass]="statusClass(inq.status)">{{ STATUS_LABELS[inq.status] }}</span>
+              <span class="badge badge-orange" *ngIf="inq.sentIncomplete">Incomplete</span>
+            </div>
+          </td>
         </tr>
         <tr *ngIf="priceApprovedTabFiltered.length === 0">
           <td colspan="8" class="empty-row">No results.</td>
@@ -118,14 +136,23 @@
       </thead>
       <tbody>
         <tr *ngFor="let inq of quotationTabFiltered" (click)="openDetail(inq)" class="clickable-row">
-          <td><span class="mono-cell">{{ inq.rfqNo || '-' }}</span><span class="coupa-badge" *ngIf="inq.coupaSource">Coupa</span></td>
+          <td>
+            <span class="mono-cell">{{ inq.rfqNo || '-' }}</span>
+            <span class="coupa-badge" *ngIf="inq.coupaSource">Coupa</span>
+            <span class="org-badge" [ngClass]="organizationClass(inq.organization)">{{ inq.organization || 'FJM' }}</span>
+          </td>
           <td>{{ inq.customer }}</td>
           <td>{{ formatDateOnly(inq.items[0]?.itemNeedByDate) }}</td>
           <td>{{ formatDate(inq.tanggal) }}</td>
           <td>{{ inq.salesPic }}</td>
           <td>{{ inq.sourcingPic || '-' }}</td>
           <td>{{ itemCount(inq) }}</td>
-          <td><span class="badge" [ngClass]="statusClass(inq.status)">{{ STATUS_LABELS[inq.status] }}</span></td>
+          <td>
+            <div class="status-stack">
+              <span class="badge" [ngClass]="statusClass(inq.status)">{{ STATUS_LABELS[inq.status] }}</span>
+              <span class="badge badge-orange" *ngIf="inq.sentIncomplete">Incomplete</span>
+            </div>
+          </td>
         </tr>
         <tr *ngIf="quotationTabFiltered.length === 0">
           <td colspan="8" class="empty-row">No results.</td>
@@ -149,6 +176,12 @@
       <label>Customer *
         <input type="text" [(ngModel)]="createCustomer" [ngModelOptions]="{standalone:true}"
           class="form-control" placeholder="Nama perusahaan / customer" />
+      </label>
+      <label>Organization *
+        <select [(ngModel)]="createOrganization" [ngModelOptions]="{standalone:true}" class="form-control">
+          <option value="" disabled>Select organization</option>
+          <option *ngFor="let org of organizationOptions" [value]="org">{{ org }}</option>
+        </select>
       </label>
       <label>Need by Date
         <input type="date" [(ngModel)]="createNeedByDate" [ngModelOptions]="{standalone:true}" class="form-control" [min]="today" />
@@ -213,6 +246,12 @@
       <h2>Import Coupa Excel</h2>
       <button type="button" class="ghost" (click)="cancelImport()">Cancel</button>
     </div>
+    <label>Organization *
+      <select [(ngModel)]="importOrganization" [ngModelOptions]="{standalone:true}" class="form-control">
+        <option value="" disabled>Select organization</option>
+        <option *ngFor="let org of organizationOptions" [value]="org">{{ org }}</option>
+      </select>
+    </label>
     <label>Excel File (.xlsx)
       <input type="file" (change)="onImportFileChange($event)" class="form-control" accept=".xlsx" />
     </label>
@@ -226,43 +265,64 @@
 
 <!-- Edit Inquiry Modal -->
 <div class="modal-overlay" *ngIf="editInquiry" (click)="cancelEdit()">
-  <div class="modal-card" (click)="$event.stopPropagation()">
+  <div class="modal-card create-modal" (click)="$event.stopPropagation()">
     <div class="form-header">
       <h2>Edit Inquiry</h2>
-      <button type="button" class="ghost" (click)="cancelEdit()">Cancel</button>
+      <button type="button" class="ghost" (click)="cancelEdit()">✕</button>
     </div>
-    <label>Customer
-      <input type="text" [(ngModel)]="editForm.customer" [ngModelOptions]="{standalone:true}" class="form-control" />
-    </label>
-    <label>Item Name
-      <input type="text" [(ngModel)]="editForm.namaBarang" [ngModelOptions]="{standalone:true}" class="form-control" />
-    </label>
-    <div class="form-row">
-      <label>Expected Quantity
-        <input type="number" [(ngModel)]="editForm.qty" [ngModelOptions]="{standalone:true}" class="form-control" />
+
+    <div class="create-top-fields">
+      <label>Customer *
+        <input type="text" [(ngModel)]="editForm.customer" [ngModelOptions]="{standalone:true}"
+          class="form-control" placeholder="Nama perusahaan / customer" />
       </label>
-      <label>Unit of Measurement
-        <input type="text" [(ngModel)]="editForm.itemUom" [ngModelOptions]="{standalone:true}" class="form-control" placeholder="cth: Each, MeterSquared" />
+      <label>Organization *
+        <select [(ngModel)]="editForm.organization" [ngModelOptions]="{standalone:true}" class="form-control">
+          <option *ngFor="let org of organizationOptions" [value]="org">{{ org }}</option>
+        </select>
       </label>
-    </div>
-    <label>Need by Date
-      <input type="date" [(ngModel)]="editForm.itemNeedByDate" [ngModelOptions]="{standalone:true}" class="form-control" [min]="today" />
-    </label>
-    <div class="form-row">
-      <label>Manufacturer Name
-        <input type="text" [(ngModel)]="editForm.itemManufacturerName" [ngModelOptions]="{standalone:true}" class="form-control" />
-      </label>
-      <label>Manufacturer Part Number
-        <input type="text" [(ngModel)]="editForm.itemManufacturerPartNumber" [ngModelOptions]="{standalone:true}" class="form-control" />
+      <label>Need by Date
+        <input type="date" [(ngModel)]="editForm.itemNeedByDate" [ngModelOptions]="{standalone:true}" class="form-control" [min]="today" />
       </label>
     </div>
-    <label>Classification of Goods
-      <input type="text" [(ngModel)]="editForm.itemClassificationOfGoods" [ngModelOptions]="{standalone:true}" class="form-control" />
-    </label>
-    <label>Description
-      <textarea [(ngModel)]="editForm.spesifikasi" [ngModelOptions]="{standalone:true}" class="form-control" rows="2"></textarea>
-    </label>
+
+    <div class="create-items-section">
+      <div class="create-items-header">
+        <span class="create-items-title">Item</span>
+      </div>
+
+      <div class="create-item-card">
+        <label>Item Name *
+          <input type="text" [(ngModel)]="editForm.namaBarang" [ngModelOptions]="{standalone:true}"
+            class="form-control" placeholder="Nama produk yang diminta" />
+        </label>
+        <div class="form-row">
+          <label>Expected Quantity
+            <input type="number" [(ngModel)]="editForm.qty" [ngModelOptions]="{standalone:true}" class="form-control" min="0" placeholder="0" />
+          </label>
+          <label>Unit of Measurement
+            <input type="text" [(ngModel)]="editForm.itemUom" [ngModelOptions]="{standalone:true}" class="form-control" placeholder="cth: Each, MeterSquared" />
+          </label>
+        </div>
+        <div class="form-row">
+          <label>Manufacturer Name
+            <input type="text" [(ngModel)]="editForm.itemManufacturerName" [ngModelOptions]="{standalone:true}" class="form-control" />
+          </label>
+          <label>Manufacturer Part Number
+            <input type="text" [(ngModel)]="editForm.itemManufacturerPartNumber" [ngModelOptions]="{standalone:true}" class="form-control" />
+          </label>
+        </div>
+        <label>Classification of Goods
+          <input type="text" [(ngModel)]="editForm.itemClassificationOfGoods" [ngModelOptions]="{standalone:true}" class="form-control" />
+        </label>
+        <label>Description
+          <textarea [(ngModel)]="editForm.spesifikasi" [ngModelOptions]="{standalone:true}" class="form-control" rows="2"></textarea>
+        </label>
+      </div>
+    </div>
+
     <div class="actions">
+      <button type="button" class="ghost" (click)="cancelEdit()">Cancel</button>
       <button type="button" class="primary" (click)="saveEdit()">Save</button>
     </div>
   </div>
@@ -285,7 +345,9 @@
       <div class="modal-header-row title-row">
         <span class="mono-blue">{{ detailInquiry.rfqNo }}</span>
         <span class="coupa-badge" *ngIf="detailInquiry.coupaSource">Coupa</span>
+        <span class="org-badge" [ngClass]="organizationClass(detailInquiry.organization)">{{ detailInquiry.organization || 'FJM' }}</span>
         <span class="badge" [ngClass]="statusClass(detailInquiry.status)">{{ STATUS_LABELS[detailInquiry.status] }}</span>
+        <span class="badge badge-orange" *ngIf="detailInquiry.status === 'quotation_sent' && detailInquiry.sentIncomplete">Incomplete</span>
       </div>
       <div class="modal-header-row">
         <span class="header-label">Customer:</span>
@@ -370,7 +432,7 @@
           <div class="item-review-row clickable-row" *ngFor="let item of detailInquiry.items"
             [class.is-editing]="reviewingItemId === item.id"
             [class.is-below-approved-floor]="detailInquiry.status === 'price_approved' && isItemBelowApprovedFloor(item)"
-            [class.is-rejected]="detailInquiry.status === 'price_approved' && item.reviewStatus === 'rejected'"
+            [class.is-rejected]="['price_approved','quotation_sent'].includes(detailInquiry.status) && item.reviewStatus === 'rejected'"
             [class.is-reviewed]="detailInquiry.status === 'price_approved' && isItemReviewed(item)"
             [class.is-not-reviewed]="detailInquiry.status === 'price_approved' && !isItemReviewed(item)"
             (click)="detailInquiry.status === 'new_inquiry' ? (reviewingItemId === item.id ? cancelReviewItem() : startReviewItem(item)) : toggleViewItem(item.id)">
@@ -384,10 +446,9 @@
                   <span *ngIf="getApprovedPrice(item)"> · Jual: {{ formatCurrency(getApprovedPrice(item)) }}</span>
                 </div>
               </div>
-              <div class="item-review-state" *ngIf="detailInquiry.status === 'price_approved'">
+              <div class="item-review-state" *ngIf="['price_approved','quotation_sent'].includes(detailInquiry.status)">
+                <span class="review-state-pill sourcing-tidak-terisi" *ngIf="detailInquiry.status === 'price_approved' && isSourcingTidakTerisi(item)">Tidak Terisi (Sourcing)</span>
                 <span class="review-state-pill rejected" *ngIf="item.reviewStatus === 'rejected'">Rejected</span>
-                <span class="review-state-pill reviewed" *ngIf="isItemReviewed(item)">Reviewed</span>
-                <span class="review-state-pill not-reviewed" *ngIf="!isItemReviewed(item)">Not reviewed</span>
               </div>
             </div>
 
@@ -553,27 +614,39 @@
         </ng-container>
         <ng-container *ngSwitchCase="'price_approved'">
           <ng-container *ngIf="itemsBelowApprovedFloor(detailInquiry!) as badItems">
-          <ng-container *ngIf="rejectedItems(detailInquiry!) as rejected">
+          <ng-container *ngIf="reviewNeededItems(detailInquiry!) as reviewNeeded">
+          <ng-container *ngIf="sourcingTidakTerisiItems(detailInquiry!) as sourcingGaps">
           <ng-container *ngIf="unresolvedItems(detailInquiry!) as unresolved">
             <div class="footer-warning muted-warning" *ngIf="!hasReviewedAllItems(detailInquiry!)">
               Review all items first before sending.
               {{ unreviewedItemCount(detailInquiry!) }} item{{ unreviewedItemCount(detailInquiry!) > 1 ? 's' : '' }} not reviewed yet.
             </div>
+            <div class="footer-warning" *ngIf="sourcingGaps.length > 0">
+              {{ sourcingGaps.length }} item{{ sourcingGaps.length > 1 ? 's are' : ' is' }} tidak terisi (sourcing) — send for Price Review.
+            </div>
             <div class="footer-warning" *ngIf="badItems.length > 0">
               {{ badItems.length }} item{{ badItems.length > 1 ? 's have' : ' has' }} a price below the approved floor — send for Price Review.
+            </div>
+            <div class="footer-warning" *ngIf="reviewNeeded.length > 0">
+              {{ reviewNeeded.length }} item{{ reviewNeeded.length > 1 ? 's need' : ' needs' }} review update — send for Price Review.
             </div>
             <div class="footer-warning muted-warning" *ngIf="unresolved.length > 0 && hasReviewedAllItems(detailInquiry!)">
               Sending now will mark this RFQ as incomplete.
             </div>
             <div class="footer-actions">
-              <button type="button" class="ghost sm review-action-btn" [disabled]="!hasReviewedAllItems(detailInquiry!) || (badItems.length === 0 && rejected.length === 0)" (click)="openPriceReviewModal(detailInquiry!)">Price Review</button>
+              <button type="button" class="ghost sm review-action-btn" [disabled]="!hasReviewedAllItems(detailInquiry!) || (badItems.length === 0 && reviewNeeded.length === 0 && sourcingGaps.length === 0)" (click)="openPriceReviewModal(detailInquiry!)">Price Review</button>
               <button type="button" class="primary sm sent-action-btn" [disabled]="!hasReviewedAllItems(detailInquiry!)" (click)="sendToSent(detailInquiry!)">Sent</button>
             </div>
           </ng-container>
           </ng-container>
           </ng-container>
+          </ng-container>
         </ng-container>
         <ng-container *ngSwitchCase="'quotation_sent'">
+          <span class="status-info" *ngIf="detailInquiry.sentIncomplete">
+            RFQ sent as incomplete.
+            <span *ngIf="rejectedItemCount(detailInquiry) > 0">{{ rejectedItemCount(detailInquiry) }} item{{ rejectedItemCount(detailInquiry) > 1 ? 's' : '' }} still need review.</span>
+          </span>
           <div class="footer-actions">
             <button type="button" class="ghost sm" (click)="exportCoupa(detailInquiry!)">Export Coupa Excel</button>
           </div>
@@ -586,31 +659,32 @@
 
 <!-- Price Review Reason Modal -->
 <div class="modal-overlay" *ngIf="showPriceReviewModal" (click)="closePriceReviewModal()">
-  <div class="modal-card" (click)="$event.stopPropagation()">
+  <div class="modal-card price-review-modal" (click)="$event.stopPropagation()">
     <div class="form-header">
       <h2>Send To Price Review</h2>
-      <button type="button" class="ghost" (click)="closePriceReviewModal()">Cancel</button>
     </div>
-    <div class="notice error" *ngIf="error">{{ error }}</div>
+    <div class="price-review-modal-body">
+      <div class="notice error" *ngIf="error">{{ error }}</div>
 
-    <div *ngIf="detailInquiry">
-      <label>Reason for review *</label>
-      <textarea class="form-control" rows="3" [(ngModel)]="priceReviewReason" [ngModelOptions]="{standalone:true}"
-        placeholder="Type reason for sending these items back to Price Approval"></textarea>
+      <div *ngIf="detailInquiry">
+        <label>Reason for review *</label>
+        <textarea class="form-control" rows="3" [(ngModel)]="priceReviewReason" [ngModelOptions]="{standalone:true}"
+          placeholder="Type reason for sending these items back to Price Approval"></textarea>
 
-      <div class="price-review-preview">
-        <div class="price-review-preview-title">Items to review:</div>
-        <ul class="price-review-item-list">
-          <li *ngFor="let item of itemsForPriceReview(detailInquiry)">
-            {{ item.itemName || '-' }}
-          </li>
-        </ul>
+        <div class="price-review-preview">
+          <div class="price-review-preview-title">Items to review:</div>
+          <ul class="price-review-item-list">
+            <li *ngFor="let item of itemsForPriceReview(detailInquiry)">
+              {{ item.itemName || '-' }}
+            </li>
+          </ul>
+        </div>
       </div>
-    </div>
 
-    <div class="actions">
-      <button type="button" class="ghost" (click)="closePriceReviewModal()">Cancel</button>
-      <button type="button" class="primary" [disabled]="!priceReviewReason.trim()" (click)="confirmReturnToPriceApproval()">Send To Price Review</button>
+      <div class="actions">
+        <button type="button" class="ghost" (click)="closePriceReviewModal()">Cancel</button>
+        <button type="button" class="primary" [disabled]="!priceReviewReason.trim()" (click)="confirmReturnToPriceApproval()">Send To Price Review</button>
+      </div>
     </div>
   </div>
 </div>

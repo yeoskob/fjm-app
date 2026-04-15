@@ -22,7 +22,7 @@ export class InquiryService {
     return firstValueFrom(this.http.post<{ id: string; rfqNo: string }>(this.base, payload));
   }
 
-  importCoupa(payload: { fileBase64: string; fileName: string; createdBy: string; createdByName: string }): Promise<{ id: string; rfqNo: string; itemCount: number }> {
+  importCoupa(payload: { fileBase64: string; fileName: string; createdBy: string; createdByName: string; organization: string }): Promise<{ id: string; rfqNo: string; itemCount: number }> {
     return firstValueFrom(this.http.post<{ id: string; rfqNo: string; itemCount: number }>(`${this.base}/import-coupa`, payload));
   }
 
@@ -78,8 +78,8 @@ export class InquiryService {
     return firstValueFrom(this.http.post<void>(`${this.base}/${id}/items/${itemId}/approve`, payload));
   }
 
-  rejectItem(id: string, itemId: string, doneBy: string, doneByName: string, reason: string): Promise<void> {
-    return firstValueFrom(this.http.post<void>(`${this.base}/${id}/items/${itemId}/reject`, { doneBy, doneByName, reason }));
+  rejectItem(id: string, itemId: string, doneBy: string, doneByName: string, counterPrice: number, reason?: string): Promise<void> {
+    return firstValueFrom(this.http.post<void>(`${this.base}/${id}/items/${itemId}/reject`, { doneBy, doneByName, counterPrice, reason }));
   }
 
   exportCoupa(id: string): Promise<Blob> {

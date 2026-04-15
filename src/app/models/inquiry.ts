@@ -91,6 +91,7 @@ export interface Inquiry {
   items: InquiryItem[];
   status: InquiryStatus;
   coupaSource?: boolean;
+  organization?: string;
   coupaFileName?: string;
   createdAt: string;
   createdBy: string;
@@ -118,6 +119,7 @@ export interface InquiryNote {
 export interface InquiryCreate {
   customer: string;
   salesPic: string;
+  organization: string;
   namaBarang: string;
   spesifikasi?: string;
   qty?: number;

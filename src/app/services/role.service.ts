@@ -6,7 +6,7 @@ import { environment } from '../../environments/environment';
 export interface RoleDef {
   name: string;
   menus: string[];
-  tabs: Record<string, string[]>;
+  tabs?: Record<string, string[]>;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -19,12 +19,12 @@ export class RoleService {
     return firstValueFrom(this.http.get<RoleDef[]>(this.base));
   }
 
-  create(name: string, menus: string[], tabs: Record<string, string[]>): Promise<RoleDef> {
-    return firstValueFrom(this.http.post<RoleDef>(this.base, { name, menus, tabs }));
+  create(name: string, menus: string[]): Promise<RoleDef> {
+    return firstValueFrom(this.http.post<RoleDef>(this.base, { name, menus }));
   }
 
-  update(name: string, menus: string[], tabs: Record<string, string[]>): Promise<RoleDef> {
-    return firstValueFrom(this.http.put<RoleDef>(`${this.base}/${encodeURIComponent(name)}`, { menus, tabs }));
+  update(name: string, menus: string[]): Promise<RoleDef> {
+    return firstValueFrom(this.http.put<RoleDef>(`${this.base}/${encodeURIComponent(name)}`, { menus }));
   }
 
   delete(name: string): Promise<void> {

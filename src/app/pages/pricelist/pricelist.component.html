@@ -153,6 +153,7 @@
             <th>UoM</th>
             <th>Supplier</th>
             <th>Harga Beli</th>
+            <th>Lead Time</th>
             <th>Harga Jual</th>
             <th>Margin</th>
             <th>Status</th>
@@ -163,9 +164,8 @@
             <tr class="item-row"
               [class.approved-row]="isApproved(item)"
               [class.review-row]="isNeedsReview(item)"
-              [class.rejected-row]="isRejected(item)"
               [class.editing-row]="editingItemId === item.id"
-              [class.clickable-row]="selectedInquiry.status === 'price_approval' && !isApproved(item)"
+              [class.clickable-row]="selectedInquiry.status === 'price_approval'"
               (click)="selectedInquiry.status === 'price_approval' && toggleApprove(item)">
               <td class="muted">{{ i + 1 }}</td>
               <td class="item-name">
@@ -178,6 +178,7 @@
               <td class="muted"><div class="clamp-cell">{{ item.itemUom || '-' }}</div></td>
               <td><div class="clamp-cell" [title]="item.supplier || ''">{{ item.supplier || '-' }}</div></td>
               <td>{{ formatCurrency(item.hargaBeli) }}</td>
+              <td>{{ item.leadTime || '-' }}</td>
               <td [class.review-price-cell]="isNeedsReview(item)">{{ getApprovedPrice(item) ? formatCurrency(getApprovedPrice(item)) : '-' }}</td>
               <td>
                 <ng-container *ngIf="isApproved(item)">
@@ -188,15 +189,14 @@
               </td>
               <td>
                 <span class="approved-pill" *ngIf="isApproved(item)">Approved</span>
-                <span class="rejected-pill" *ngIf="!isApproved(item) && isRejected(item)">Rejected</span>
                 <span class="review-pill" *ngIf="!isApproved(item) && isNeedsReview(item)">Review</span>
-                <span class="pending-pill" *ngIf="!isApproved(item) && !isNeedsReview(item) && !isRejected(item)">Pending</span>
+                <span class="pending-pill" *ngIf="!isApproved(item) && !isNeedsReview(item)">Pending</span>
               </td>
             </tr>
 
             <!-- Inline approval form -->
             <tr *ngIf="editingItemId === item.id && selectedInquiry.status === 'price_approval'" class="inline-form-row" (click)="$event.stopPropagation()">
-              <td colspan="9" class="inline-form-cell">
+              <td colspan="10" class="inline-form-cell">
                 <div class="inline-form">
                   <div class="inline-field-list approval-grid">
                     <div class="inline-field-row">
@@ -240,9 +240,11 @@
                     <div class="inline-field-row inline-actions-row">
                       <span></span>
                       <div class="inline-actions">
-                        <button type="button" class="primary sm" (click)="approve(selectedInquiry, item); $event.stopPropagation()">Approve</button>
+                        <button type="button" class="primary sm" (click)="approve(selectedInquiry, item); $event.stopPropagation()">
+                          {{ isApproved(item) ? 'Update' : 'Approve' }}
+                        </button>
                         <button type="button" class="ghost danger sm" *ngIf="item.needsPriceReview === true"
-                          (click)="reject(selectedInquiry, item); $event.stopPropagation()">Reject</button>
+                          (click)="openRejectModal(item); $event.stopPropagation()">Update Price</button>
                       </div>
                     </div>
                   </div>
@@ -252,7 +254,7 @@
 
             <!-- Comments row -->
             <tr *ngIf="editingItemId === item.id && selectedInquiry.status === 'price_approval'" class="item-comment-row" (click)="$event.stopPropagation()">
-              <td colspan="9">
+              <td colspan="10">
                 <div class="item-comments-feed">
                   <div class="empty-comments" *ngIf="(itemNotesMap[item.id]?.length ?? 0) === 0">No comments yet.</div>
                   <div class="comment-bubble" *ngFor="let n of (itemNotesMap[item.id] ?? [])"
@@ -299,6 +301,32 @@
         (click)="returnToSourcing()">
         Kembalikan ke Sourcing
       </button>
+    </div>
+  </div>
+</div>
+
+<!-- Reject Reason Modal -->
+<div class="modal-overlay" *ngIf="showRejectModal" (click)="closeRejectModal()">
+  <div class="modal-card reject-modal" (click)="$event.stopPropagation()">
+    <div class="form-header">
+      <h2>Update Price for Negotiation</h2>
+    </div>
+    <div class="reject-modal-body">
+      <div class="notice error" *ngIf="error">{{ error }}</div>
+      <div *ngIf="rejectTargetItem" class="reject-review-preview">
+        <div class="reject-review-label">Item</div>
+        <div class="reject-review-item">{{ rejectTargetItem.itemName || '-' }}</div>
+      </div>
+      <label>Counter Price (Rp) *</label>
+      <input type="number" class="form-control" min="1" [(ngModel)]="rejectCounterPrice" [ngModelOptions]="{standalone:true}" />
+      <label>Negotiation note (optional)</label>
+      <textarea class="form-control" rows="3" [(ngModel)]="rejectReason" [ngModelOptions]="{standalone:true}"
+        placeholder="Type note for marketing"></textarea>
+      <div class="actions">
+        <button type="button" class="ghost" (click)="closeRejectModal()">Cancel</button>
+        <button type="button" class="primary" [disabled]="!rejectCounterPrice || !selectedInquiry || !rejectTargetItem"
+          (click)="reject(selectedInquiry!, rejectTargetItem!, rejectCounterPrice, rejectReason)">Send Counter Price</button>
+      </div>
     </div>
   </div>
 </div>

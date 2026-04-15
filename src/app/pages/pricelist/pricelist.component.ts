@@ -27,6 +27,10 @@ export class PricelistComponent implements OnInit {
   currentUser = this.authService.getCurrentUser();
   editingItemId: string | null = null;
   previewImageUrl: string | null = null;
+  showRejectModal = false;
+  rejectReason = '';
+  rejectCounterPrice: number | null = null;
+  rejectTargetItem: InquiryItem | null = null;
 
   // Comments panel (inquiry-level)
   showComments = false;
@@ -190,8 +194,24 @@ export class PricelistComponent implements OnInit {
     this.showComments = false;
     this.notes = [];
     this.newNote = '';
+    this.closeRejectModal();
     this.error = '';
     this.success = '';
+  }
+
+  openRejectModal(item: InquiryItem): void {
+    this.rejectTargetItem = item;
+    this.rejectReason = '';
+    this.rejectCounterPrice = this.getApprovedFloor(item) ?? this.getProposedPrice(item) ?? null;
+    this.showRejectModal = true;
+    this.error = '';
+  }
+
+  closeRejectModal(): void {
+    this.showRejectModal = false;
+    this.rejectReason = '';
+    this.rejectCounterPrice = null;
+    this.rejectTargetItem = null;
   }
 
   async toggleComments(): Promise<void> {
@@ -248,8 +268,6 @@ export class PricelistComponent implements OnInit {
 
   toggleApprove(item: InquiryItem): void {
     if (!this.selectedInquiry || this.selectedInquiry.status !== 'price_approval') return;
-    if (this.isApproved(item)) return;
-    if (item.priceApproved) return;
     if (this.editingItemId === item.id) {
       this.cancelApprove();
       return;
@@ -264,13 +282,16 @@ export class PricelistComponent implements OnInit {
     this.editingItemId = item.id;
     this.itemNewNote = '';
     this.error = '';
-    if (!this.approvalForms[item.id]) {
-      const proposedPrice = this.getProposedPrice(item);
-      const multiplier = 1 + this.defaultMarginPct / 100;
-      this.approvalForms[item.id] = {
-        hargaJual: proposedPrice ?? (item.hargaBeli ? Math.round(item.hargaBeli * multiplier) : undefined),
-      };
-    }
+    const proposedPrice = this.getProposedPrice(item);
+    const multiplier = 1 + this.defaultMarginPct / 100;
+    this.approvalForms[item.id] = {
+      hargaJual: this.approvalForms[item.id]?.hargaJual
+        ?? proposedPrice
+        ?? (item.hargaBeli ? Math.round(item.hargaBeli * multiplier) : undefined),
+      leadTimeCustomer: this.approvalForms[item.id]?.leadTimeCustomer ?? item.leadTimeCustomer,
+      validitasQuotation: this.approvalForms[item.id]?.validitasQuotation ?? item.validitasQuotation,
+      catatanQuotation: this.approvalForms[item.id]?.catatanQuotation ?? item.catatanQuotation,
+    };
     this.updateMarginPctFromHargaJual(item);
   }
 
@@ -304,23 +325,23 @@ export class PricelistComponent implements OnInit {
     await this.refresh();
   }
 
-  async reject(inq: Inquiry, item: InquiryItem): Promise<void> {
+  async reject(inq: Inquiry, item: InquiryItem, counterPrice: number | null, reason?: string): Promise<void> {
     const user = this.authService.getCurrentUser();
     if (!user) return;
-    const reason = window.prompt('Enter reject reason:');
-    if (!reason || !reason.trim()) {
-      this.error = 'Reject reason is required.';
+    if (!counterPrice || counterPrice <= 0) {
+      this.error = 'Counter price is required.';
       return;
     }
     this.error = '';
     this.success = '';
     try {
-      await this.inquiryService.rejectItem(inq.id, item.id, user.username, user.name, reason.trim());
+      await this.inquiryService.rejectItem(inq.id, item.id, user.username, user.name, counterPrice, String(reason ?? '').trim() || undefined);
       this.editingItemId = null;
-      this.success = `Item "${item.itemName}" rejected.`;
+      this.closeRejectModal();
+      this.success = `Counter price updated for "${item.itemName}".`;
       await this.refresh();
     } catch (e: any) {
-      this.error = e?.error?.error ?? 'Failed to reject item.';
+      this.error = e?.error?.error ?? 'Failed to update counter price.';
     }
   }
 
@@ -457,7 +478,7 @@ export class PricelistComponent implements OnInit {
     if (isNaN(d.getTime())) return '-';
     const datePart = d.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
     if (!iso.includes('T')) return datePart;
-    const h = d.getUTCHours(), m = d.getUTCMinutes();
+    const h = d.getHours(), m = d.getMinutes();
     const time = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
     return `${datePart}, ${time}`;
   }

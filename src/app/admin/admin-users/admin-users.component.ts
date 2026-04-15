@@ -4,29 +4,17 @@ import { Role, User } from '../../models/user';
 import { AuthService } from '../../services/auth.service';
 import { UserService } from '../../services/user.service';
 import { RoleService, RoleDef } from '../../services/role.service';
+import { OrganizationSetting, SettingsService } from '../../services/settings.service';
 
 export const ALL_MODULES: { key: string; label: string }[] = [
-  { key: 'dashboard',  label: 'Dashboard' },
-  { key: 'marketing',  label: 'Marketing' },
-  { key: 'sourcing',   label: 'Sourcing' },
-  { key: 'pricelist',  label: 'Price List' },
+  { key: 'dashboard', label: 'Dashboard' },
+  { key: 'marketing', label: 'Marketing' },
+  { key: 'sourcing', label: 'Sourcing' },
+  { key: 'pricelist', label: 'Price List' },
   { key: 'purchasing', label: 'Purchasing' },
 ];
 
-export const MODULE_TABS: Record<string, { key: string; label: string }[]> = {
-  marketing: [
-    { key: 'rfq',       label: 'New Inquiry' },
-    { key: 'quotation', label: 'Quotation Sent' },
-    { key: 'deals',     label: 'Deals' },
-  ],
-  purchasing: [
-    { key: 'deal',             label: 'Deals' },
-    { key: 'ready_to_purchase', label: 'Ready to Purchase' },
-    { key: 'lost',             label: 'Lost' },
-  ],
-};
-
-type AdminTab = 'users' | 'roles';
+type AdminTab = 'users' | 'roles' | 'organizations';
 
 @Component({
   selector: 'app-admin-users',
@@ -35,8 +23,9 @@ type AdminTab = 'users' | 'roles';
 })
 export class AdminUsersComponent implements OnInit {
   activeTab: AdminTab = 'users';
+  isAdmin = false;
 
-  // ── Users ──
+  // Users
   users: User[] = [];
   roles: RoleDef[] = [];
   editingUserId: string | null = null;
@@ -45,33 +34,43 @@ export class AdminUsersComponent implements OnInit {
   isBusy = false;
 
   userForm: { name: string; username: string; password: string; role: string } = {
-    name: '', username: '', password: '', role: '',
+    name: '',
+    username: '',
+    password: '',
+    role: '',
   };
 
-  // ── Roles ──
+  // Roles
   editingRoleName: string | null = null;
   isAddingRole = false;
   roleError = '';
   roleSuccess = '';
   roleBusy = false;
 
-  roleForm: { name: string; menus: Record<string, boolean>; tabs: Record<string, Record<string, boolean>> } = {
+  roleForm: { name: string; menus: Record<string, boolean> } = {
     name: '',
     menus: {},
-    tabs: {},
   };
 
+  // Organizations
+  organizations: OrganizationSetting[] = [];
+  orgCode = '';
+  orgError = '';
+  orgSuccess = '';
+  orgBusy = false;
+
   readonly modules = ALL_MODULES;
-  readonly moduleTabs = MODULE_TABS;
 
   constructor(
     private userService: UserService,
     private authService: AuthService,
     private roleService: RoleService,
+    private settingsService: SettingsService,
     private router: Router
   ) {}
 
   ngOnInit(): void {
+    this.isAdmin = this.authService.hasRole('admin');
     void this.refresh();
   }
 
@@ -79,20 +78,22 @@ export class AdminUsersComponent implements OnInit {
     this.activeTab = tab;
     this.cancelUserEdit();
     this.cancelRoleEdit();
+    this.orgError = '';
+    this.orgSuccess = '';
   }
 
   async refresh(): Promise<void> {
-    [this.users, this.roles] = await Promise.all([
+    [this.users, this.roles, this.organizations] = await Promise.all([
       this.userService.getUsers(),
       this.roleService.getAll(),
+      this.settingsService.getOrganizations(),
     ]);
     if (!this.userForm.role && this.roles.length > 0) {
       this.userForm.role = this.roles[0].name;
     }
   }
 
-  // ── User methods ──
-
+  // User methods
   startEditUser(user: User): void {
     this.editingUserId = user.id;
     this.userForm = { name: user.name, username: user.username, password: '', role: user.role };
@@ -113,21 +114,50 @@ export class AdminUsersComponent implements OnInit {
     this.userSuccess = '';
     const name = this.userForm.name.trim();
     const username = this.userForm.username.trim();
-    if (!name || !username) { this.userError = 'Name and username are required.'; return; }
-    if (!this.editingUserId && !this.userForm.password.trim()) { this.userError = 'Password is required for new users.'; return; }
+    if (!name || !username) {
+      this.userError = 'Name and username are required.';
+      return;
+    }
+    if (!this.editingUserId && !this.userForm.password.trim()) {
+      this.userError = 'Password is required for new users.';
+      return;
+    }
     this.isBusy = true;
 
     if (this.editingUserId) {
       const existing = this.users.find((u) => u.id === this.editingUserId);
-      if (!existing) { this.userError = 'User not found.'; this.isBusy = false; return; }
+      if (!existing) {
+        this.userError = 'User not found.';
+        this.isBusy = false;
+        return;
+      }
       const password = this.userForm.password.trim() || undefined;
-      const result = await this.userService.updateUser({ ...existing, name, username, password, role: this.userForm.role as Role });
-      if (!result.ok) { this.userError = result.error; this.isBusy = false; return; }
+      const result = await this.userService.updateUser({
+        ...existing,
+        name,
+        username,
+        password,
+        role: this.userForm.role as Role,
+      });
+      if (!result.ok) {
+        this.userError = result.error;
+        this.isBusy = false;
+        return;
+      }
       this.authService.updateCurrentUser(result.user);
       this.userSuccess = 'User updated.';
     } else {
-      const result = await this.userService.addUser({ name, username, password: this.userForm.password, role: this.userForm.role as Role });
-      if (!result.ok) { this.userError = result.error; this.isBusy = false; return; }
+      const result = await this.userService.addUser({
+        name,
+        username,
+        password: this.userForm.password,
+        role: this.userForm.role as Role,
+      });
+      if (!result.ok) {
+        this.userError = result.error;
+        this.isBusy = false;
+        return;
+      }
       this.userSuccess = 'User added.';
     }
 
@@ -147,21 +177,11 @@ export class AdminUsersComponent implements OnInit {
     await this.refresh();
   }
 
-  // ── Role methods ──
-
-  private defaultTabForm(): Record<string, Record<string, boolean>> {
-    const tabs: Record<string, Record<string, boolean>> = {};
-    for (const [mod, modTabs] of Object.entries(this.moduleTabs)) {
-      tabs[mod] = {};
-      for (const t of modTabs) tabs[mod][t.key] = true;
-    }
-    return tabs;
-  }
-
+  // Role methods
   startAddRole(): void {
     this.isAddingRole = true;
     this.editingRoleName = null;
-    this.roleForm = { name: '', menus: {}, tabs: this.defaultTabForm() };
+    this.roleForm = { name: '', menus: {} };
     this.roleError = '';
     this.roleSuccess = '';
   }
@@ -171,16 +191,7 @@ export class AdminUsersComponent implements OnInit {
     this.isAddingRole = false;
     const menus: Record<string, boolean> = {};
     for (const m of this.modules) menus[m.key] = role.menus.includes(m.key);
-    const tabs: Record<string, Record<string, boolean>> = {};
-    for (const [mod, modTabs] of Object.entries(this.moduleTabs)) {
-      tabs[mod] = {};
-      const allowed = role.tabs?.[mod] ?? [];
-      for (const t of modTabs) {
-        // if no tabs configured for this module, default all to true
-        tabs[mod][t.key] = allowed.length === 0 ? true : allowed.includes(t.key);
-      }
-    }
-    this.roleForm = { name: role.name, menus, tabs };
+    this.roleForm = { name: role.name, menus };
     this.roleError = '';
     this.roleSuccess = '';
   }
@@ -188,7 +199,7 @@ export class AdminUsersComponent implements OnInit {
   cancelRoleEdit(): void {
     this.editingRoleName = null;
     this.isAddingRole = false;
-    this.roleForm = { name: '', menus: {}, tabs: this.defaultTabForm() };
+    this.roleForm = { name: '', menus: {} };
     this.roleError = '';
     this.roleSuccess = '';
   }
@@ -197,34 +208,28 @@ export class AdminUsersComponent implements OnInit {
     return this.modules.filter((m) => this.roleForm.menus[m.key]).map((m) => m.key);
   }
 
-  selectedTabs(): Record<string, string[]> {
-    const result: Record<string, string[]> = {};
-    for (const [mod, tabMap] of Object.entries(this.roleForm.tabs)) {
-      const allowed = Object.entries(tabMap).filter(([, v]) => v).map(([k]) => k);
-      // only store if not all tabs selected (all selected = no restriction)
-      const allTabs = this.moduleTabs[mod] ?? [];
-      if (allowed.length < allTabs.length) result[mod] = allowed;
-    }
-    return result;
-  }
-
   async saveRole(): Promise<void> {
     if (this.roleBusy) return;
     this.roleError = '';
     this.roleSuccess = '';
     const menus = this.selectedMenus();
-    if (menus.length === 0) { this.roleError = 'Select at least one module.'; return; }
+    if (menus.length === 0) {
+      this.roleError = 'Select at least one module.';
+      return;
+    }
 
-    const tabs = this.selectedTabs();
     this.roleBusy = true;
     try {
       if (this.isAddingRole) {
         const name = this.roleForm.name.trim();
-        if (!name) { this.roleError = 'Role name is required.'; return; }
-        await this.roleService.create(name, menus, tabs);
+        if (!name) {
+          this.roleError = 'Role name is required.';
+          return;
+        }
+        await this.roleService.create(name, menus);
         this.roleSuccess = `Role "${name}" created.`;
       } else if (this.editingRoleName) {
-        await this.roleService.update(this.editingRoleName, menus, tabs);
+        await this.roleService.update(this.editingRoleName, menus);
         this.roleSuccess = `Role "${this.editingRoleName}" updated.`;
       }
       await this.refresh();
@@ -250,5 +255,29 @@ export class AdminUsersComponent implements OnInit {
     return role.menus
       .map((k) => this.modules.find((m) => m.key === k)?.label ?? k)
       .join(', ');
+  }
+
+  async addOrganization(): Promise<void> {
+    if (!this.isAdmin || this.orgBusy) return;
+    this.orgError = '';
+    this.orgSuccess = '';
+
+    const code = this.orgCode.trim().toUpperCase();
+    if (!code) {
+      this.orgError = 'Organization code is required.';
+      return;
+    }
+
+    this.orgBusy = true;
+    try {
+      await this.settingsService.addOrganization(code);
+      this.orgCode = '';
+      this.orgSuccess = `Organization "${code}" added.`;
+      this.organizations = await this.settingsService.getOrganizations();
+    } catch (err: any) {
+      this.orgError = err?.error?.error ?? 'Failed to add organization.';
+    } finally {
+      this.orgBusy = false;
+    }
   }
 }

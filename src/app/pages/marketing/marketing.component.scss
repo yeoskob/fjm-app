@@ -19,7 +19,6 @@
   font-size: 0.75rem;
   color: #dc2626;
   margin-top: 3px;
-  font-weight: 500;
 }
 
 .input-error {
@@ -108,20 +107,6 @@
     border-bottom-color: #1d4ed8;
     background: #fff;
     border-radius: 8px 8px 0 0;
-  }
-}
-
-.tab-count {
-  background: #cbd5e1;
-  color: #475569;
-  font-size: 0.72rem;
-  font-weight: 700;
-  padding: 0.1rem 0.45rem;
-  border-radius: 999px;
-
-  .tab-btn.active & {
-    background: #dbeafe;
-    color: #1d4ed8;
   }
 }
 
@@ -285,6 +270,18 @@
   letter-spacing: 0.03em;
 }
 
+.org-badge {
+  display: inline-block;
+  font-size: 0.62rem;
+  font-weight: 700;
+  padding: 0.1rem 0.4rem;
+  border-radius: 4px;
+}
+
+.org-badge-fjm { background: #dbeafe; color: #1d4ed8; }
+.org-badge-fmi { background: #dcfce7; color: #15803d; }
+.org-badge-fsa { background: #fee2e2; color: #b91c1c; }
+
 /* Badges */
 .badge {
   display: inline-block;
@@ -302,6 +299,11 @@
 .badge-green   { background: #dcfce7; color: #15803d; }
 .badge-red     { background: #fee2e2; color: #b91c1c; }
 .badge-gray    { background: #f1f5f9; color: #475569; }
+
+.status-stack {
+  display: inline-flex;
+  flex-direction: column;
+}
 
 /* Modals */
 .modal-overlay {
@@ -574,13 +576,6 @@
   padding: 1rem 1.5rem;
 }
 
-.item-comment-count-badge {
-  font-size: 0.78rem;
-  color: #64748b;
-  margin-left: auto;
-  white-space: nowrap;
-}
-
 /* Inline per-item comments panel */
 .item-comments-panel {
   border-top: 1px solid #e2e8f0;
@@ -812,11 +807,25 @@ textarea.form-control { resize: vertical; }
   background: #f8fafc;
 }
 
-.price-review-preview-title {
-  font-size: 0.82rem;
-  font-weight: 700;
-  color: #334155;
-  margin-bottom: 0.35rem;
+.price-review-modal .form-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 1rem;
+  border-bottom: 1px solid #e2e8f0;
+  background: #f8fafc;
+  h2 { margin: 0; font-size: 1.45rem; line-height: 1.2; color: #0f172a; }
+}
+
+.price-review-modal-body {
+  padding: 1rem;
+}
+
+.price-review-modal .actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
 }
 
 .price-review-item-list {
@@ -824,8 +833,6 @@ textarea.form-control { resize: vertical; }
   padding-left: 1rem;
   color: #334155;
   font-size: 0.82rem;
-  display: grid;
-  gap: 0.2rem;
 }
 
 .item-review-main {
@@ -919,19 +926,13 @@ textarea.form-control { resize: vertical; }
   line-height: 1.2;
   white-space: nowrap;
 
-  &.reviewed {
-    background: #dcfce7;
-    color: #15803d;
-  }
-
-  &.not-reviewed {
-    background: #fef3c7;
-    color: #92400e;
-  }
-
   &.rejected {
     background: #fee2e2;
     color: #b91c1c;
+  }
+
+  &.sourcing-tidak-terisi {
+    color: #92400e;
   }
 }
 
@@ -998,12 +999,6 @@ textarea.form-control { resize: vertical; }
   border-top: 1px solid #e2e8f0;
   padding: 0.6rem 0.75rem;
   background: #f8fafc;
-}
-
-.panel-close-row {
-  display: flex;
-  justify-content: flex-end;
-  margin-bottom: 0.4rem;
 }
 
 .item-detail-table {

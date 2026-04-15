@@ -13,6 +13,9 @@
     <button type="button" class="tab-btn" [class.active]="activeTab === 'roles'" (click)="setTab('roles')">
       Roles
     </button>
+    <button type="button" class="tab-btn" [class.active]="activeTab === 'organizations'" (click)="setTab('organizations')">
+      Organizations
+    </button>
   </div>
 
   <!-- ── Users Tab ── -->
@@ -108,16 +111,6 @@
               <input type="checkbox" [(ngModel)]="roleForm.menus[m.key]" [ngModelOptions]="{standalone:true}" />
               {{ m.label }}
             </label>
-            <!-- Tab access sub-options -->
-            <div class="tab-access-list" *ngIf="roleForm.menus[m.key] && moduleTabs[m.key]?.length">
-              <span class="tab-access-label">Tab access:</span>
-              <label class="checkbox-label tab-checkbox" *ngFor="let t of moduleTabs[m.key]">
-                <input type="checkbox"
-                  [(ngModel)]="roleForm.tabs[m.key][t.key]"
-                  [ngModelOptions]="{standalone:true}" />
-                {{ t.label }}
-              </label>
-            </div>
           </div>
         </div>
 
@@ -166,6 +159,53 @@
           </tbody>
         </table>
         <div class="table-total">Total: {{ roles.length }} items</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Organizations Tab -->
+  <div class="tab-content" *ngIf="activeTab === 'organizations'">
+    <div class="admin-grid">
+      <div class="card" *ngIf="isAdmin">
+        <h2>Add Organization</h2>
+        <label>
+          Organization code
+          <input type="text" [(ngModel)]="orgCode" [ngModelOptions]="{standalone:true}" placeholder="e.g. FJM" />
+          <span class="hint">Use uppercase short code. Example: FJM, FMI, FSA.</span>
+        </label>
+
+        <div class="notice error" *ngIf="orgError">{{ orgError }}</div>
+        <div class="notice success" *ngIf="orgSuccess">{{ orgSuccess }}</div>
+
+        <div class="actions">
+          <button type="button" class="primary" [disabled]="orgBusy" (click)="addOrganization()">
+            {{ orgBusy ? 'Adding...' : 'Add Organization' }}
+          </button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Organization List</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Code</th>
+              <th>Created By</th>
+              <th>Created At</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let org of organizations">
+              <td><span class="role-chip">{{ org.code }}</span></td>
+              <td>{{ org.createdBy || 'system' }}</td>
+              <td>{{ org.createdAt | date:'dd MMM yyyy, HH:mm' }}</td>
+            </tr>
+            <tr *ngIf="organizations.length === 0">
+              <td colspan="3" class="empty-row">No organizations defined.</td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="table-total">Total: {{ organizations.length }} items</div>
       </div>
     </div>
   </div>

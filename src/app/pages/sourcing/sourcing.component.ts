@@ -383,7 +383,7 @@ export class SourcingComponent implements OnInit {
     if (isNaN(d.getTime())) return '-';
     const datePart = d.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
     if (!iso.includes('T')) return datePart;
-    const h = d.getUTCHours(), m = d.getUTCMinutes();
+    const h = d.getHours(), m = d.getMinutes();
     const time = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
     return `${datePart}, ${time}`;
   }

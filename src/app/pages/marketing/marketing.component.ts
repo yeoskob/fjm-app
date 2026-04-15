@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { AuthService } from '../../services/auth.service';
 import { InquiryService } from '../../services/inquiry.service';
+import { SettingsService } from '../../services/settings.service';
 import { Inquiry, InquiryCreate, InquiryItem, InquiryNote, InquiryStatus, INQUIRY_STATUS_LABELS } from '../../models/inquiry';
 import { todayLocalISO } from '../../utils/date';
 
@@ -20,10 +21,12 @@ export class MarketingComponent implements OnInit {
   form: Partial<InquiryCreate> = {};
   createCustomer = '';
   createNeedByDate = '';
+  createOrganization = '';
   createItems: Array<{ itemName: string; itemQuantity?: number; itemUom?: string; itemExtendedDescription?: string; itemImage?: string }> = [];
   submittingCreate = false;
   showImport = false;
   importFile: File | null = null;
+  importOrganization = '';
   importing = false;
 
   detailInquiry: Inquiry | null = null;
@@ -74,6 +77,7 @@ export class MarketingComponent implements OnInit {
     // Packaging
     'Box', 'Carton', 'Pack', 'Roll', 'Sheet', 'Drum', 'Pallet', 'Bundle', 'Bag', 'Spool',
   ];
+  organizationOptions: string[] = ['FJM', 'FMI', 'FSA'];
 
   readonly STATUS_LABELS = INQUIRY_STATUS_LABELS;
   readonly PIPELINE_STAGES: InquiryStatus[] = [
@@ -175,7 +179,11 @@ export class MarketingComponent implements OnInit {
     return ['deal', 'lost'].includes(stage);
   }
 
-  constructor(private inquiryService: InquiryService, public authService: AuthService) {}
+  constructor(
+    private inquiryService: InquiryService,
+    private settingsService: SettingsService,
+    public authService: AuthService
+  ) {}
 
   ngOnInit(): void {
     this.isAdmin = this.authService.hasRole('admin');
@@ -188,6 +196,21 @@ export class MarketingComponent implements OnInit {
       void this.inquiryService.getUsers().then((users) => {
         this.salesUsers = users.filter((u) => u.role === 'marketing');
       });
+    }
+    void this.loadOrganizationOptions();
+  }
+
+  private async loadOrganizationOptions(): Promise<void> {
+    try {
+      const orgs = await this.settingsService.getOrganizations();
+      const codes = orgs
+        .map((o) => String(o.code ?? '').trim().toUpperCase())
+        .filter((code) => !!code);
+      if (codes.length > 0) {
+        this.organizationOptions = Array.from(new Set(codes)).sort();
+      }
+    } catch {
+      // Keep fallback defaults when settings API is unavailable
     }
   }
 
@@ -229,11 +252,18 @@ export class MarketingComponent implements OnInit {
     return map[status] ?? 'badge-gray';
   }
 
+  organizationClass(org?: string): string {
+    if (org === 'FMI') return 'org-badge-fmi';
+    if (org === 'FSA') return 'org-badge-fsa';
+    return 'org-badge-fjm';
+  }
+
   openCreate(): void {
     this.showCreate = true;
     this.showImport = false;
     this.createCustomer = '';
     this.createNeedByDate = '';
+    this.createOrganization = '';
     this.createItems = [{ itemName: '' }];
     this.error = '';
     this.detailInquiry = null;
@@ -263,6 +293,7 @@ export class MarketingComponent implements OnInit {
     this.showImport = true;
     this.showCreate = false;
     this.importFile = null;
+    this.importOrganization = '';
     this.error = '';
     this.success = '';
   }
@@ -270,6 +301,7 @@ export class MarketingComponent implements OnInit {
   cancelImport(): void {
     this.showImport = false;
     this.importFile = null;
+    this.importOrganization = '';
   }
 
   async submitCreate(): Promise<void> {
@@ -277,6 +309,7 @@ export class MarketingComponent implements OnInit {
     const user = this.authService.getCurrentUser();
     if (!user) { this.error = 'Not logged in.'; return; }
     if (!this.createCustomer.trim()) { this.error = 'Customer is required.'; return; }
+    if (!this.createOrganization) { this.error = 'Organization is required.'; return; }
     const validItems = this.createItems.filter(i => i.itemName.trim());
     if (validItems.length === 0) { this.error = 'Add at least one item with a name.'; return; }
 
@@ -286,6 +319,7 @@ export class MarketingComponent implements OnInit {
       const { id } = await this.inquiryService.create({
         customer: this.createCustomer.trim(),
         salesPic: user.name,
+        organization: this.createOrganization,
         namaBarang: first.itemName.trim(),
         spesifikasi: first.itemExtendedDescription?.trim(),
         qty: first.itemQuantity,
@@ -328,6 +362,7 @@ export class MarketingComponent implements OnInit {
     const user = this.authService.getCurrentUser();
     if (!user) { this.error = 'Not logged in.'; return; }
     if (!this.importFile) { this.error = 'Please choose an Excel file.'; return; }
+    if (!this.importOrganization) { this.error = 'Organization is required.'; return; }
 
     this.importing = true;
     try {
@@ -337,6 +372,7 @@ export class MarketingComponent implements OnInit {
         fileName: this.importFile.name,
         createdBy: user.username,
         createdByName: user.name,
+        organization: this.importOrganization,
       });
       this.success = `Imported Coupa file. ${result.itemCount} items loaded.`;
       this.showImport = false;
@@ -643,6 +679,7 @@ export class MarketingComponent implements OnInit {
     const item = inquiry.items[0];
     this.editForm = {
       customer: inquiry.customer,
+      organization: inquiry.organization ?? 'FJM',
       salesPic: inquiry.salesPic,
       namaBarang: item?.itemName,
       spesifikasi: item?.itemExtendedDescription,
@@ -688,17 +725,7 @@ export class MarketingComponent implements OnInit {
     if (!user) return;
     this.error = '';
     try {
-      const unresolved = this.unresolvedItems(inquiry);
-      let incompleteReason: string | undefined;
-      if (unresolved.length > 0) {
-        const reason = window.prompt(`You are sending with ${unresolved.length} unresolved item(s). Please enter reason for incomplete send:`);
-        if (!reason || !reason.trim()) {
-          this.error = 'Reason is required to send incomplete quotation.';
-          return;
-        }
-        incompleteReason = reason.trim();
-      }
-      await this.inquiryService.sendToSent(inquiry.id, user.username, user.name, incompleteReason);
+      await this.inquiryService.sendToSent(inquiry.id, user.username, user.name);
       this.success = 'Quotation sent to customer.';
       this.detailInquiry = null;
       await this.refresh();
@@ -766,21 +793,39 @@ export class MarketingComponent implements OnInit {
     return inquiry.items.filter((item) => this.isItemBelowApprovedFloor(item));
   }
 
+  reviewNeededItems(inquiry: Inquiry): InquiryItem[] {
+    return inquiry.items.filter((item) => item.needsPriceReview === true || item.reviewStatus === 'review');
+  }
+
   rejectedItems(inquiry: Inquiry): InquiryItem[] {
-    return inquiry.items.filter((item) => item.reviewStatus === 'rejected');
+    return this.reviewNeededItems(inquiry);
+  }
+
+  rejectedItemCount(inquiry: Inquiry): number {
+    return this.reviewNeededItems(inquiry).length;
+  }
+
+  sourcingTidakTerisiItems(inquiry: Inquiry): InquiryItem[] {
+    return inquiry.items.filter((item) => this.isSourcingTidakTerisi(item));
+  }
+
+  isSourcingTidakTerisi(item: InquiryItem): boolean {
+    return this.getApprovedPrice(item) == null;
   }
 
   unresolvedItems(inquiry: Inquiry): InquiryItem[] {
     return inquiry.items.filter((item) =>
       item.priceApproved !== true ||
-      item.reviewStatus === 'rejected' ||
+      item.needsPriceReview === true ||
+      item.reviewStatus === 'review' ||
       this.isItemBelowApprovedFloor(item)
     );
   }
 
   itemsForPriceReview(inquiry: Inquiry): InquiryItem[] {
     return inquiry.items.filter((item) =>
-      item.reviewStatus === 'rejected' ||
+      this.isSourcingTidakTerisi(item) ||
+      item.reviewStatus === 'review' ||
       item.needsPriceReview === true ||
       this.isItemBelowApprovedFloor(item)
     );
@@ -847,7 +892,7 @@ export class MarketingComponent implements OnInit {
     if (isNaN(d.getTime())) return '-';
     const datePart = d.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
     if (!iso.includes('T')) return datePart;
-    const h = d.getUTCHours(), m = d.getUTCMinutes();
+    const h = d.getHours(), m = d.getMinutes();
     const time = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
     return `${datePart}, ${time}`;
   }
