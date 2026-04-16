@@ -446,8 +446,8 @@
                   <span *ngIf="getApprovedPrice(item)"> · Jual: {{ formatCurrency(getApprovedPrice(item)) }}</span>
                 </div>
               </div>
-              <div class="item-review-state" *ngIf="['price_approved','quotation_sent'].includes(detailInquiry.status)">
-                <span class="review-state-pill sourcing-tidak-terisi" *ngIf="detailInquiry.status === 'price_approved' && isSourcingTidakTerisi(item)">Tidak Terisi (Sourcing)</span>
+              <div class="item-review-state" *ngIf="['price_approval','price_approved','quotation_sent'].includes(detailInquiry.status)">
+                <span class="review-state-pill sourcing-tidak-terisi" *ngIf="isSourcingTidakTerisi(item)">Tidak Terisi (Sourcing)</span>
                 <span class="review-state-pill rejected" *ngIf="item.reviewStatus === 'rejected'">Rejected</span>
               </div>
             </div>

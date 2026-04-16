@@ -34,7 +34,7 @@ export class DashboardComponent implements OnInit {
 
   get marketingPieData() {
     const rows = this.dashboard?.statusBreakdown ?? [];
-    return this.buildMarketingPie(rows);
+    return this.buildMarketingPie(rows, this.dashboard?.sentIncomplete ?? 0);
   }
 
   get itemPieData() {
@@ -92,37 +92,32 @@ export class DashboardComponent implements OnInit {
   }
 
   userMarketingPieData(stats: UserStats) {
-    return this.buildMarketingPie(stats.salesStats.statusBreakdown ?? []);
+    return this.buildMarketingPie(stats.salesStats.statusBreakdown ?? [], stats.salesStats.sentIncomplete ?? 0);
   }
 
-  private buildMarketingPie(rows: Array<{ status: string; count: number }>) {
+  private buildMarketingPie(rows: Array<{ status: string; count: number }>, sentIncomplete = 0) {
     const get = (status: string) => rows.find((r) => r.status === status)?.count ?? 0;
 
     const newInquiry = get('new_inquiry');
-    const inProgress = get('rfq') + get('price_approval') + get('price_approved') + get('follow_up');
-    const sent = get('quotation_sent');
-    const total = newInquiry + inProgress + sent;
+    const sentTotal = get('quotation_sent') + get('ready_to_purchase');
+    const sentComplete = sentTotal - sentIncomplete;
+    const total = newInquiry + sentTotal;
     if (total === 0) return null;
 
     const C = this.PIE_C;
-    const newDash = (newInquiry / total) * C;
-    const progressDash = (inProgress / total) * C;
-    const sentDash = (sent / total) * C;
+    const newDash        = (newInquiry     / total) * C;
+    const sentDash       = (sentComplete   / total) * C;
+    const incompleteDash = (sentIncomplete / total) * C;
 
     return {
       total,
       newInquiry,
-      inProgress,
-      sent,
-      newDash,
-      newGap: C - newDash,
-      newOffset: 0,
-      progressDash,
-      progressGap: C - progressDash,
-      progressOffset: C - newDash,
-      sentDash,
-      sentGap: C - sentDash,
-      sentOffset: C - (newDash + progressDash),
+      sent: sentComplete,
+      sentIncomplete,
+      newDash,        newGap: C - newDash,        newOffset: 0,
+      sentDash,       sentGap: C - sentDash,       sentOffset: C - newDash,
+      incompleteDash, incompleteGap: C - incompleteDash,
+      incompleteOffset: C - (newDash + sentDash),
     };
   }
 
@@ -181,6 +176,7 @@ export class DashboardComponent implements OnInit {
       follow_up: 'Negotiation',
       deal: 'Deal',
       lost: 'Lost',
+      ready_to_purchase: 'Ready to Purchase',
     };
     return map[status] ?? status;
   }

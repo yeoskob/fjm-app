@@ -810,7 +810,7 @@ export class MarketingComponent implements OnInit {
   }
 
   isSourcingTidakTerisi(item: InquiryItem): boolean {
-    return this.getApprovedPrice(item) == null;
+    return !(item.supplier && item.hargaBeli != null && item.leadTime);
   }
 
   unresolvedItems(inquiry: Inquiry): InquiryItem[] {

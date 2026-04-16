@@ -135,7 +135,8 @@
   &.sent         { background: #15803d; }
   &.terisi       { background: #15803d; }
   &.tidak-terisi { background: #f59e0b; }
-  &.missed       { background: #b91c1c; }
+  &.missed           { background: #b91c1c; }
+  &.sent-incomplete  { background: #dc2626; }
 }
 
 .pie-legend-label {

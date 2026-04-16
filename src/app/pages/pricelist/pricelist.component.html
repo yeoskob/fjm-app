@@ -243,8 +243,6 @@
                         <button type="button" class="primary sm" (click)="approve(selectedInquiry, item); $event.stopPropagation()">
                           {{ isApproved(item) ? 'Update' : 'Approve' }}
                         </button>
-                        <button type="button" class="ghost danger sm" *ngIf="item.needsPriceReview === true"
-                          (click)="openRejectModal(item); $event.stopPropagation()">Update Price</button>
                       </div>
                     </div>
                   </div>
