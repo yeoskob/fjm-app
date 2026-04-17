@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { ActivatedRoute } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 import { InquiryService } from '../../services/inquiry.service';
 import { SettingsService } from '../../services/settings.service';
@@ -182,14 +183,17 @@ export class MarketingComponent implements OnInit {
   constructor(
     private inquiryService: InquiryService,
     private settingsService: SettingsService,
-    public authService: AuthService
+    public authService: AuthService,
+    private route: ActivatedRoute,
   ) {}
 
   ngOnInit(): void {
     this.isAdmin = this.authService.hasRole('admin');
-    // Set initial tab to first one the user can see
     const tabs: Array<'rfq' | 'price_approved' | 'sent'> = ['rfq', 'price_approved', 'sent'];
-    this.activeTab = tabs.find((t) => this.canSeeTab(t)) ?? 'rfq';
+    const qTab = this.route.snapshot.queryParamMap.get('tab') as typeof tabs[number] | null;
+    this.activeTab = (qTab && tabs.includes(qTab) && this.canSeeTab(qTab))
+      ? qTab
+      : (tabs.find((t) => this.canSeeTab(t)) ?? 'rfq');
     void this.refresh();
     const user = this.authService.getCurrentUser();
     if (user?.role === 'admin' || user?.role === 'manager') {

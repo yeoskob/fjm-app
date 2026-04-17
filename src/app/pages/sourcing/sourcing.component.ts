@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { ActivatedRoute } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 import { InquiryService } from '../../services/inquiry.service';
 import { Inquiry, InquiryItem, InquiryNote, SourcingInfo } from '../../models/inquiry';
@@ -101,9 +102,12 @@ export class SourcingComponent implements OnInit {
   fillForm: Partial<SourcingInfo> & { leadTimeNum?: number } = {};
   previewImageUrl: string | null = null;
 
-  constructor(private inquiryService: InquiryService, private authService: AuthService) {}
+  constructor(private inquiryService: InquiryService, private authService: AuthService, private route: ActivatedRoute) {}
 
   ngOnInit(): void {
+    const tabs: Array<'rfq' | 'riwayat'> = ['rfq', 'riwayat'];
+    const qTab = this.route.snapshot.queryParamMap.get('tab') as typeof tabs[number] | null;
+    if (qTab && tabs.includes(qTab)) this.activeTab = qTab;
     void this.refresh();
     if (this.isAdminOrManager()) {
       void this.inquiryService.getUsers().then((users) => {
@@ -220,6 +224,7 @@ export class SourcingComponent implements OnInit {
 
   async toggleFill(item: InquiryItem): Promise<void> {
     if (!this.selectedInquiry || this.selectedInquiry.status !== 'rfq') return;
+    if (this.isMissed(item)) return;
     if (this.editingItemId === item.id) {
       this.cancelFill();
       this.itemNewNote = '';
@@ -332,8 +337,12 @@ export class SourcingComponent implements OnInit {
     return !!(item.supplier && item.hargaBeli != null && item.leadTime);
   }
 
-  isMissed(item: InquiryItem): boolean {
-    return !!item.sourcingMissed;
+  isMissed(_item?: InquiryItem): boolean {
+    return !!this.selectedInquiry?.sourcingMissed;
+  }
+
+  isInqMissed(inq: Inquiry): boolean {
+    return !!inq.sourcingMissed;
   }
 
   itemCount(inquiry: Inquiry): number {
