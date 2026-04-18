@@ -42,10 +42,12 @@
           </tr>
         </thead>
         <tbody>
-          <tr class="rfq-row" *ngFor="let inq of pagedRfq" (click)="openModal(inq)">
+          <tr class="rfq-row" *ngFor="let inq of pagedRfq" (click)="openModal(inq)"
+              [class.missed-row]="inq.sourcingMissed">
             <td class="mono-blue">
               {{ inq.rfqNo }}
               <span class="coupa-badge" *ngIf="inq.coupaSource">Coupa</span>
+              <span class="missed-pill" *ngIf="inq.sourcingMissed">Missed</span>
             </td>
             <td><strong>{{ inq.customer }}</strong></td>
             <td class="muted">{{ inq.salesPic }}</td>
@@ -55,9 +57,9 @@
             </td>
             <td class="col-center">{{ itemCount(inq) }}</td>
             <td class="col-center">
-              <span class="pending-pill" *ngIf="pendingCount(inq) > 0">{{ pendingCount(inq) }}</span>
-              <span class="missed-pill" *ngIf="pendingCount(inq) === 0 && missedCount(inq) > 0">{{ missedCount(inq) }} Missed</span>
-              <span class="done-pill" *ngIf="pendingCount(inq) === 0 && missedCount(inq) === 0">✓ Done</span>
+              <span class="missed-pill" *ngIf="inq.sourcingMissed">Missed</span>
+              <span class="pending-pill" *ngIf="!inq.sourcingMissed && pendingCount(inq) > 0">{{ pendingCount(inq) }}</span>
+              <span class="done-pill" *ngIf="!inq.sourcingMissed && pendingCount(inq) === 0">✓ Done</span>
             </td>
             <td>
               <ng-container *ngIf="earliestNeedByDate(inq) as nbd; else noNbd">
@@ -250,9 +252,9 @@
               <td [title]="item.leadTime || ''">{{ item.leadTime || '-' }}</td>
               <td>
                 <span class="approved-pill" *ngIf="item.priceApproved">Price Approved</span>
-                <span class="missed-pill" *ngIf="!item.priceApproved && isSourced(item) && isMissed(item)">Missed</span>
+                <span class="missed-pill" *ngIf="!item.priceApproved && isMissed(item)">Missed</span>
                 <span class="sourced-pill" *ngIf="!item.priceApproved && isSourced(item) && !isMissed(item)">Terisi</span>
-                <span class="unsourced-pill" *ngIf="!item.priceApproved && !isSourced(item)">Tidak Terisi</span>
+                <span class="unsourced-pill" *ngIf="!item.priceApproved && !isSourced(item) && !isMissed(item)">Tidak Terisi</span>
               </td>
               <td class="action-cell">
                 <button *ngIf="editingItemId === item.id"
@@ -346,9 +348,11 @@
 
     <!-- Fixed Footer -->
     <div class="modal-footer" *ngIf="selectedInquiry.status === 'rfq'">
-      <div class="all-sourced-notice" *ngIf="pendingCount(selectedInquiry) === 0">
+      <div class="all-sourced-notice" *ngIf="pendingCount(selectedInquiry) === 0 && !selectedInquiry.sourcingMissed">
         ✓ Semua item sudah terisi. Siap dikirim ke Price Approval.
-        <span *ngIf="missedCount(selectedInquiry) > 0" class="missed-notice">({{ missedCount(selectedInquiry) }} item melewati need-by date)</span>
+      </div>
+      <div class="missed-notice-block" *ngIf="selectedInquiry.sourcingMissed">
+        RFQ ini melewati need-by date dan ditandai sebagai Missed. Sourcing tidak dapat mengisi item.
       </div>
       <div class="pending-notice" *ngIf="pendingCount(selectedInquiry) > 0">
         {{ pendingCount(selectedInquiry) }} item belum terisi.

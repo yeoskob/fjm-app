@@ -41,6 +41,8 @@
   max-width: 600px;
 }
 
+.sourcing-kpi-row { grid-template-columns: repeat(4, 1fr); max-width: 860px; }
+
 .stat-card {
   background: #fff;
   border-radius: 12px;
@@ -48,19 +50,98 @@
   text-align: center;
   box-shadow: 0 4px 12px rgba(15, 23, 42, 0.06);
 
-  &.highlight-green  { background: #15803d; color: #fff; }
-  &.highlight-red    { background: #b91c1c; color: #fff; }
-  &.highlight-blue   { background: #1d4ed8; color: #fff; }
-  &.highlight-orange { background: #c2410c; color: #fff; }
+  &.highlight-green     { background: #15803d; color: #fff; }
+  &.highlight-red       { background: #b91c1c; color: #fff; }
+  &.highlight-red-soft  { background: #ef4444; color: #fff; }
+  &.highlight-blue      { background: #1d4ed8; color: #fff; }
+  &.highlight-orange    { background: #c2410c; color: #fff; }
+  &.highlight-amber     { background: #d97706; color: #fff; }
 }
 
 .stat-value { font-size: 2rem; font-weight: 800; line-height: 1; }
 .stat-label { font-size: 0.78rem; margin-top: 0.4rem; opacity: 0.8; }
+.stat-sub   { font-size: 0.72rem; margin-top: 0.3rem; opacity: 0.65; }
+
+.marketing-kpi-row { grid-template-columns: repeat(3, 1fr); max-width: 640px; }
 
 .two-col {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 0.75rem;
+}
+
+.three-col {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 0.75rem;
+}
+
+// ── Pipeline Funnel ───────────────────────────────────────────────────────────
+
+.funnel-card { margin-bottom: 0; }
+
+.funnel-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  padding: 0.5rem 0;
+}
+
+.funnel-step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: #f8fafc;
+  border-radius: 10px;
+  padding: 0.75rem 1rem;
+  min-width: 100px;
+  text-align: center;
+  transition: background 0.15s, box-shadow 0.15s;
+
+  &.funnel-step-link {
+    cursor: pointer;
+    &:hover {
+      background: #e0e7ff;
+      box-shadow: 0 2px 8px rgba(29, 78, 216, 0.12);
+    }
+  }
+}
+
+.funnel-count {
+  font-size: 1.75rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.funnel-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #475569;
+  margin-top: 0.3rem;
+}
+
+.funnel-pct {
+  font-size: 0.7rem;
+  color: #94a3b8;
+  margin-top: 0.15rem;
+}
+
+.funnel-arrow {
+  font-size: 1.5rem;
+  color: #cbd5e1;
+  padding: 0 0.1rem;
+  align-self: center;
+}
+
+.card-sub {
+  font-size: 0.72rem;
+  font-weight: 400;
+  color: #94a3b8;
+  margin-left: 0.4rem;
+  text-transform: none;
+  letter-spacing: 0;
 }
 
 .breakdown-list { display: grid; gap: 0.4rem; }
@@ -130,12 +211,14 @@
   height: 12px;
   border-radius: 50%;
   flex-shrink: 0;
-  &.new-inquiry  { background: #1d4ed8; }
+  &.new-inquiry   { background: #1d4ed8; }
+  &.in-pipeline   { background: #7c3aed; }
   &.in-progress  { background: #f59e0b; }
   &.sent         { background: #15803d; }
   &.terisi       { background: #15803d; }
   &.tidak-terisi { background: #f59e0b; }
-  &.missed       { background: #b91c1c; }
+  &.missed           { background: #b91c1c; }
+  &.sent-incomplete  { background: #dc2626; }
 }
 
 .pie-legend-label {
@@ -165,10 +248,17 @@
   text-align: right;
 }
 
+@media (max-width: 860px) {
+  .three-col { grid-template-columns: 1fr; }
+}
+
 @media (max-width: 640px) {
   .two-col { grid-template-columns: 1fr; }
   .stat-row { grid-template-columns: 1fr 1fr; }
+  .marketing-kpi-row { grid-template-columns: 1fr; max-width: 100%; }
   .pie-wrap { flex-direction: column; }
+  .funnel-wrap { gap: 0.15rem; }
+  .funnel-step { min-width: 80px; padding: 0.5rem 0.6rem; }
 }
 
 // ── User Lookup ──────────────────────────────────────────────────────────────
@@ -383,6 +473,11 @@
   margin-bottom: 0.75rem;
 }
 
+.achievement-detail-row .achievement-stat {
+  background: #f1f5f9;
+  .achievement-stat-value { font-size: 1.1rem; color: #475569; }
+}
+
 .achievement-stat {
   flex: 1;
   min-width: 80px;
@@ -427,7 +522,56 @@
   tr:last-child td { border-bottom: none; }
 }
 
+// ── Urgent RFQ Table ─────────────────────────────────────────────────────────
+
+.urgent-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.88rem;
+
+  th, td {
+    padding: 0.5rem 0.75rem;
+    text-align: left;
+    border-bottom: 1px solid #f1f5f9;
+  }
+  th { font-weight: 700; color: #475569; }
+  tr:last-child td { border-bottom: none; }
+
+  &.col-center { text-align: center; }
+}
+
+.col-center { text-align: center; }
+
+.urgent-critical td { background: #fff1f1; }
+.urgent-warning  td { background: #fffbeb; }
+
+.days-badge {
+  display: inline-block;
+  font-weight: 700;
+  font-size: 0.85rem;
+  padding: 0.15rem 0.5rem;
+  border-radius: 6px;
+  background: #f1f5f9;
+  color: #475569;
+
+  &.critical { background: #fee2e2; color: #b91c1c; }
+  &.warning  { background: #fef3c7; color: #92400e; }
+}
+
+.unassigned-badge {
+  font-size: 0.75rem;
+  color: #94a3b8;
+  font-style: italic;
+}
+
+.mono-blue {
+  font-family: monospace;
+  color: #1d4ed8;
+  font-weight: 600;
+}
+
 @media (max-width: 860px) {
   .user-lookup-body { grid-template-columns: 1fr; }
   .user-list { max-height: 220px; }
+  .sourcing-kpi-row { grid-template-columns: 1fr 1fr; max-width: 100%; }
 }

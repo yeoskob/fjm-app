@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { Router } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 import { InquiryService } from '../../services/inquiry.service';
 import { DashboardStats, UserStats } from '../../models/inquiry';
@@ -23,51 +24,86 @@ export class DashboardComponent implements OnInit {
   readonly PIE_R = 40;
   readonly PIE_C = 2 * Math.PI * 40;
 
+  private readonly PIPELINE_STATUSES = [
+    'new_inquiry', 'rfq', 'price_approval', 'price_approved', 'quotation_sent',
+  ];
+
   get marketingBreakdown() {
     const rows = this.dashboard?.statusBreakdown ?? [];
-    return rows.filter((s) => !['deal', 'lost'].includes(s.status));
+    return this.PIPELINE_STATUSES.map((status) => ({
+      status,
+      count: rows.find((r) => r.status === status)?.count ?? 0,
+    }));
   }
 
   userMarketingBreakdown(stats: UserStats) {
-    return (stats.salesStats.statusBreakdown ?? []).filter((s) => !['deal', 'lost'].includes(s.status));
+    const rows = stats.salesStats.statusBreakdown ?? [];
+    return this.PIPELINE_STATUSES.map((status) => ({
+      status,
+      count: rows.find((r) => r.status === status)?.count ?? 0,
+    }));
+  }
+
+  get sourcingFillRate(): number {
+    if (!this.dashboard) return 0;
+    const filled = this.dashboard.itemsTerisi ?? 0;
+    const unfilled = this.dashboard.itemsTidakTerisi ?? 0;
+    const base = filled + unfilled;
+    return base > 0 ? +((filled / base) * 100).toFixed(1) : 0;
+  }
+
+  get marketingConversionRate(): number {
+    if (!this.dashboard?.total) return 0;
+    return +((this.dashboard.quotationSent / this.dashboard.total) * 100).toFixed(1);
+  }
+
+  get funnelData() {
+    if (!this.dashboard) return [];
+    const rows = this.dashboard.statusBreakdown ?? [];
+    const get = (s: string) => rows.find((r) => r.status === s)?.count ?? 0;
+    const base = this.dashboard.total || 1;
+    const steps = [
+      { label: 'New Inquiry',    count: get('new_inquiry'),                               color: '#1d4ed8', route: '/marketing',  tab: 'rfq'           },
+      { label: 'Sourcing',       count: get('rfq'),                                       color: '#7c3aed', route: '/sourcing',   tab: 'rfq'           },
+      { label: 'Price Approval', count: get('price_approval'),                            color: '#c2410c', route: '/pricelist',  tab: null            },
+      { label: 'Price Approved', count: get('price_approved'),                            color: '#d97706', route: '/marketing',  tab: 'price_approved'},
+      { label: 'Sent',           count: get('quotation_sent') + get('ready_to_purchase'), color: '#15803d', route: '/marketing',  tab: 'sent'          },
+    ];
+    return steps.map((s) => ({ ...s, pct: Math.round((s.count / base) * 100) }));
   }
 
   get marketingPieData() {
     const rows = this.dashboard?.statusBreakdown ?? [];
-    return this.buildMarketingPie(rows);
+    return this.buildMarketingPie(rows, this.dashboard?.sentIncomplete ?? 0);
   }
 
   get itemPieData() {
     if (!this.dashboard) return null;
     const terisi = this.dashboard.itemsTerisi ?? 0;
     const tidakTerisi = this.dashboard.itemsTidakTerisi ?? 0;
-    const missed = this.dashboard.itemsMissed ?? 0;
-    const total = terisi + tidakTerisi + missed;
+    const missedAll = this.dashboard.itemsMissed ?? 0;
+    const missedUnassigned = this.dashboard.itemsMissedUnassigned ?? 0;
+    const missedAssigned = missedAll - missedUnassigned;
+    const total = terisi + tidakTerisi + missedAll;
     if (total === 0) return null;
 
     const C = this.PIE_C;
+    const terisiDash          = (terisi          / total) * C;
+    const tidakDash           = (tidakTerisi      / total) * C;
+    const missedAssignedDash  = (missedAssigned   / total) * C;
+    const missedUnassignedDash = (missedUnassigned / total) * C;
 
-    // Arc lengths
-    const terisiDash = (terisi / total) * C;
-    const tidakDash  = (tidakTerisi / total) * C;
-    const missedDash = (missed / total) * C;
-
-    // Gap = C - dash so the period = C (wraps the circle exactly once)
-    const terisiGap = C - terisiDash;
-    const tidakGap  = C - tidakDash;
-    const missedGap = C - missedDash;
-
-    // dashoffset = C - cumulative_previous (positive, positions each segment after the last)
-    // Group is rotated -90° in the template so drawing starts at 12 o'clock
-    const terisiOffset = 0;                              // first segment, starts at 12 o'clock
-    const tidakOffset  = C - terisiDash;                 // starts after green
-    const missedOffset = C - (terisiDash + tidakDash);   // starts after green + amber
+    const terisiOffset           = 0;
+    const tidakOffset            = C - terisiDash;
+    const missedAssignedOffset   = C - (terisiDash + tidakDash);
+    const missedUnassignedOffset = C - (terisiDash + tidakDash + missedAssignedDash);
 
     return {
-      total, terisi, tidakTerisi, missed, C,
-      terisiDash, terisiGap, terisiOffset,
-      tidakDash,  tidakGap,  tidakOffset,
-      missedDash, missedGap, missedOffset,
+      total, terisi, tidakTerisi, missedAssigned, missedUnassigned, C,
+      terisiDash,           terisiGap: C - terisiDash,                     terisiOffset,
+      tidakDash,            tidakGap: C - tidakDash,                       tidakOffset,
+      missedAssignedDash,   missedAssignedGap: C - missedAssignedDash,     missedAssignedOffset,
+      missedUnassignedDash, missedUnassignedGap: C - missedUnassignedDash, missedUnassignedOffset,
     };
   }
 
@@ -92,37 +128,51 @@ export class DashboardComponent implements OnInit {
   }
 
   userMarketingPieData(stats: UserStats) {
-    return this.buildMarketingPie(stats.salesStats.statusBreakdown ?? []);
+    return this.buildMarketingPie(stats.salesStats.statusBreakdown ?? [], stats.salesStats.sentIncomplete ?? 0);
   }
 
-  private buildMarketingPie(rows: Array<{ status: string; count: number }>) {
+  userConversionRate(stats: UserStats): number {
+    const total = stats.salesStats.total || 0;
+    if (!total) return 0;
+    return +((stats.salesStats.quotationSent / total) * 100).toFixed(1);
+  }
+
+  userMissedRate(stats: UserStats): number {
+    const base = (stats.sourcingStats.itemsTerisi ?? 0) + (stats.sourcingStats.itemsMissed ?? 0);
+    if (!base) return 0;
+    return +((( stats.sourcingStats.itemsMissed ?? 0) / base) * 100).toFixed(1);
+  }
+
+  userSourcingFillRate(stats: UserStats): number {
+    const filled = stats.sourcingStats.itemsTerisi ?? 0;
+    const unfilled = stats.sourcingStats.itemsTidakTerisi ?? 0;
+    const base = filled + unfilled;
+    return base > 0 ? +((filled / base) * 100).toFixed(1) : 0;
+  }
+
+  private buildMarketingPie(rows: Array<{ status: string; count: number }>, sentIncomplete = 0) {
     const get = (status: string) => rows.find((r) => r.status === status)?.count ?? 0;
 
-    const newInquiry = get('new_inquiry');
-    const inProgress = get('rfq') + get('price_approval') + get('price_approved') + get('follow_up');
-    const sent = get('quotation_sent');
-    const total = newInquiry + inProgress + sent;
+    const newInquiry  = get('new_inquiry');
+    const inPipeline  = get('rfq') + get('price_approval') + get('price_approved');
+    const sentTotal   = get('quotation_sent') + get('ready_to_purchase');
+    const sentComplete = sentTotal - sentIncomplete;
+    const total = newInquiry + inPipeline + sentTotal;
     if (total === 0) return null;
 
     const C = this.PIE_C;
-    const newDash = (newInquiry / total) * C;
-    const progressDash = (inProgress / total) * C;
-    const sentDash = (sent / total) * C;
+    const newDash        = (newInquiry    / total) * C;
+    const pipelineDash   = (inPipeline    / total) * C;
+    const sentDash       = (sentComplete  / total) * C;
+    const incompleteDash = (sentIncomplete / total) * C;
 
     return {
-      total,
-      newInquiry,
-      inProgress,
-      sent,
-      newDash,
-      newGap: C - newDash,
-      newOffset: 0,
-      progressDash,
-      progressGap: C - progressDash,
-      progressOffset: C - newDash,
-      sentDash,
-      sentGap: C - sentDash,
-      sentOffset: C - (newDash + progressDash),
+      total, newInquiry, inPipeline, sent: sentComplete, sentIncomplete,
+      newDash,        newGap: C - newDash,        newOffset: 0,
+      pipelineDash,   pipelineGap: C - pipelineDash, pipelineOffset: C - newDash,
+      sentDash,       sentGap: C - sentDash,       sentOffset: C - (newDash + pipelineDash),
+      incompleteDash, incompleteGap: C - incompleteDash,
+      incompleteOffset: C - (newDash + pipelineDash + sentDash),
     };
   }
 
@@ -141,7 +191,12 @@ export class DashboardComponent implements OnInit {
     this.clearUser();
   }
 
-  constructor(private inquiryService: InquiryService, private authService: AuthService) {}
+  constructor(private inquiryService: InquiryService, private authService: AuthService, private router: Router) {}
+
+  navigateToStep(step: { route: string | null; tab: string | null }): void {
+    if (!step.route) return;
+    void this.router.navigate([step.route], step.tab ? { queryParams: { tab: step.tab } } : {});
+  }
 
   ngOnInit(): void {
     this.isAdmin = this.authService.hasRole('admin');
@@ -181,6 +236,7 @@ export class DashboardComponent implements OnInit {
       follow_up: 'Negotiation',
       deal: 'Deal',
       lost: 'Lost',
+      ready_to_purchase: 'Ready to Purchase',
     };
     return map[status] ?? status;
   }

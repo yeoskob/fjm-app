@@ -100,6 +100,7 @@ export interface Inquiry {
   updatedBy?: string;
   sentIncomplete?: boolean;
   sentIncompleteReason?: string | null;
+  sourcingMissed?: boolean;
   activityLog?: ActivityLog[];
 }
 
@@ -166,6 +167,7 @@ export interface DashboardStats {
   lost: number;
   conversionRate: number;
   topSales: Array<{ sales_pic: string; deal_count: number }>;
+  topMarketing: Array<{ sales_pic: string; sent_count: number }>;
   statusBreakdown: Array<{ status: string; count: number }>;
   sourcingPending: number;
   sourcingItemsThisMonth: number;
@@ -174,6 +176,10 @@ export interface DashboardStats {
   itemsTerisi: number;
   itemsTidakTerisi: number;
   itemsMissed: number;
+  itemsMissedUnassigned: number;
+  rfqsMissed: number;
+  rfqsMissedUnassigned: number;
+  urgentRfqs: Array<{ id: string; rfq_no: string; customer: string; sourcing_pic: string | null; deadline_quotation: string; days_left: number }>;
 }
 
 export interface UserStats {
