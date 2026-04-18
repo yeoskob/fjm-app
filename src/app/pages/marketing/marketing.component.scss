@@ -786,8 +786,10 @@ textarea.form-control { resize: vertical; }
     border-color: #b91c1c;
     background: #fef2f2;
   }
-  &.is-reviewed:not(.is-below-approved-floor) { border-color: #16a34a; }
-  &.is-not-reviewed:not(.is-below-approved-floor) { border-color: #f59e0b; }
+  &.needs-review-unread:not(.is-below-approved-floor) {
+    border-color: #f59e0b;
+    background: #fffbeb;
+  }
   &.is-editing { border-color: #6366f1; }
   &.is-below-approved-floor {
     border-color: #dc2626;

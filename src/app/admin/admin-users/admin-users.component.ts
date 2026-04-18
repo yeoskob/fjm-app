@@ -5,6 +5,7 @@ import { AuthService } from '../../services/auth.service';
 import { UserService } from '../../services/user.service';
 import { RoleService, RoleDef } from '../../services/role.service';
 import { OrganizationSetting, SettingsService } from '../../services/settings.service';
+import { DEFAULT_NOTIF_ROLES, NOTIF_ROLES_KEY, RfqNotificationService } from '../../services/rfq-notification.service';
 
 export const ALL_MODULES: { key: string; label: string }[] = [
   { key: 'dashboard', label: 'Dashboard' },
@@ -14,7 +15,7 @@ export const ALL_MODULES: { key: string; label: string }[] = [
   { key: 'purchasing', label: 'Purchasing' },
 ];
 
-type AdminTab = 'users' | 'roles' | 'organizations';
+type AdminTab = 'users' | 'roles' | 'organizations' | 'notifications';
 
 @Component({
   selector: 'app-admin-users',
@@ -61,11 +62,18 @@ export class AdminUsersComponent implements OnInit {
 
   readonly modules = ALL_MODULES;
 
+  // Notifications
+  notifRolesMap: Record<string, boolean> = {};
+  notifError = '';
+  notifSuccess = '';
+  notifBusy = false;
+
   constructor(
     private userService: UserService,
     private authService: AuthService,
     private roleService: RoleService,
     private settingsService: SettingsService,
+    private rfqNotif: RfqNotificationService,
     private router: Router
   ) {}
 
@@ -80,17 +88,39 @@ export class AdminUsersComponent implements OnInit {
     this.cancelRoleEdit();
     this.orgError = '';
     this.orgSuccess = '';
+    this.notifError = '';
+    this.notifSuccess = '';
   }
 
   async refresh(): Promise<void> {
-    [this.users, this.roles, this.organizations] = await Promise.all([
+    const [users, roles, organizations, settings] = await Promise.all([
       this.userService.getUsers(),
       this.roleService.getAll(),
       this.settingsService.getOrganizations(),
+      this.settingsService.getAll(),
     ]);
+    this.users = users;
+    this.roles = roles;
+    this.organizations = organizations;
+
     if (!this.userForm.role && this.roles.length > 0) {
       this.userForm.role = this.roles[0].name;
     }
+
+    // Build notifRolesMap from saved setting (or defaults)
+    let savedRoles: string[] = [...DEFAULT_NOTIF_ROLES];
+    try {
+      const raw = settings[NOTIF_ROLES_KEY];
+      if (raw) savedRoles = JSON.parse(raw) as string[];
+    } catch { /* use defaults */ }
+
+    const map: Record<string, boolean> = {};
+    for (const r of this.roles) map[r.name] = savedRoles.includes(r.name);
+    // Always include built-in roles admin/manager in the map
+    for (const r of ['admin', 'manager']) {
+      if (!(r in map)) map[r] = savedRoles.includes(r);
+    }
+    this.notifRolesMap = map;
   }
 
   // User methods
@@ -255,6 +285,25 @@ export class AdminUsersComponent implements OnInit {
     return role.menus
       .map((k) => this.modules.find((m) => m.key === k)?.label ?? k)
       .join(', ');
+  }
+
+  async saveNotifRoles(): Promise<void> {
+    if (this.notifBusy) return;
+    this.notifError = '';
+    this.notifSuccess = '';
+    const selected = Object.entries(this.notifRolesMap)
+      .filter(([, v]) => v)
+      .map(([k]) => k);
+    this.notifBusy = true;
+    try {
+      await this.settingsService.set(NOTIF_ROLES_KEY, JSON.stringify(selected));
+      this.rfqNotif.setRoles(selected);
+      this.notifSuccess = 'Notification roles saved.';
+    } catch (err: any) {
+      this.notifError = err?.error?.error ?? 'Failed to save.';
+    } finally {
+      this.notifBusy = false;
+    }
   }
 
   async addOrganization(): Promise<void> {
