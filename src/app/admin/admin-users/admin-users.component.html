@@ -16,6 +16,9 @@
     <button type="button" class="tab-btn" [class.active]="activeTab === 'organizations'" (click)="setTab('organizations')">
       Organizations
     </button>
+    <button type="button" class="tab-btn" [class.active]="activeTab === 'notifications'" (click)="setTab('notifications')">
+      Notifications
+    </button>
   </div>
 
   <!-- ── Users Tab ── -->
@@ -206,6 +209,33 @@
           </tbody>
         </table>
         <div class="table-total">Total: {{ organizations.length }} items</div>
+      </div>
+    </div>
+  </div>
+  <!-- Notifications Tab -->
+  <div class="tab-content" *ngIf="activeTab === 'notifications'">
+    <div class="admin-grid">
+      <div class="card">
+        <h2>RFQ Approval Notification</h2>
+        <p class="hint">Select which roles receive a banner notification when an RFQ enters the Price Approval stage.</p>
+
+        <div class="module-list" style="margin-top: 1rem;">
+          <div class="module-item" *ngFor="let entry of notifRolesMap | keyvalue">
+            <label class="checkbox-label">
+              <input type="checkbox" [(ngModel)]="notifRolesMap[entry.key]" [ngModelOptions]="{standalone:true}" />
+              {{ entry.key }}
+            </label>
+          </div>
+        </div>
+
+        <div class="notice error" *ngIf="notifError">{{ notifError }}</div>
+        <div class="notice success" *ngIf="notifSuccess">{{ notifSuccess }}</div>
+
+        <div class="actions" style="margin-top: 1.25rem;">
+          <button type="button" class="primary" [disabled]="notifBusy" (click)="saveNotifRoles()">
+            {{ notifBusy ? 'Saving...' : 'Save' }}
+          </button>
+        </div>
       </div>
     </div>
   </div>

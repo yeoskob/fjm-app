@@ -26,6 +26,24 @@
     </div>
   </header>
 
+  <ng-container *ngIf="authService.isLoggedIn() && (rfqNotif.visible$ | async) as notifs">
+    <div class="rfq-notif-banner" *ngIf="notifs.length > 0">
+      <span class="rfq-notif-icon">&#9888;</span>
+      <span class="rfq-notif-text">
+        <ng-container *ngIf="notifs.length === 1; else multiNotif">
+          {{ notifs[0].message }}
+        </ng-container>
+        <ng-template #multiNotif>
+          <strong>{{ notifs.length }}</strong> RFQs need your attention
+        </ng-template>
+      </span>
+      <button type="button" class="rfq-notif-action" (click)="goToPricelist()">
+        Review now &rarr;
+      </button>
+      <button type="button" class="rfq-notif-dismiss" (click)="rfqNotif.dismissAll()" title="Dismiss">&#10005;</button>
+    </div>
+  </ng-container>
+
   <main class="content" [class.full]="!authService.isLoggedIn()">
     <router-outlet></router-outlet>
   </main>

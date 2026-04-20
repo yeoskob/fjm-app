@@ -858,16 +858,12 @@ export class MarketingComponent implements OnInit {
     );
   }
 
-  hasReviewedAllItems(inquiry: Inquiry): boolean {
-    return inquiry.items.every((item) => this.reviewedItemIds.has(item.id));
+  needsPriceReviewItems(inquiry: Inquiry): InquiryItem[] {
+    return inquiry.items.filter(i => i.needsPriceReview === true);
   }
 
-  unreviewedItemCount(inquiry: Inquiry): number {
-    return inquiry.items.filter((item) => !this.reviewedItemIds.has(item.id)).length;
-  }
-
-  isItemReviewed(item: InquiryItem): boolean {
-    return this.reviewedItemIds.has(item.id);
+  unreviewedNeedsPriceReviewItems(inquiry: Inquiry): InquiryItem[] {
+    return this.needsPriceReviewItems(inquiry).filter(i => !this.reviewedItemIds.has(i.id));
   }
 
   async savePriceApproved(inquiry: Inquiry): Promise<void> {

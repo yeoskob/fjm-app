@@ -447,8 +447,7 @@
             [class.is-editing]="reviewingItemId === item.id"
             [class.is-below-approved-floor]="detailInquiry.status === 'price_approved' && isItemBelowApprovedFloor(item)"
             [class.is-rejected]="['price_approved','quotation_sent'].includes(detailInquiry.status) && item.reviewStatus === 'rejected'"
-            [class.is-reviewed]="detailInquiry.status === 'price_approved' && isItemReviewed(item)"
-            [class.is-not-reviewed]="detailInquiry.status === 'price_approved' && !isItemReviewed(item)"
+            [class.needs-review-unread]="detailInquiry.status === 'price_approved' && item.needsPriceReview && !reviewedItemIds.has(item.id)"
             (click)="detailInquiry.status === 'new_inquiry' ? (reviewingItemId === item.id ? cancelReviewItem() : startReviewItem(item)) : toggleViewItem(item.id)">
             <div class="item-review-main">
               <img *ngIf="item.itemImage" [src]="item.itemImage" class="item-thumb clickable"
@@ -631,10 +630,7 @@
           <ng-container *ngIf="reviewNeededItems(detailInquiry!) as reviewNeeded">
           <ng-container *ngIf="sourcingTidakTerisiItems(detailInquiry!) as sourcingGaps">
           <ng-container *ngIf="unresolvedItems(detailInquiry!) as unresolved">
-            <div class="footer-warning muted-warning" *ngIf="!hasReviewedAllItems(detailInquiry!)">
-              Review all items first before sending.
-              {{ unreviewedItemCount(detailInquiry!) }} item{{ unreviewedItemCount(detailInquiry!) > 1 ? 's' : '' }} not reviewed yet.
-            </div>
+          <ng-container *ngIf="unreviewedNeedsPriceReviewItems(detailInquiry!) as unreadReviewItems">
             <div class="footer-warning" *ngIf="sourcingGaps.length > 0">
               {{ sourcingGaps.length }} item{{ sourcingGaps.length > 1 ? 's are' : ' is' }} tidak terisi (sourcing) — send for Price Review.
             </div>
@@ -644,13 +640,18 @@
             <div class="footer-warning" *ngIf="reviewNeeded.length > 0">
               {{ reviewNeeded.length }} item{{ reviewNeeded.length > 1 ? 's need' : ' needs' }} review update — send for Price Review.
             </div>
-            <div class="footer-warning muted-warning" *ngIf="unresolved.length > 0 && hasReviewedAllItems(detailInquiry!)">
+            <div class="footer-warning muted-warning" *ngIf="unresolved.length > 0">
               Sending now will mark this RFQ as incomplete.
             </div>
             <div class="footer-actions">
               <button type="button" class="ghost sm review-action-btn" [disabled]="!hasReviewedAllItems(detailInquiry!) || (badItems.length === 0 && reviewNeeded.length === 0 && sourcingGaps.length === 0)" (click)="openPriceReviewModal(detailInquiry!)">Price Review</button>
               <button type="button" class="primary sm sent-action-btn" [disabled]="!hasReviewedAllItems(detailInquiry!) || badItems.length > 0" (click)="sendToSent(detailInquiry!)">Sent</button>
             </div>
+            <div class="footer-actions">
+              <button type="button" class="ghost sm review-action-btn" [disabled]="(badItems.length === 0 && reviewNeeded.length === 0 && sourcingGaps.length === 0) || unreadReviewItems.length > 0" (click)="openPriceReviewModal(detailInquiry!)">Price Review</button>
+              <button type="button" class="primary sm sent-action-btn" (click)="sendToSent(detailInquiry!)">Sent</button>
+            </div>
+          </ng-container>
           </ng-container>
           </ng-container>
           </ng-container>
