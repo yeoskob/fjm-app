@@ -118,9 +118,11 @@ export class RfqNotificationService implements OnDestroy {
     const url = `${this.base}/stream?token=${encodeURIComponent(token)}`;
     const es = new EventSource(url);
     this.eventSource = es;
+    let firstOpen = true;
 
-    // On (re)connect: re-fetch unread so nothing is missed while offline
-    es.addEventListener('open', () => void this.fetchUnread());
+    es.addEventListener('open', () => {
+      if (firstOpen) { firstOpen = false; void this.fetchUnread(); }
+    });
 
     es.addEventListener('message', (event: MessageEvent<string>) => {
       if (!this.isEligible()) return;

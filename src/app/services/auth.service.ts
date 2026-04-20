@@ -56,7 +56,8 @@ export class AuthService {
   }
 
   hasMenu(menu: string): boolean {
-    return this.currentUser?.menus?.includes(menu) ?? this.currentUser?.role === 'admin';
+    if (this.currentUser?.role === 'admin') return true;
+    return this.currentUser?.menus?.includes(menu) ?? false;
   }
 
   hasTab(module: string, _tab: string): boolean {

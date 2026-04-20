@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
-import { DashboardStats, Inquiry, InquiryCreate, InquiryNote, PriceApproval, SourcingInfo, UserStats } from '../models/inquiry';
+import { DashboardStats, Inquiry, InquiryCreate, InquiryNote, PriceApproval, ReportData, ReportSourcingData, SourcingInfo, UserStats } from '../models/inquiry';
 import { environment } from '../../environments/environment';
 
 @Injectable({ providedIn: 'root' })
@@ -12,6 +12,10 @@ export class InquiryService {
 
   getAll(): Promise<Inquiry[]> {
     return firstValueFrom(this.http.get<Inquiry[]>(this.base));
+  }
+
+  getById(id: string): Promise<Inquiry> {
+    return firstValueFrom(this.http.get<Inquiry>(`${this.base}/${id}`));
   }
 
   getDashboard(): Promise<DashboardStats> {
@@ -90,16 +94,12 @@ export class InquiryService {
     return firstValueFrom(this.http.post<void>(`${this.base}/${id}/follow-up`, { doneBy, doneByName, note }));
   }
 
-  close(id: string, outcome: 'deal' | 'lost', doneBy: string, doneByName: string, note?: string): Promise<void> {
-    return firstValueFrom(this.http.post<void>(`${this.base}/${id}/close`, { outcome, doneBy, doneByName, note }));
-  }
-
   readyToPurchase(id: string, doneBy: string, doneByName: string): Promise<void> {
     return firstValueFrom(this.http.post<void>(`${this.base}/${id}/ready-to-purchase`, { doneBy, doneByName }));
   }
 
   assignSales(id: string, salesPic: string, doneBy: string, doneByName: string, role: string): Promise<void> {
-    return firstValueFrom(this.http.post<void>(`${this.base}/${id}/assign-sales`, { salesPic, doneBy, doneByName, role }));
+    return firstValueFrom(this.http.patch<void>(`${this.base}/${id}/assign-sales`, { salesPic, doneBy, doneByName, role }));
   }
 
   assignSourcing(id: string, sourcingPic: string | null, doneBy: string, doneByName: string, role: string): Promise<void> {
@@ -124,5 +124,27 @@ export class InquiryService {
 
   getUsers(): Promise<Array<{ id: string; name: string; username: string; role: string }>> {
     return firstValueFrom(this.http.get<Array<{ id: string; name: string; username: string; role: string }>>(`${environment.apiUrl}/users`));
+  }
+
+  getReport(month?: string, salesPic?: string): Promise<ReportData> {
+    const params: Record<string, string> = {};
+    if (month) params['month'] = month;
+    if (salesPic) params['salesPic'] = salesPic;
+    return firstValueFrom(this.http.get<ReportData>(`${this.base}/report`, { params }));
+  }
+
+  getSourcingReport(month?: string, sourcingPic?: string): Promise<ReportSourcingData> {
+    const params: Record<string, string> = {};
+    if (month) params['month'] = month;
+    if (sourcingPic) params['sourcingPic'] = sourcingPic;
+    return firstValueFrom(this.http.get<ReportSourcingData>(`${this.base}/report/sourcing`, { params }));
+  }
+
+  exportReport(month?: string, salesPic?: string, status?: string): Promise<Blob> {
+    const params: Record<string, string> = {};
+    if (month) params['month'] = month;
+    if (salesPic) params['salesPic'] = salesPic;
+    if (status) params['status'] = status;
+    return firstValueFrom(this.http.get(`${this.base}/report/export`, { params, responseType: 'blob' }));
   }
 }

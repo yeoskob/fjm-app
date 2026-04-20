@@ -7,12 +7,15 @@ import { RoleService, RoleDef } from '../../services/role.service';
 import { OrganizationSetting, SettingsService } from '../../services/settings.service';
 import { DEFAULT_NOTIF_ROLES, NOTIF_ROLES_KEY, RfqNotificationService } from '../../services/rfq-notification.service';
 
+export const PRICE_REVIEW_DEADLINE_HOURS_KEY = 'price_review_deadline_hours';
+
 export const ALL_MODULES: { key: string; label: string }[] = [
   { key: 'dashboard', label: 'Dashboard' },
   { key: 'marketing', label: 'Marketing' },
   { key: 'sourcing', label: 'Sourcing' },
   { key: 'pricelist', label: 'Price List' },
   { key: 'purchasing', label: 'Purchasing' },
+  { key: 'report', label: 'Report' },
 ];
 
 type AdminTab = 'users' | 'roles' | 'organizations' | 'notifications';
@@ -64,9 +67,13 @@ export class AdminUsersComponent implements OnInit {
 
   // Notifications
   notifRolesMap: Record<string, boolean> = {};
+  deadlineHours = 24;
   notifError = '';
   notifSuccess = '';
   notifBusy = false;
+  deadlineBusy = false;
+  deadlineError = '';
+  deadlineSuccess = '';
 
   constructor(
     private userService: UserService,
@@ -121,6 +128,9 @@ export class AdminUsersComponent implements OnInit {
       if (!(r in map)) map[r] = savedRoles.includes(r);
     }
     this.notifRolesMap = map;
+
+    const rawDeadline = settings[PRICE_REVIEW_DEADLINE_HOURS_KEY];
+    this.deadlineHours = rawDeadline ? Number(rawDeadline) : 24;
   }
 
   // User methods
@@ -303,6 +313,26 @@ export class AdminUsersComponent implements OnInit {
       this.notifError = err?.error?.error ?? 'Failed to save.';
     } finally {
       this.notifBusy = false;
+    }
+  }
+
+  async saveDeadlineHours(): Promise<void> {
+    if (this.deadlineBusy) return;
+    this.deadlineError = '';
+    this.deadlineSuccess = '';
+    const hours = Number(this.deadlineHours);
+    if (!Number.isFinite(hours) || hours <= 0) {
+      this.deadlineError = 'Enter a positive number of hours.';
+      return;
+    }
+    this.deadlineBusy = true;
+    try {
+      await this.settingsService.set(PRICE_REVIEW_DEADLINE_HOURS_KEY, String(hours));
+      this.deadlineSuccess = 'Deadline saved.';
+    } catch (err: any) {
+      this.deadlineError = err?.error?.error ?? 'Failed to save.';
+    } finally {
+      this.deadlineBusy = false;
     }
   }
 

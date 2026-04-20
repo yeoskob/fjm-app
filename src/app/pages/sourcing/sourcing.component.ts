@@ -99,7 +99,9 @@ export class SourcingComponent implements OnInit {
   fillingInquiryId: string | null = null;
   fillingItem: InquiryItem | null = null;
   editingItemId: string | null = null;
+  viewingItemId: string | null = null;
   fillForm: Partial<SourcingInfo> & { leadTimeNum?: number } = {};
+  ppnType: 'incl_ppn' | 'excl_ppn' | 'non_ppn' | null = null;
   previewImageUrl: string | null = null;
 
   constructor(private inquiryService: InquiryService, private authService: AuthService, private route: ActivatedRoute) {}
@@ -126,7 +128,7 @@ export class SourcingComponent implements OnInit {
     const all = await this.inquiryService.getAll();
     const user = this.currentUser;
 
-    const doneStatuses = ['price_approval', 'price_approved', 'quotation_sent', 'follow_up', 'deal', 'lost'];
+    const doneStatuses = ['price_approval', 'price_approved', 'quotation_sent', 'follow_up', 'ready_to_purchase', 'missed', 'unsent'];
 
     if (this.isAdminOrManager()) {
       // Admin/manager see everything
@@ -158,6 +160,7 @@ export class SourcingComponent implements OnInit {
     this.itemNewNote = '';
     this.assigningSalesPic = false;
     this.assigningSourcingPic = false;
+    this.viewingItemId = null;
     this.cancelFill();
   }
 
@@ -167,9 +170,21 @@ export class SourcingComponent implements OnInit {
     this.itemNewNote = '';
     this.assigningSalesPic = false;
     this.assigningSourcingPic = false;
+    this.viewingItemId = null;
     this.cancelFill();
     this.error = '';
     this.success = '';
+  }
+
+  async toggleView(item: InquiryItem): Promise<void> {
+    if (this.viewingItemId === item.id) {
+      this.viewingItemId = null;
+      return;
+    }
+    this.viewingItemId = item.id;
+    if (!this.itemNotesMap[item.id] && this.selectedInquiry) {
+      await this.loadItemNotes(this.selectedInquiry.id, item.id);
+    }
   }
 
   canComment(): boolean {
@@ -220,6 +235,7 @@ export class SourcingComponent implements OnInit {
       termPembayaran: item.termPembayaran,
       alternateName: item.alternateName,
     };
+    this.ppnType = (item.ppnType as typeof this.ppnType) ?? null;
   }
 
   async toggleFill(item: InquiryItem): Promise<void> {
@@ -243,6 +259,7 @@ export class SourcingComponent implements OnInit {
     this.fillingItem = null;
     this.editingItemId = null;
     this.fillForm = {};
+    this.ppnType = null;
     this.error = '';
   }
 
@@ -268,6 +285,7 @@ export class SourcingComponent implements OnInit {
       stockAvailability: this.fillForm.stockAvailability?.trim(),
       termPembayaran: this.fillForm.termPembayaran?.trim(),
       alternateName: this.fillForm.alternateName?.trim(),
+      ppnType: this.ppnType ?? undefined,
       doneBy: user.username,
       doneByName: user.name,
     };
@@ -363,8 +381,9 @@ export class SourcingComponent implements OnInit {
 
   statusLabel(status: string): string {
     const map: Record<string, string> = {
-      rfq: 'RFQ', price_approval: 'Price Approval', quotation_sent: 'Quotation Sent',
-      deal: 'Deal', lost: 'Lost',
+      rfq: 'RFQ', price_approval: 'Price Approval', price_approved: 'Price Approved',
+      quotation_sent: 'Quotation Sent', follow_up: 'Negotiation', ready_to_purchase: 'Ready to Purchase',
+      missed: 'Missed', unsent: 'Unsent',
     };
     return map[status] ?? status;
   }
@@ -386,6 +405,22 @@ export class SourcingComponent implements OnInit {
     return Math.round((target.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
   }
 
+  daysLeftLabel(dateStr: string | null): string {
+    const d = this.daysLeft(dateStr);
+    if (d === null) return '-';
+    if (d < 0) return `${Math.abs(d)}d overdue`;
+    if (d === 0) return 'Today';
+    return `${d}d`;
+  }
+
+  daysLeftClass(dateStr: string | null): string {
+    const d = this.daysLeft(dateStr);
+    if (d === null) return '';
+    if (d < 0) return 'days-overdue';
+    if (d <= 3) return 'days-warning';
+    return 'days-ok';
+  }
+
   formatDate(iso?: string): string {
     if (!iso) return '-';
     const d = new Date(iso);
@@ -400,5 +435,11 @@ export class SourcingComponent implements OnInit {
   formatCurrency(value?: number): string {
     if (value == null) return '-';
     return 'Rp ' + value.toLocaleString('id-ID');
+  }
+
+  ppnTypeLabel(type?: string | null): string {
+    if (!type) return '';
+    const map: Record<string, string> = { incl_ppn: 'Incl. PPN', excl_ppn: 'Excl. PPN', non_ppn: 'Non PPN' };
+    return map[type] ?? type;
   }
 }

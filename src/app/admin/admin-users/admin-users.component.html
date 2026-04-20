@@ -217,7 +217,7 @@
     <div class="admin-grid">
       <div class="card">
         <h2>RFQ Approval Notification</h2>
-        <p class="hint">Select which roles receive a banner notification when an RFQ enters the Price Approval stage.</p>
+        <p class="hint">Select which roles receive a notification when an RFQ enters the Price Approval stage.</p>
 
         <div class="module-list" style="margin-top: 1rem;">
           <div class="module-item" *ngFor="let entry of notifRolesMap | keyvalue">
@@ -233,7 +233,29 @@
 
         <div class="actions" style="margin-top: 1.25rem;">
           <button type="button" class="primary" [disabled]="notifBusy" (click)="saveNotifRoles()">
-            {{ notifBusy ? 'Saving...' : 'Save' }}
+            {{ notifBusy ? 'Saving...' : 'Save Roles' }}
+          </button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Batas Waktu Review Harga</h2>
+        <p class="hint">Waktu (dalam jam) yang diberikan kepada admin untuk me-review RFQ setelah masuk ke Price Approval. Ditampilkan sebagai countdown di tabel Menunggu Approval dan Menunggu Review.</p>
+
+        <label style="margin-top: 1rem;">
+          Deadline (jam)
+          <input type="number" min="1" step="1"
+            [(ngModel)]="deadlineHours"
+            [ngModelOptions]="{standalone:true}"
+            style="width: 120px;" />
+        </label>
+
+        <div class="notice error" *ngIf="deadlineError">{{ deadlineError }}</div>
+        <div class="notice success" *ngIf="deadlineSuccess">{{ deadlineSuccess }}</div>
+
+        <div class="actions" style="margin-top: 1.25rem;">
+          <button type="button" class="primary" [disabled]="deadlineBusy" (click)="saveDeadlineHours()">
+            {{ deadlineBusy ? 'Saving...' : 'Save Deadline' }}
           </button>
         </div>
       </div>

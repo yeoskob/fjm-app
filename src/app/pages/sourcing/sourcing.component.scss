@@ -166,6 +166,11 @@
   &.urgent  { background: #fee2e2; color: #b91c1c; }
 }
 
+.days-left-cell { font-size: 0.82rem; font-weight: 600; white-space: nowrap; }
+.days-ok      { color: #15803d; }
+.days-warning { color: #b45309; }
+.days-overdue { color: #dc2626; }
+
 .pending-pill, .unsourced-pill {
   display: inline-block;
   background: #fef3c7;
@@ -221,12 +226,14 @@
   background: #f1f5f9;
   color: #475569;
   white-space: nowrap;
-  &[data-status="rfq"]            { background: #fef9c3; color: #854d0e; }
-  &[data-status="price_approval"] { background: #ffedd5; color: #c2410c; }
-  &[data-status="quotation_sent"] { background: #ccfbf1; color: #0f766e; }
-  &[data-status="follow_up"]      { background: #ede9fe; color: #6d28d9; }
-  &[data-status="deal"]           { background: #dcfce7; color: #15803d; }
-  &[data-status="lost"]           { background: #fee2e2; color: #b91c1c; }
+  &[data-status="rfq"]              { background: #fef9c3; color: #854d0e; }
+  &[data-status="price_approval"]   { background: #ffedd5; color: #c2410c; }
+  &[data-status="price_approved"]   { background: #d1fae5; color: #065f46; }
+  &[data-status="quotation_sent"]   { background: #ccfbf1; color: #0f766e; }
+  &[data-status="follow_up"]        { background: #ede9fe; color: #6d28d9; }
+  &[data-status="missed"]           { background: #fee2e2; color: #b91c1c; }
+  &[data-status="unsent"]           { background: #fee2e2; color: #b91c1c; }
+  &[data-status="ready_to_purchase"]{ background: #e0e7ff; color: #3730a3; }
 }
 
 .empty { color: #64748b; padding: 0.5rem 0; }
@@ -406,6 +413,11 @@
   color: #475569;
   white-space: nowrap;
   min-width: 130px;
+}
+
+.field-value-ro {
+  font-size: 0.88rem;
+  color: #1e293b;
 }
 
 .lead-time-input-wrap {
@@ -692,3 +704,47 @@ button.sm { padding: 0.3rem 0.65rem; font-size: 0.78rem; }
 }
 
 .comment-hint { font-size: 0.72rem; color: #94a3b8; }
+
+.harga-beli-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex: 1;
+}
+
+.harga-beli-input {
+  width: 50% !important;
+  flex-shrink: 0;
+}
+
+.ppn-radio-group {
+  display: flex;
+  gap: 0.65rem;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.ppn-radio-label {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: #374151;
+  white-space: nowrap;
+  cursor: pointer;
+  input[type="radio"] { margin: 0; cursor: pointer; }
+}
+
+.ppn-badge {
+  display: inline-block;
+  margin-left: 0.45rem;
+  padding: 0.1rem 0.45rem;
+  background: #eff6ff;
+  color: #1d4ed8;
+  border: 1px solid #bfdbfe;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  vertical-align: middle;
+}

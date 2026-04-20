@@ -1,5 +1,6 @@
-﻿import { Component, OnInit } from '@angular/core';
+﻿import { Component, OnDestroy, OnInit } from '@angular/core';
 import { NavigationEnd, Router } from '@angular/router';
+import { Subscription } from 'rxjs';
 import { filter } from 'rxjs/operators';
 import { AuthService } from './services/auth.service';
 import { RfqNotificationService } from './services/rfq-notification.service';
@@ -9,7 +10,9 @@ import { RfqNotificationService } from './services/rfq-notification.service';
   templateUrl: './app.component.html',
   styleUrls: ['./app.component.scss'],
 })
-export class AppComponent implements OnInit {
+export class AppComponent implements OnInit, OnDestroy {
+  private notifSub?: Subscription;
+
   constructor(
     public authService: AuthService,
     public rfqNotif: RfqNotificationService,
@@ -17,7 +20,6 @@ export class AppComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    // Start/stop polling whenever the route changes so it kicks in right after login
     this.router.events
       .pipe(filter(e => e instanceof NavigationEnd))
       .subscribe(() => {
@@ -31,6 +33,14 @@ export class AppComponent implements OnInit {
     if (this.authService.isLoggedIn()) {
       void this.rfqNotif.start();
     }
+
+    this.notifSub = this.rfqNotif.visible$.subscribe(notifs => {
+      document.title = notifs.length > 0 ? `(${notifs.length}) FJM Portal` : 'FJM Portal';
+    });
+  }
+
+  ngOnDestroy(): void {
+    this.notifSub?.unsubscribe();
   }
 
   logout(): void {

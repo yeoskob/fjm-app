@@ -42,6 +42,7 @@ import { NotAuthorizedComponent } from './pages/not-authorized/not-authorized.co
 import { PricelistComponent } from './pages/pricelist/pricelist.component';
 import { PurchasingComponent } from './pages/purchasing/purchasing.component';
 import { SourcingComponent } from './pages/sourcing/sourcing.component';
+import { ReportComponent } from './pages/report/report.component';
 
 @NgModule({
   declarations: [
@@ -54,6 +55,7 @@ import { SourcingComponent } from './pages/sourcing/sourcing.component';
     PricelistComponent,
     NotAuthorizedComponent,
     AdminUsersComponent,
+    ReportComponent,
   ],
   imports: [BrowserModule, AppRoutingModule, FormsModule, HttpClientModule],
   providers: [

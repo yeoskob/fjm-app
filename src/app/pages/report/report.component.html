@@ -1,0 +1,262 @@
+<section class="page">
+  <div class="page-header">
+    <div>
+      <h1>Report</h1>
+      <p>Analisis performa marketing dan sourcing.</p>
+    </div>
+    <button class="export-btn" (click)="exportExcel()" [disabled]="exporting">
+      {{ exporting ? 'Exporting...' : 'Export Excel' }}
+    </button>
+  </div>
+
+  <!-- Tabs -->
+  <div class="tab-bar">
+    <button type="button" class="tab-btn" [class.active]="activeTab === 'marketing'" (click)="setTab('marketing')">
+      Marketing
+      <span class="tab-count">{{ mData?.rows?.length ?? 0 }}</span>
+    </button>
+    <button type="button" class="tab-btn" [class.active]="activeTab === 'sourcing'" (click)="setTab('sourcing')">
+      Sourcing
+      <span class="tab-count">{{ sData?.rows?.length ?? 0 }}</span>
+    </button>
+  </div>
+
+  <!-- ═══ MARKETING TAB ═══ -->
+  <div class="tab-content" *ngIf="activeTab === 'marketing'">
+    <div class="toolbar">
+      <div class="filters-row">
+        <select [(ngModel)]="mSelectedMonth" (change)="onMFilterChange()">
+          <option value="">Semua Bulan</option>
+          <option *ngFor="let m of months" [value]="m.value">{{ m.label }}</option>
+        </select>
+        <div class="user-dropdown-wrap">
+          <button type="button" class="user-dropdown-trigger" (click)="openMUserDropdown()">
+            <span>{{ mUserLabel }}</span>
+            <span *ngIf="mSelectedSalesPic" class="clear-btn" (click)="$event.stopPropagation(); clearMUser()">&#10005;</span>
+            <span *ngIf="!mSelectedSalesPic">&#9660;</span>
+          </button>
+          <div class="user-dropdown-panel" *ngIf="mUserDropdownOpen">
+            <input class="user-search-input" type="text" placeholder="Cari nama..." [(ngModel)]="mUserSearch" (click)="$event.stopPropagation()" autofocus />
+            <div class="user-option" (click)="clearMUser()">Semua Marketing</div>
+            <div class="user-option" *ngFor="let u of mFilteredUsers" (click)="selectMUser(u)" [class.selected]="u === mSelectedSalesPic">{{ u }}</div>
+            <div class="user-option dim" *ngIf="mFilteredUsers.length === 0">Tidak ditemukan</div>
+          </div>
+        </div>
+        <select [(ngModel)]="mSelectedStatus" (ngModelChange)="mPage = 1">
+          <option value="">Semua Status</option>
+          <option *ngFor="let s of MARKETING_STATUS_OPTIONS" [value]="s.value">{{ s.label }}</option>
+        </select>
+      </div>
+      <div class="search-bar">
+        <input type="text" class="search-input" placeholder="Search RFQ no, customer, sales PIC..." [(ngModel)]="mSearch" (ngModelChange)="mPage = 1" />
+        <button *ngIf="mSearch" class="search-clear" (click)="mSearch = ''">&#10005;</button>
+      </div>
+    </div>
+
+    <div class="notice error" *ngIf="mError">{{ mError }}</div>
+    <div class="loading-row" *ngIf="mLoading">Loading...</div>
+
+    <ng-container *ngIf="mData && !mLoading">
+      <div class="summary-bar">
+        <span class="sum-item"><strong>{{ mSortedRows.length }}</strong> RFQ</span>
+        <span class="sum-sep">·</span>
+        <span class="sum-item sum-sent">{{ mCountByStatus('quotation_sent','ready_to_purchase') }} Sent</span>
+        <span class="sum-sep">·</span>
+        <span class="sum-item sum-unsent">{{ mCountByStatus('unsent') }} Unsent</span>
+      </div>
+      <div class="rfq-table-wrap">
+        <table class="rfq-table">
+          <thead>
+            <tr>
+              <th (click)="setMSort('rfq_no')" class="sortable">RFQ No <span class="sort-icon">{{ mSortIcon('rfq_no') }}</span></th>
+              <th (click)="setMSort('customer')" class="sortable">Customer <span class="sort-icon">{{ mSortIcon('customer') }}</span></th>
+              <th (click)="setMSort('sales_pic')" class="sortable">Sales PIC <span class="sort-icon">{{ mSortIcon('sales_pic') }}</span></th>
+              <th (click)="setMSort('tanggal')" class="sortable">Inquiry Date <span class="sort-icon">{{ mSortIcon('tanggal') }}</span></th>
+              <th (click)="setMSort('need_by_date')" class="sortable">Need By Date <span class="sort-icon">{{ mSortIcon('need_by_date') }}</span></th>
+              <th (click)="setMSort('timeline_days')" class="sortable">Timeline <span class="sort-icon">{{ mSortIcon('timeline_days') }}</span></th>
+              <th (click)="setMSort('status')" class="sortable">Status <span class="sort-icon">{{ mSortIcon('status') }}</span></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let row of mPagedRows" class="clickable-row" (click)="openDetail(row.id)">
+              <td class="mono">{{ row.rfq_no }}</td>
+              <td>{{ row.customer }}</td>
+              <td>{{ row.sales_pic }}</td>
+              <td class="date-cell">{{ formatDate(row.tanggal) }}</td>
+              <td class="date-cell">{{ formatDate(row.need_by_date) }}</td>
+              <td>
+                <span *ngIf="row.timeline_days != null" class="tl-badge" [ngClass]="timelineClass(row.timeline_days)">{{ row.timeline_days }}d</span>
+                <span *ngIf="row.timeline_days == null" class="dim">-</span>
+              </td>
+              <td>
+                <span class="status-chip" [ngClass]="statusClass(row.status)">{{ statusLabel(row.status) }}</span>
+              </td>
+            </tr>
+            <tr *ngIf="mSortedRows.length === 0">
+              <td colspan="7" class="empty">Tidak ada data pada periode ini.</td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="table-footer">
+          <span class="table-total">Total: {{ mSortedRows.length }} items</span>
+          <div class="paginator" *ngIf="mTotalPages > 1">
+            <button (click)="mPage = 1" [disabled]="mPage === 1">«</button>
+            <button (click)="mPage = mPage - 1" [disabled]="mPage === 1">‹</button>
+            <span>{{ mPage }} / {{ mTotalPages }}</span>
+            <button (click)="mPage = mPage + 1" [disabled]="mPage === mTotalPages">›</button>
+            <button (click)="mPage = mTotalPages" [disabled]="mPage === mTotalPages">»</button>
+          </div>
+        </div>
+      </div>
+    </ng-container>
+  </div>
+
+  <!-- ═══ SOURCING TAB ═══ -->
+  <div class="tab-content" *ngIf="activeTab === 'sourcing'">
+    <div class="toolbar">
+      <div class="filters-row">
+        <select [(ngModel)]="sSelectedMonth" (change)="onSFilterChange()">
+          <option value="">Semua Bulan</option>
+          <option *ngFor="let m of months" [value]="m.value">{{ m.label }}</option>
+        </select>
+        <div class="user-dropdown-wrap">
+          <button type="button" class="user-dropdown-trigger" (click)="openSUserDropdown()">
+            <span>{{ sUserLabel }}</span>
+            <span *ngIf="sSelectedSourcingPic" class="clear-btn" (click)="$event.stopPropagation(); clearSUser()">&#10005;</span>
+            <span *ngIf="!sSelectedSourcingPic">&#9660;</span>
+          </button>
+          <div class="user-dropdown-panel" *ngIf="sUserDropdownOpen">
+            <input class="user-search-input" type="text" placeholder="Cari nama..." [(ngModel)]="sUserSearch" (click)="$event.stopPropagation()" autofocus />
+            <div class="user-option" (click)="clearSUser()">Semua Sourcing</div>
+            <div class="user-option" *ngFor="let u of sFilteredUsers" (click)="selectSUser(u)" [class.selected]="u === sSelectedSourcingPic">{{ u }}</div>
+            <div class="user-option dim" *ngIf="sFilteredUsers.length === 0">Tidak ditemukan</div>
+          </div>
+        </div>
+        <select [(ngModel)]="sSelectedStatus" (ngModelChange)="sPage = 1">
+          <option value="">Semua Status</option>
+          <option *ngFor="let s of SOURCING_STATUS_OPTIONS" [value]="s.value">{{ s.label }}</option>
+        </select>
+      </div>
+      <div class="search-bar">
+        <input type="text" class="search-input" placeholder="Search RFQ no, customer, sourcing PIC..." [(ngModel)]="sSearch" (ngModelChange)="sPage = 1" />
+        <button *ngIf="sSearch" class="search-clear" (click)="sSearch = ''">&#10005;</button>
+      </div>
+    </div>
+
+    <div class="notice error" *ngIf="sError">{{ sError }}</div>
+    <div class="loading-row" *ngIf="sLoading">Loading...</div>
+
+    <ng-container *ngIf="sData && !sLoading">
+      <div class="summary-bar">
+        <span class="sum-item"><strong>{{ sSortedRows.length }}</strong> RFQ</span>
+        <span class="sum-sep">·</span>
+        <span class="sum-item sum-missed">{{ sCountByStatus('missed') }} Missed</span>
+      </div>
+      <div class="rfq-table-wrap">
+        <table class="rfq-table">
+          <thead>
+            <tr>
+              <th (click)="setSSSort('rfq_no')" class="sortable">RFQ No <span class="sort-icon">{{ sSortIcon('rfq_no') }}</span></th>
+              <th (click)="setSSSort('customer')" class="sortable">Customer <span class="sort-icon">{{ sSortIcon('customer') }}</span></th>
+              <th (click)="setSSSort('sales_pic')" class="sortable">Sales PIC <span class="sort-icon">{{ sSortIcon('sales_pic') }}</span></th>
+              <th (click)="setSSSort('sourcing_pic')" class="sortable">Sourcing PIC <span class="sort-icon">{{ sSortIcon('sourcing_pic') }}</span></th>
+              <th (click)="setSSSort('tanggal')" class="sortable">Inquiry Date <span class="sort-icon">{{ sSortIcon('tanggal') }}</span></th>
+              <th (click)="setSSSort('need_by_date')" class="sortable">Need By Date <span class="sort-icon">{{ sSortIcon('need_by_date') }}</span></th>
+              <th (click)="setSSSort('total_items')" class="sortable col-center">Items <span class="sort-icon">{{ sSortIcon('total_items') }}</span></th>
+              <th (click)="setSSSort('sourced_items')" class="sortable col-center">Sourced <span class="sort-icon">{{ sSortIcon('sourced_items') }}</span></th>
+              <th (click)="setSSSort('status')" class="sortable">Status <span class="sort-icon">{{ sSortIcon('status') }}</span></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let row of sPagedRows" class="clickable-row" (click)="openDetail(row.id)">
+              <td class="mono">{{ row.rfq_no }}</td>
+              <td>{{ row.customer }}</td>
+              <td>{{ row.sales_pic }}</td>
+              <td>{{ row.sourcing_pic || '-' }}</td>
+              <td class="date-cell">{{ formatDate(row.tanggal) }}</td>
+              <td class="date-cell">{{ formatDate(row.need_by_date) }}</td>
+              <td class="col-center">{{ row.total_items }}</td>
+              <td class="col-center">
+                <span class="tl-badge" [ngClass]="sourcedPctClass(row)">
+                  {{ row.sourced_items }}/{{ row.total_items }}
+                </span>
+              </td>
+              <td>
+                <span class="status-chip" [ngClass]="statusClass(row.status)">{{ statusLabel(row.status) }}</span>
+              </td>
+            </tr>
+            <tr *ngIf="sSortedRows.length === 0">
+              <td colspan="9" class="empty">Tidak ada data pada periode ini.</td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="table-footer">
+          <span class="table-total">Total: {{ sSortedRows.length }} items</span>
+          <div class="paginator" *ngIf="sTotalPages > 1">
+            <button (click)="sPage = 1" [disabled]="sPage === 1">«</button>
+            <button (click)="sPage = sPage - 1" [disabled]="sPage === 1">‹</button>
+            <span>{{ sPage }} / {{ sTotalPages }}</span>
+            <button (click)="sPage = sPage + 1" [disabled]="sPage === sTotalPages">›</button>
+            <button (click)="sPage = sTotalPages" [disabled]="sPage === sTotalPages">»</button>
+          </div>
+        </div>
+      </div>
+    </ng-container>
+  </div>
+</section>
+
+<!-- Detail Panel -->
+<div class="detail-backdrop" *ngIf="detailInquiry || detailLoading" (click)="closeDetail()"></div>
+<div class="detail-panel" *ngIf="detailInquiry || detailLoading">
+  <div class="detail-header">
+    <div *ngIf="detailInquiry">
+      <div class="detail-title">{{ detailInquiry.rfqNo }}</div>
+      <div class="detail-sub">{{ detailInquiry.customer }} &mdash; {{ detailInquiry.salesPic }}</div>
+    </div>
+    <div *ngIf="detailLoading" class="detail-title">Loading...</div>
+    <button class="detail-close" (click)="closeDetail()">&#10005;</button>
+  </div>
+  <ng-container *ngIf="detailInquiry">
+    <div class="detail-meta">
+      <span><strong>Tanggal:</strong> {{ formatDate(detailInquiry.tanggal) }}</span>
+      <span><strong>Status:</strong>
+        <span class="status-chip" [ngClass]="statusClass(detailInquiry.status)">{{ statusLabel(detailInquiry.status) }}</span>
+      </span>
+      <span *ngIf="detailInquiry.sourcingPic"><strong>Sourcing:</strong> {{ detailInquiry.sourcingPic }}</span>
+    </div>
+    <h3 class="detail-section-title">Items ({{ detailInquiry.items.length }})</h3>
+    <div class="detail-items-wrap">
+      <table class="detail-items-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Item Name</th>
+            <th>Qty</th>
+            <th>Need By</th>
+            <th>Supplier</th>
+            <th class="num">Harga Beli</th>
+            <th class="num">Harga Jual</th>
+            <th>Sourced</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let item of detailInquiry.items; let i = index">
+            <td class="dim">{{ i + 1 }}</td>
+            <td>{{ item.itemName || '-' }}</td>
+            <td>{{ item.itemQuantity != null ? item.itemQuantity + ' ' + (item.itemUom || '') : '-' }}</td>
+            <td class="date-cell">{{ formatDate(item.itemNeedByDate) }}</td>
+            <td>{{ item.supplier || '-' }}</td>
+            <td class="num">{{ item.hargaBeli != null ? (item.hargaBeli | number) : '-' }}</td>
+            <td class="num">{{ item.hargaJual != null ? (item.hargaJual | number) : '-' }}</td>
+            <td>
+              <span class="item-status-dot"
+                [class.dot-filled]="item.supplier && item.hargaBeli != null"
+                [class.dot-empty]="!item.supplier || item.hargaBeli == null">
+              </span>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </ng-container>
+</div>

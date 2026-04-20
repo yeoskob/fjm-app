@@ -69,10 +69,8 @@
             </td>
             <td class="col-center">
               <ng-container *ngIf="earliestNeedByDate(inq) as nbd; else noDays">
-                <span class="days-left-badge"
-                  [class.urgent]="(daysLeft(nbd) ?? 99) <= 3"
-                  [class.warning]="(daysLeft(nbd) ?? 99) > 3 && (daysLeft(nbd) ?? 99) <= 7">
-                  {{ daysLeft(nbd) }}
+                <span [ngClass]="daysLeftClass(nbd)" class="days-left-cell">
+                  {{ daysLeftLabel(nbd) }}
                 </span>
               </ng-container>
               <ng-template #noDays><span class="muted">-</span></ng-template>
@@ -235,9 +233,9 @@
             <tr class="item-row"
               [class.sourced-row]="isSourced(item)"
               [class.approved-row]="item.priceApproved"
-              [class.editing-row]="editingItemId === item.id"
-              [class.clickable-row]="selectedInquiry.status === 'rfq' && !item.priceApproved"
-              (click)="!item.priceApproved && toggleFill(item)">
+              [class.editing-row]="editingItemId === item.id || viewingItemId === item.id"
+              [class.clickable-row]="selectedInquiry.status === 'rfq' ? !item.priceApproved : activeTab === 'riwayat'"
+              (click)="activeTab === 'riwayat' ? toggleView(item) : (!item.priceApproved && toggleFill(item))">
               <td class="muted">{{ i + 1 }}</td>
               <td class="item-name">
                 <img *ngIf="item.itemImage" [src]="item.itemImage" class="item-thumb clickable"
@@ -272,8 +270,15 @@
                   </div>
                   <div class="inline-field-row">
                     <span class="field-label">Harga Beli (Rp) *</span>
-                    <input type="number" [(ngModel)]="fillForm.hargaBeli" [ngModelOptions]="{standalone:true}"
-                      class="form-control" min="0" />
+                    <div class="harga-beli-row">
+                      <input type="number" [(ngModel)]="fillForm.hargaBeli" [ngModelOptions]="{standalone:true}"
+                        class="form-control harga-beli-input" min="0" />
+                      <div class="ppn-radio-group">
+                        <label class="ppn-radio-label"><input type="radio" name="ppnType" value="incl_ppn" [(ngModel)]="ppnType" [ngModelOptions]="{standalone:true}" /> Incl. PPN</label>
+                        <label class="ppn-radio-label"><input type="radio" name="ppnType" value="excl_ppn" [(ngModel)]="ppnType" [ngModelOptions]="{standalone:true}" /> Excl. PPN</label>
+                        <label class="ppn-radio-label"><input type="radio" name="ppnType" value="non_ppn" [(ngModel)]="ppnType" [ngModelOptions]="{standalone:true}" /> Non PPN</label>
+                      </div>
+                    </div>
                   </div>
                   <div class="inline-field-row">
                     <span class="field-label">Lead Time *</span>
@@ -313,7 +318,81 @@
                 </div>
               </td>
             </tr>
-            <!-- Per-item comments row -->
+            <!-- Riwayat: read-only sourcing detail panel -->
+            <tr *ngIf="activeTab === 'riwayat' && viewingItemId === item.id" class="inline-input-row">
+              <td colspan="9">
+                <div class="inline-field-list">
+                  <div class="inline-field-row" *ngIf="item.itemQuantity != null">
+                    <span class="field-label">Expected Qty</span>
+                    <span class="field-value-ro">{{ item.itemQuantity }} {{ item.itemUom }}</span>
+                  </div>
+                  <div class="inline-field-row" *ngIf="item.itemNeedByDate">
+                    <span class="field-label">Need by Date</span>
+                    <span class="field-value-ro">{{ formatDate(item.itemNeedByDate) }}</span>
+                  </div>
+                  <div class="inline-field-row" *ngIf="item.itemManufacturerName">
+                    <span class="field-label">Manufacturer</span>
+                    <span class="field-value-ro">{{ item.itemManufacturerName }}</span>
+                  </div>
+                  <div class="inline-field-row" *ngIf="item.itemManufacturerPartNumber">
+                    <span class="field-label">Part Number</span>
+                    <span class="field-value-ro">{{ item.itemManufacturerPartNumber }}</span>
+                  </div>
+                  <div class="inline-field-row" *ngIf="item.itemExtendedDescription">
+                    <span class="field-label">Description</span>
+                    <span class="field-value-ro">{{ item.itemExtendedDescription }}</span>
+                  </div>
+                  <div class="inline-field-row">
+                    <span class="field-label">Supplier</span>
+                    <span class="field-value-ro">{{ item.supplier || '-' }}</span>
+                  </div>
+                  <div class="inline-field-row">
+                    <span class="field-label">Harga Beli</span>
+                    <span class="field-value-ro">{{ formatCurrency(item.hargaBeli) }}<span *ngIf="item.ppnType" class="ppn-badge">{{ ppnTypeLabel(item.ppnType) }}</span></span>
+                  </div>
+                  <div class="inline-field-row">
+                    <span class="field-label">Lead Time</span>
+                    <span class="field-value-ro">{{ item.leadTime || '-' }}</span>
+                  </div>
+                  <div class="inline-field-row" *ngIf="item.moq != null">
+                    <span class="field-label">MOQ</span>
+                    <span class="field-value-ro">{{ item.moq }}</span>
+                  </div>
+                  <div class="inline-field-row" *ngIf="item.stockAvailability">
+                    <span class="field-label">Stock</span>
+                    <span class="field-value-ro">{{ item.stockAvailability }}</span>
+                  </div>
+                  <div class="inline-field-row" *ngIf="item.termPembayaran">
+                    <span class="field-label">Shipping Term</span>
+                    <span class="field-value-ro">{{ item.termPembayaran }}</span>
+                  </div>
+                  <div class="inline-field-row" *ngIf="item.alternateName">
+                    <span class="field-label">Supplier Item Name</span>
+                    <span class="field-value-ro">{{ item.alternateName }}</span>
+                  </div>
+                  <div class="inline-field-row" *ngIf="item.hargaJual">
+                    <span class="field-label">Harga Jual</span>
+                    <span class="field-value-ro">{{ formatCurrency(item.hargaJual) }}</span>
+                  </div>
+                </div>
+              </td>
+            </tr>
+            <!-- Riwayat: comments (view only) -->
+            <tr *ngIf="activeTab === 'riwayat' && viewingItemId === item.id" class="item-comment-row">
+              <td colspan="9">
+                <div class="item-comments-feed">
+                  <div class="empty-comments" *ngIf="(itemNotesMap[item.id]?.length ?? 0) === 0">No comments yet.</div>
+                  <div class="comment-bubble" *ngFor="let n of (itemNotesMap[item.id] ?? [])"
+                    [class.mine]="n.createdBy === currentUser?.username">
+                    <div class="comment-author">{{ n.createdByName }}</div>
+                    <div class="comment-text">{{ n.note }}</div>
+                    <div class="comment-time">{{ formatDate(n.createdAt) }}</div>
+                  </div>
+                </div>
+              </td>
+            </tr>
+
+            <!-- Per-item comments row (rfq fill mode) -->
             <tr *ngIf="editingItemId === item.id" class="item-comment-row">
               <td colspan="9">
                 <div class="item-comments-feed">

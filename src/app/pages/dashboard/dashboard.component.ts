@@ -74,7 +74,7 @@ export class DashboardComponent implements OnInit {
 
   get marketingPieData() {
     const rows = this.dashboard?.statusBreakdown ?? [];
-    return this.buildMarketingPie(rows, this.dashboard?.sentIncomplete ?? 0);
+    return this.buildMarketingPie(rows, this.dashboard?.unsent ?? 0);
   }
 
   get itemPieData() {
@@ -128,7 +128,7 @@ export class DashboardComponent implements OnInit {
   }
 
   userMarketingPieData(stats: UserStats) {
-    return this.buildMarketingPie(stats.salesStats.statusBreakdown ?? [], stats.salesStats.sentIncomplete ?? 0);
+    return this.buildMarketingPie(stats.salesStats.statusBreakdown ?? [], stats.salesStats.unsent ?? 0);
   }
 
   userConversionRate(stats: UserStats): number {
@@ -150,29 +150,28 @@ export class DashboardComponent implements OnInit {
     return base > 0 ? +((filled / base) * 100).toFixed(1) : 0;
   }
 
-  private buildMarketingPie(rows: Array<{ status: string; count: number }>, sentIncomplete = 0) {
+  private buildMarketingPie(rows: Array<{ status: string; count: number }>, _unsent = 0) {
     const get = (status: string) => rows.find((r) => r.status === status)?.count ?? 0;
 
     const newInquiry  = get('new_inquiry');
     const inPipeline  = get('rfq') + get('price_approval') + get('price_approved');
     const sentTotal   = get('quotation_sent') + get('ready_to_purchase');
-    const sentComplete = sentTotal - sentIncomplete;
-    const total = newInquiry + inPipeline + sentTotal;
+    const unsent      = get('unsent');
+    const total = newInquiry + inPipeline + sentTotal + unsent;
     if (total === 0) return null;
 
     const C = this.PIE_C;
-    const newDash        = (newInquiry    / total) * C;
-    const pipelineDash   = (inPipeline    / total) * C;
-    const sentDash       = (sentComplete  / total) * C;
-    const incompleteDash = (sentIncomplete / total) * C;
+    const newDash      = (newInquiry / total) * C;
+    const pipelineDash = (inPipeline / total) * C;
+    const sentDash     = (sentTotal  / total) * C;
+    const unsentDash   = (unsent     / total) * C;
 
     return {
-      total, newInquiry, inPipeline, sent: sentComplete, sentIncomplete,
-      newDash,        newGap: C - newDash,        newOffset: 0,
-      pipelineDash,   pipelineGap: C - pipelineDash, pipelineOffset: C - newDash,
-      sentDash,       sentGap: C - sentDash,       sentOffset: C - (newDash + pipelineDash),
-      incompleteDash, incompleteGap: C - incompleteDash,
-      incompleteOffset: C - (newDash + pipelineDash + sentDash),
+      total, newInquiry, inPipeline, sent: sentTotal, unsent,
+      newDash,      newGap: C - newDash,      newOffset: 0,
+      pipelineDash, pipelineGap: C - pipelineDash, pipelineOffset: C - newDash,
+      sentDash,     sentGap: C - sentDash,     sentOffset: C - (newDash + pipelineDash),
+      unsentDash,   unsentGap: C - unsentDash, unsentOffset: C - (newDash + pipelineDash + sentDash),
     };
   }
 

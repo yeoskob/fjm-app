@@ -10,6 +10,7 @@ import { NotAuthorizedComponent } from './pages/not-authorized/not-authorized.co
 import { PricelistComponent } from './pages/pricelist/pricelist.component';
 import { PurchasingComponent } from './pages/purchasing/purchasing.component';
 import { SourcingComponent } from './pages/sourcing/sourcing.component';
+import { ReportComponent } from './pages/report/report.component';
 
 const routes: Routes = [
   { path: '', redirectTo: 'login', pathMatch: 'full' },
@@ -49,6 +50,12 @@ const routes: Routes = [
     component: AdminUsersComponent,
     canActivate: [AuthGuard, RoleGuard],
     data: { menu: 'admin' },
+  },
+  {
+    path: 'report',
+    component: ReportComponent,
+    canActivate: [AuthGuard, RoleGuard],
+    data: { menu: 'report' },
   },
   { path: 'not-authorized', component: NotAuthorizedComponent },
   { path: '**', redirectTo: 'login' },

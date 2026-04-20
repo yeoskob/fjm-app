@@ -48,62 +48,81 @@
   gap: 0.75rem;
 }
 
-.rfq-notif-banner {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  padding: 0.65rem 2rem;
-  background: #fef3c7;
-  border-bottom: 1px solid #fcd34d;
-  color: #92400e;
-  font-size: 0.9rem;
-  animation: slideDown 0.25s ease-out;
+.rfq-notif-toast {
+  position: fixed;
+  top: 1.25rem;
+  right: 1.25rem;
+  z-index: 9999;
+  width: 280px;
+  background: #fff;
+  border: 1px solid #fcd34d;
+  border-left: 4px solid #f59e0b;
+  border-radius: 10px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
+  padding: 0.85rem 1rem;
+  animation: toastIn 0.2s ease-out;
 }
 
-@keyframes slideDown {
-  from { transform: translateY(-100%); opacity: 0; }
+@keyframes toastIn {
+  from { transform: translateY(-12px); opacity: 0; }
   to   { transform: translateY(0);     opacity: 1; }
 }
 
-.rfq-notif-icon {
-  font-size: 1.1rem;
+.rfq-notif-toast-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.4rem;
+}
+
+.rfq-notif-toast-icon {
+  color: #f59e0b;
+  font-size: 1rem;
   flex-shrink: 0;
 }
 
-.rfq-notif-text {
+.rfq-notif-toast-title {
   flex: 1;
-}
-
-.rfq-notif-action {
-  background: #d97706;
-  color: #fff;
-  border: none;
-  border-radius: 6px;
-  padding: 0.3rem 0.85rem;
-  font-size: 0.85rem;
+  font-size: 0.88rem;
   font-weight: 600;
-  cursor: pointer;
-  white-space: nowrap;
-
-  &:hover {
-    background: #b45309;
-  }
+  color: #1e293b;
 }
 
-.rfq-notif-dismiss {
+.rfq-notif-toast-close {
   background: none;
   border: none;
-  color: #92400e;
-  font-size: 1rem;
+  color: #94a3b8;
+  font-size: 0.85rem;
   cursor: pointer;
-  padding: 0.2rem 0.4rem;
+  padding: 0.1rem 0.3rem;
   border-radius: 4px;
   line-height: 1;
   flex-shrink: 0;
 
-  &:hover {
-    background: #fde68a;
-  }
+  &:hover { background: #f1f5f9; color: #475569; }
+}
+
+.rfq-notif-toast-body {
+  font-size: 0.8rem;
+  color: #64748b;
+  margin: 0 0 0.65rem;
+  line-height: 1.4;
+}
+
+.rfq-notif-toast-btn {
+  display: block;
+  width: 100%;
+  background: #f59e0b;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 0.4rem 0;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: center;
+
+  &:hover { background: #d97706; }
 }
 
 .content {

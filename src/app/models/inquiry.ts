@@ -5,9 +5,9 @@ export type InquiryStatus =
   | 'price_approved'
   | 'quotation_sent'
   | 'follow_up'
-  | 'deal'
-  | 'lost'
-  | 'ready_to_purchase';
+  | 'ready_to_purchase'
+  | 'missed'
+  | 'unsent';
 
 export const INQUIRY_STATUS_LABELS: Record<InquiryStatus, string> = {
   new_inquiry: 'New Inquiry',
@@ -16,9 +16,9 @@ export const INQUIRY_STATUS_LABELS: Record<InquiryStatus, string> = {
   price_approved: 'Price Approved',
   quotation_sent: 'Quotation Sent',
   follow_up: 'Negotiation',
-  deal: 'Deal',
-  lost: 'Lost',
   ready_to_purchase: 'Ready to Purchase',
+  missed: 'Missed',
+  unsent: 'Unsent',
 };
 
 export interface ActivityLog {
@@ -79,6 +79,7 @@ export interface InquiryItem {
   reviewStatus?: 'pending' | 'approved' | 'review' | 'rejected';
   reviewRound?: number;
   sourcingMissed?: boolean;
+  ppnType?: 'incl_ppn' | 'excl_ppn' | 'non_ppn' | null;
 }
 
 export interface Inquiry {
@@ -101,6 +102,7 @@ export interface Inquiry {
   sentIncomplete?: boolean;
   sentIncompleteReason?: string | null;
   sourcingMissed?: boolean;
+  priceApprovalStartedAt?: string | null;
   activityLog?: ActivityLog[];
 }
 
@@ -144,6 +146,7 @@ export interface SourcingInfo {
   stockAvailability?: string;
   termPembayaran?: string;
   alternateName?: string;
+  ppnType?: 'incl_ppn' | 'excl_ppn' | 'non_ppn' | null;
   doneBy: string;
   doneByName: string;
 }
@@ -161,12 +164,9 @@ export interface DashboardStats {
   total: number;
   thisMonth: number;
   quotationSent: number;
-  sentIncomplete: number;
-  sentIncompleteRate: number;
-  deals: number;
-  lost: number;
+  unsent: number;
   conversionRate: number;
-  topSales: Array<{ sales_pic: string; deal_count: number }>;
+  topSales: Array<{ sales_pic: string; sent_count: number }>;
   topMarketing: Array<{ sales_pic: string; sent_count: number }>;
   statusBreakdown: Array<{ status: string; count: number }>;
   sourcingPending: number;
@@ -182,15 +182,44 @@ export interface DashboardStats {
   urgentRfqs: Array<{ id: string; rfq_no: string; customer: string; sourcing_pic: string | null; deadline_quotation: string; days_left: number }>;
 }
 
+export interface ReportRow {
+  id: string;
+  rfq_no: string;
+  customer: string;
+  sales_pic: string;
+  tanggal: string;
+  status: string;
+  need_by_date: string | null;
+  timeline_days: number | null;
+  days_taken: number | null;
+}
+export interface ReportData {
+  rows: ReportRow[];
+}
+
+export interface ReportSourcingRow {
+  id: string;
+  rfq_no: string;
+  customer: string;
+  sales_pic: string;
+  sourcing_pic: string | null;
+  tanggal: string;
+  status: string;
+  need_by_date: string | null;
+  total_items: number;
+  sourced_items: number;
+}
+
+export interface ReportSourcingData {
+  rows: ReportSourcingRow[];
+}
+
 export interface UserStats {
   salesStats: {
     total: number;
     thisMonth: number;
     quotationSent: number;
-    sentIncomplete: number;
-    sentIncompleteRate: number;
-    deals: number;
-    lost: number;
+    unsent: number;
     active: number;
     conversionRate: number;
     statusBreakdown: Array<{ status: string; count: number }>;

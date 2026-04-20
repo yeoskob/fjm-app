@@ -14,6 +14,11 @@
   <div class="tab-bar">
     <button type="button" class="tab-btn" [class.active]="activeTab === 'pending'" (click)="activeTab = 'pending'">
       Menunggu Approval
+      <span class="tab-count" *ngIf="pendingApproval.length > 0">{{ pendingApproval.length }}</span>
+    </button>
+    <button type="button" class="tab-btn" [class.active]="activeTab === 'review'" (click)="activeTab = 'review'">
+      Menunggu Review
+      <span class="tab-count tab-count-review" *ngIf="pendingReview.length > 0">{{ pendingReview.length }}</span>
     </button>
     <button type="button" class="tab-btn" [class.active]="activeTab === 'riwayat'" (click)="activeTab = 'riwayat'">
       Riwayat
@@ -38,6 +43,7 @@
             <th (click)="toggleSort(pendingSort,'items')" class="sortable col-center">Items <span class="sort-icon">{{ sortIcon(pendingSort,'items') }}</span></th>
             <th (click)="toggleSort(pendingSort,'pending')" class="sortable col-center">Pending <span class="sort-icon">{{ sortIcon(pendingSort,'pending') }}</span></th>
             <th (click)="toggleSort(pendingSort,'needByDate')" class="sortable">Need By Date <span class="sort-icon">{{ sortIcon(pendingSort,'needByDate') }}</span></th>
+            <th>Sisa Waktu</th>
           </tr>
         </thead>
         <tbody>
@@ -58,6 +64,14 @@
               <span class="done-pill" *ngIf="pendingItemCount(inq) === 0">✓ Done</span>
             </td>
             <td class="muted">{{ earliestNeedByDate(inq) }}</td>
+            <td>
+              <ng-container *ngIf="timeLeft(inq) as tl; else noDeadline">
+                <span [class.time-ok]="tl.state === 'ok'"
+                      [class.time-warning]="tl.state === 'warning'"
+                      [class.time-overdue]="tl.state === 'overdue'">{{ tl.text }}</span>
+              </ng-container>
+              <ng-template #noDeadline><span class="muted">-</span></ng-template>
+            </td>
           </tr>
         </tbody>
       </table>
@@ -67,6 +81,64 @@
       <button class="ghost sm" (click)="pendingPage = pendingPage - 1" [disabled]="pendingPage === 1">‹ Prev</button>
       <span>{{ pendingPage }} / {{ pendingPages() }}</span>
       <button class="ghost sm" (click)="pendingPage = pendingPage + 1" [disabled]="pendingPage === pendingPages()">Next ›</button>
+    </div>
+  </div>
+
+  <!-- Menunggu Review Tab -->
+  <div class="tab-content" *ngIf="activeTab === 'review'">
+    <div class="empty" *ngIf="pendingReview.length === 0">Tidak ada yang perlu di-review.</div>
+    <div class="table-toolbar" *ngIf="pendingReview.length > 0">
+      <input class="table-filter" type="text" [(ngModel)]="reviewFilter"
+        placeholder="Filter RFQ, customer, PIC..." />
+    </div>
+    <div class="rfq-table-wrap" *ngIf="pendingReview.length > 0">
+      <table class="rfq-table">
+        <thead>
+          <tr>
+            <th (click)="toggleSort(reviewSort,'rfqNo')" class="sortable">RFQ No <span class="sort-icon">{{ sortIcon(reviewSort,'rfqNo') }}</span></th>
+            <th (click)="toggleSort(reviewSort,'customer')" class="sortable">Customer <span class="sort-icon">{{ sortIcon(reviewSort,'customer') }}</span></th>
+            <th (click)="toggleSort(reviewSort,'salesPic')" class="sortable">Sales PIC <span class="sort-icon">{{ sortIcon(reviewSort,'salesPic') }}</span></th>
+            <th (click)="toggleSort(reviewSort,'sourcingPic')" class="sortable">Sourcing PIC <span class="sort-icon">{{ sortIcon(reviewSort,'sourcingPic') }}</span></th>
+            <th (click)="toggleSort(reviewSort,'items')" class="sortable col-center">Items <span class="sort-icon">{{ sortIcon(reviewSort,'items') }}</span></th>
+            <th (click)="toggleSort(reviewSort,'pending')" class="sortable col-center">To Review <span class="sort-icon">{{ sortIcon(reviewSort,'pending') }}</span></th>
+            <th (click)="toggleSort(reviewSort,'needByDate')" class="sortable">Need By Date <span class="sort-icon">{{ sortIcon(reviewSort,'needByDate') }}</span></th>
+            <th>Sisa Waktu</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr class="rfq-row review-row" *ngFor="let inq of pagedReview" (click)="openModal(inq)">
+            <td class="mono-blue">
+              {{ inq.rfqNo }}
+              <span class="coupa-badge" *ngIf="inq.coupaSource">Coupa</span>
+            </td>
+            <td><strong>{{ inq.customer }}</strong></td>
+            <td class="muted">{{ inq.salesPic }}</td>
+            <td>
+              <span class="sourcing-assigned" *ngIf="inq.sourcingPic">{{ inq.sourcingPic }}</span>
+              <span class="muted" *ngIf="!inq.sourcingPic">Unassigned</span>
+            </td>
+            <td class="col-center">{{ inq.items?.length ?? 0 }}</td>
+            <td class="col-center">
+              <span class="pending-pill">{{ pendingItemCount(inq) }}</span>
+            </td>
+            <td class="muted">{{ earliestNeedByDate(inq) }}</td>
+            <td>
+              <ng-container *ngIf="timeLeft(inq) as tl; else noDeadlineR">
+                <span [class.time-ok]="tl.state === 'ok'"
+                      [class.time-warning]="tl.state === 'warning'"
+                      [class.time-overdue]="tl.state === 'overdue'">{{ tl.text }}</span>
+              </ng-container>
+              <ng-template #noDeadlineR><span class="muted">-</span></ng-template>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+      <div class="table-total">Total: {{ reviewFiltered.length }} items</div>
+    </div>
+    <div class="pager" *ngIf="reviewPages() > 1">
+      <button class="ghost sm" (click)="reviewPage = reviewPage - 1" [disabled]="reviewPage === 1">‹ Prev</button>
+      <span>{{ reviewPage }} / {{ reviewPages() }}</span>
+      <button class="ghost sm" (click)="reviewPage = reviewPage + 1" [disabled]="reviewPage === reviewPages()">Next ›</button>
     </div>
   </div>
 
@@ -201,7 +273,7 @@
                   <div class="inline-field-list approval-grid">
                     <div class="inline-field-row">
                       <span class="field-label">Harga Beli</span>
-                      <span class="field-value">{{ formatCurrency(item.hargaBeli) }}</span>
+                      <span class="field-value">{{ formatCurrency(item.hargaBeli) }}<span *ngIf="item.ppnType" class="ppn-badge">{{ ppnTypeLabel(item.ppnType) }}</span></span>
                     </div>
                     <div class="inline-field-row">
                       <span class="field-label">Approved Price (Rp) *</span>
@@ -295,7 +367,7 @@
         Send to Price Approved
       </button>
       <button type="button" class="ghost danger"
-        *ngIf="selectedInquiry.status === 'price_approval' && hasUnsourcedItems(selectedInquiry)"
+        *ngIf="selectedInquiry.status === 'price_approval'"
         (click)="returnToSourcing()">
         Kembalikan ke Sourcing
       </button>

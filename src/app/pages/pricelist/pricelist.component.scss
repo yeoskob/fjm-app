@@ -35,6 +35,12 @@
   .tab-btn.active & { background: #dbeafe; color: #1d4ed8; }
 }
 
+.tab-count-review {
+  background: #fed7aa;
+  color: #9a3412;
+  .tab-btn.active & { background: #ffedd5; color: #c2410c; }
+}
+
 .tab-content { overflow-x: auto; }
 
 .notice {
@@ -131,6 +137,8 @@
 
 .muted { color: #94a3b8; }
 
+.review-row { border-left: 3px solid #f97316; }
+
 .pending-pill {
   display: inline-block;
   background: #fef3c7;
@@ -163,8 +171,6 @@
   &[data-status="price_approval"] { background: #ffedd5; color: #c2410c; }
   &[data-status="quotation_sent"] { background: #ccfbf1; color: #0f766e; }
   &[data-status="follow_up"]      { background: #ede9fe; color: #6d28d9; }
-  &[data-status="deal"]           { background: #dcfce7; color: #15803d; }
-  &[data-status="lost"]           { background: #fee2e2; color: #b91c1c; }
 }
 
 .empty { color: #64748b; padding: 0.5rem 0; }
@@ -489,6 +495,19 @@
   color: #92400e;
 }
 
+.ppn-badge {
+  display: inline-block;
+  margin-left: 0.45rem;
+  padding: 0.1rem 0.45rem;
+  background: #eff6ff;
+  color: #1d4ed8;
+  border: 1px solid #bfdbfe;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  vertical-align: middle;
+}
+
 .inline-actions-row {
   grid-column: 1 / -1;
   padding-top: 0.5rem;
@@ -617,3 +636,7 @@ button.sm { padding: 0.3rem 0.65rem; font-size: 0.78rem; }
   box-shadow: 0 2px 8px rgba(0,0,0,0.3); z-index: 1;
   &:hover { background: #f1f5f9; }
 }
+
+.time-ok { color: #16a34a; font-weight: 500; font-size: 0.8rem; }
+.time-warning { color: #d97706; font-weight: 600; font-size: 0.8rem; }
+.time-overdue { color: #dc2626; font-weight: 700; font-size: 0.8rem; }

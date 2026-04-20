@@ -2,7 +2,7 @@
   <div class="page-header">
     <div>
       <h1>Marketing</h1>
-      <p>Manage inquiries from customer intake to deal closing.</p>
+      <p>Manage inquiries from customer intake to quotation.</p>
     </div>
     <div class="actions">
       <button type="button" class="ghost" (click)="openImport()">Import Coupa Excel</button>
@@ -23,6 +23,9 @@
     </button>
     <button type="button" class="tab-btn" *ngIf="canSeeTab('sent')" [class.active]="activeTab === 'sent'" (click)="activeTab = 'sent'">
       Sent
+    </button>
+    <button type="button" class="tab-btn" [class.active]="activeTab === 'riwayat'" (click)="activeTab = 'riwayat'">
+      Riwayat
     </button>
   </div>
 
@@ -58,7 +61,6 @@
           <td>
             <div class="status-stack">
               <span class="badge" [ngClass]="statusClass(inq.status)">{{ STATUS_LABELS[inq.status] }}</span>
-              <span class="badge badge-orange" *ngIf="inq.sentIncomplete">Incomplete</span>
             </div>
           </td>
         </tr>
@@ -81,6 +83,7 @@
           <th (click)="toggleSort(priceApprovedSort,'rfqNo')" class="sortable">RFQ ID <span class="sort-icon">{{ sortIcon(priceApprovedSort,'rfqNo') }}</span></th>
           <th (click)="toggleSort(priceApprovedSort,'customer')" class="sortable">Customer <span class="sort-icon">{{ sortIcon(priceApprovedSort,'customer') }}</span></th>
           <th (click)="toggleSort(priceApprovedSort,'needByDate')" class="sortable">Need by Date <span class="sort-icon">{{ sortIcon(priceApprovedSort,'needByDate') }}</span></th>
+          <th (click)="toggleSort(priceApprovedSort,'daysLeft')" class="sortable">Days Left <span class="sort-icon">{{ sortIcon(priceApprovedSort,'daysLeft') }}</span></th>
           <th (click)="toggleSort(priceApprovedSort,'tanggal')" class="sortable">Inquiry Date <span class="sort-icon">{{ sortIcon(priceApprovedSort,'tanggal') }}</span></th>
           <th (click)="toggleSort(priceApprovedSort,'salesPic')" class="sortable">Sales <span class="sort-icon">{{ sortIcon(priceApprovedSort,'salesPic') }}</span></th>
           <th (click)="toggleSort(priceApprovedSort,'sourcingPic')" class="sortable">Sourcing <span class="sort-icon">{{ sortIcon(priceApprovedSort,'sourcingPic') }}</span></th>
@@ -96,24 +99,69 @@
             <span class="org-badge" [ngClass]="organizationClass(inq.organization)">{{ inq.organization || 'FJM' }}</span>
           </td>
           <td>{{ inq.customer }}</td>
-          <td>{{ formatDateOnly(inq.items[0]?.itemNeedByDate) }}</td>
+          <td>{{ earliestNeedByDate(inq) }}</td>
+          <td><span [ngClass]="daysLeftClass(inq)" class="days-left-cell">{{ daysLeftLabel(inq) }}</span></td>
           <td>{{ formatDate(inq.tanggal) }}</td>
           <td>{{ inq.salesPic }}</td>
           <td>{{ inq.sourcingPic || '-' }}</td>
           <td>{{ itemCount(inq) }}</td>
           <td>
-            <div class="status-stack">
-              <span class="badge" [ngClass]="statusClass(inq.status)">{{ STATUS_LABELS[inq.status] }}</span>
-              <span class="badge badge-orange" *ngIf="inq.sentIncomplete">Incomplete</span>
-            </div>
+            <span class="badge" [ngClass]="statusClass(inq.status)">{{ STATUS_LABELS[inq.status] }}</span>
           </td>
         </tr>
         <tr *ngIf="priceApprovedTabFiltered.length === 0">
-          <td colspan="8" class="empty-row">No results.</td>
+          <td colspan="9" class="empty-row">No results.</td>
         </tr>
       </tbody>
     </table>
     <div class="table-total">Total: {{ priceApprovedTabFiltered.length }} items</div>
+  </div>
+
+  <!-- Riwayat Tab -->
+  <div class="tab-content" *ngIf="activeTab === 'riwayat'">
+    <div class="table-toolbar">
+      <input class="table-filter" [(ngModel)]="riwayatFilter" [ngModelOptions]="{standalone:true}" placeholder="Filter RFQ, customer, sales..." />
+      <select class="table-filter-select" [(ngModel)]="riwayatStatusFilter" [ngModelOptions]="{standalone:true}">
+        <option value="">All Status</option>
+        <option *ngFor="let s of PIPELINE_STAGES" [value]="s">{{ STATUS_LABELS[s] }}</option>
+      </select>
+    </div>
+    <div class="empty-row" *ngIf="riwayatTabFiltered.length === 0" style="padding:2rem;text-align:center;color:#6b7280;">Belum ada riwayat inquiry.</div>
+    <table class="pipeline-table" *ngIf="riwayatTabFiltered.length > 0">
+      <thead>
+        <tr>
+          <th (click)="toggleSort(riwayatSort,'rfqNo')" class="sortable">RFQ ID <span class="sort-icon">{{ sortIcon(riwayatSort,'rfqNo') }}</span></th>
+          <th (click)="toggleSort(riwayatSort,'customer')" class="sortable">Customer <span class="sort-icon">{{ sortIcon(riwayatSort,'customer') }}</span></th>
+          <th (click)="toggleSort(riwayatSort,'salesPic')" class="sortable">Sales <span class="sort-icon">{{ sortIcon(riwayatSort,'salesPic') }}</span></th>
+          <th (click)="toggleSort(riwayatSort,'sourcingPic')" class="sortable">Sourcing <span class="sort-icon">{{ sortIcon(riwayatSort,'sourcingPic') }}</span></th>
+          <th (click)="toggleSort(riwayatSort,'items')" class="sortable">Items <span class="sort-icon">{{ sortIcon(riwayatSort,'items') }}</span></th>
+          <th (click)="toggleSort(riwayatSort,'needByDate')" class="sortable">Need By <span class="sort-icon">{{ sortIcon(riwayatSort,'needByDate') }}</span></th>
+          <th (click)="toggleSort(riwayatSort,'updatedAt')" class="sortable">Last Update <span class="sort-icon">{{ sortIcon(riwayatSort,'updatedAt') }}</span></th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let inq of riwayatTabFiltered" (click)="openDetail(inq)" class="clickable-row">
+          <td>
+            <span class="mono-cell">{{ inq.rfqNo || '-' }}</span>
+            <span class="coupa-badge" *ngIf="inq.coupaSource">Coupa</span>
+            <span class="org-badge" [ngClass]="organizationClass(inq.organization)">{{ inq.organization || 'FJM' }}</span>
+          </td>
+          <td>{{ inq.customer }}</td>
+          <td>{{ inq.salesPic }}</td>
+          <td>{{ inq.sourcingPic || '-' }}</td>
+          <td>{{ itemCount(inq) }}</td>
+          <td class="muted">{{ earliestNeedByDate(inq) }}</td>
+          <td class="muted">{{ formatDate(inq.updatedAt) }}</td>
+          <td>
+            <div class="status-stack">
+              <span class="badge" [ngClass]="statusClass(inq.status)">{{ STATUS_LABELS[inq.status] }}</span>
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="table-total" *ngIf="riwayatTabFiltered.length > 0">Total: {{ riwayatTabFiltered.length }} items</div>
   </div>
 
   <!-- Sent Tab -->
@@ -150,7 +198,6 @@
           <td>
             <div class="status-stack">
               <span class="badge" [ngClass]="statusClass(inq.status)">{{ STATUS_LABELS[inq.status] }}</span>
-              <span class="badge badge-orange" *ngIf="inq.sentIncomplete">Incomplete</span>
             </div>
           </td>
         </tr>
@@ -347,7 +394,6 @@
         <span class="coupa-badge" *ngIf="detailInquiry.coupaSource">Coupa</span>
         <span class="org-badge" [ngClass]="organizationClass(detailInquiry.organization)">{{ detailInquiry.organization || 'FJM' }}</span>
         <span class="badge" [ngClass]="statusClass(detailInquiry.status)">{{ STATUS_LABELS[detailInquiry.status] }}</span>
-        <span class="badge badge-orange" *ngIf="detailInquiry.status === 'quotation_sent' && detailInquiry.sentIncomplete">Incomplete</span>
       </div>
       <div class="modal-header-row">
         <span class="header-label">Customer:</span>
@@ -433,7 +479,7 @@
             [class.is-editing]="reviewingItemId === item.id"
             [class.is-below-approved-floor]="detailInquiry.status === 'price_approved' && isItemBelowApprovedFloor(item)"
             [class.is-rejected]="['price_approved','quotation_sent'].includes(detailInquiry.status) && item.reviewStatus === 'rejected'"
-            [class.needs-review-unread]="detailInquiry.status === 'price_approved' && item.needsPriceReview && !reviewedItemIds.has(item.id)"
+            [class.needs-review-unread]="detailInquiry.status === 'price_approved' && (item.needsPriceReview || (item.reviewRound ?? 0) > 0) && !reviewedItemIds.has(item.id)"
             (click)="detailInquiry.status === 'new_inquiry' ? (reviewingItemId === item.id ? cancelReviewItem() : startReviewItem(item)) : toggleViewItem(item.id)">
             <div class="item-review-main">
               <img *ngIf="item.itemImage" [src]="item.itemImage" class="item-thumb clickable"
@@ -485,7 +531,7 @@
                       </ng-template>
                     </ng-container>
                     <ng-template #hjLegacyEdit>
-                      <ng-container *ngIf="['quotation_sent','deal'].includes(detailInquiry.status); else hjReadOnly">
+                      <ng-container *ngIf="detailInquiry.status === 'quotation_sent'; else hjReadOnly">
                         <ng-container *ngIf="editingHargaJualId === item.id; else hjDisplay">
                           <input type="number" [(ngModel)]="hargaJualInput" [ngModelOptions]="{standalone:true}" class="form-control" style="width:120px;display:inline-block" min="0" (click)="$event.stopPropagation()" />
                           <button type="button" class="primary sm" (click)="saveHargaJual(detailInquiry!); $event.stopPropagation()">Save</button>
@@ -553,7 +599,7 @@
                   <div class="comment-time">{{ formatDate(n.createdAt) }}</div>
                 </div>
               </div>
-              <div class="item-comment-input" *ngIf="canComment()">
+              <div class="item-comment-input" *ngIf="canComment() && activeTab !== 'riwayat'">
                 <textarea class="comment-textarea" [(ngModel)]="itemNewNote" [ngModelOptions]="{standalone:true}"
                   placeholder="Add a comment..." rows="2"
                   (keydown.control.enter)="submitItemNote(detailInquiry!, item)"></textarea>
@@ -593,14 +639,13 @@
     </div><!-- /detail-single-col -->
 
     <!-- Fixed Footer: Actions -->
-    <div class="modal-footer">
+    <div class="modal-footer" *ngIf="activeTab !== 'riwayat'">
       <ng-container [ngSwitch]="detailInquiry.status">
         <ng-container *ngSwitchCase="'new_inquiry'">
           <label class="footer-note-label">Note (optional)
             <input type="text" [(ngModel)]="rfqNote" [ngModelOptions]="{standalone:true}" class="form-control" placeholder="Add a note..." />
           </label>
           <div class="footer-actions">
-            <button type="button" class="danger sm" (click)="close(detailInquiry!, 'lost')">Mark as Lost</button>
             <button type="button" class="ghost sm" *ngIf="isSingleItem(detailInquiry!)" (click)="startEdit(detailInquiry!)">Edit</button>
             <button type="button" class="primary sm" (click)="sendRfq(detailInquiry!)">Send to Sourcing (RFQ)</button>
           </div>

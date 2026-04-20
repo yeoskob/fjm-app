@@ -56,7 +56,7 @@ export class MarketingComponent implements OnInit {
   addItemForm: { itemName?: string; itemQuantity?: number; itemUom?: string; itemNeedByDate?: string; itemManufacturerName?: string; itemManufacturerPartNumber?: string; itemClassificationOfGoods?: string; itemExtendedDescription?: string; itemImage?: string } = {};
   previewImageUrl: string | null = null;
 
-  activeTab: 'rfq' | 'price_approved' | 'sent' = 'rfq';
+  activeTab: 'rfq' | 'price_approved' | 'sent' | 'riwayat' = 'rfq';
 
   canSeeTab(tab: string): boolean {
     return this.authService.hasTab('marketing', tab);
@@ -82,12 +82,13 @@ export class MarketingComponent implements OnInit {
 
   readonly STATUS_LABELS = INQUIRY_STATUS_LABELS;
   readonly PIPELINE_STAGES: InquiryStatus[] = [
-    'new_inquiry', 'rfq', 'price_approval', 'price_approved', 'quotation_sent', 'deal', 'lost'
+    'new_inquiry', 'rfq', 'price_approval', 'price_approved', 'quotation_sent', 'follow_up', 'ready_to_purchase', 'missed', 'unsent'
   ];
 
   rfqFilter = ''; rfqSort = { col: 'needByDate', dir: 'asc' as 'asc'|'desc' };
-  priceApprovedFilter = ''; priceApprovedSort = { col: 'needByDate', dir: 'asc' as 'asc'|'desc' };
+  priceApprovedFilter = ''; priceApprovedSort = { col: 'daysLeft', dir: 'asc' as 'asc'|'desc' };
   quotationFilter = ''; quotationSort = { col: 'needByDate', dir: 'asc' as 'asc'|'desc' };
+  riwayatFilter = ''; riwayatStatusFilter = ''; riwayatSort = { col: 'updatedAt', dir: 'desc' as 'asc'|'desc' };
 
   // Price editing for price_approved status
   editingPriceApprovedItemId: string | null = null;
@@ -130,9 +131,12 @@ export class MarketingComponent implements OnInit {
         else if (sort.col === 'needByDate') {
           const earliest = (inq: Inquiry) => inq.items.map(i => i.itemNeedByDate).filter(Boolean).sort()[0] ?? '';
           av = earliest(a); bv = earliest(b);
-          // push empty dates to the bottom regardless of direction
           if (!av) return 1;
           if (!bv) return -1;
+        }
+        else if (sort.col === 'daysLeft') {
+          const da = this.daysLeft(a); const db2 = this.daysLeft(b);
+          av = da ?? 999999; bv = db2 ?? 999999;
         }
         return av < bv ? (sort.dir === 'asc' ? -1 : 1) : av > bv ? (sort.dir === 'asc' ? 1 : -1) : 0;
       });
@@ -156,6 +160,15 @@ export class MarketingComponent implements OnInit {
   get rfqTabFiltered(): Inquiry[] { return this.applyFS(this.rfqTabInquiries, this.rfqFilter, this.rfqSort); }
   get priceApprovedTabFiltered(): Inquiry[] { return this.applyFS(this.priceApprovedTabInquiries, this.priceApprovedFilter, this.priceApprovedSort); }
   get quotationTabFiltered(): Inquiry[] { return this.applyFS(this.quotationTabInquiries, this.quotationFilter, this.quotationSort); }
+  get riwayatTabInquiries(): Inquiry[] {
+    return this.inquiries.filter(i => i.status !== 'new_inquiry');
+  }
+  get riwayatTabFiltered(): Inquiry[] {
+    let result = this.applyFS(this.riwayatTabInquiries, this.riwayatFilter, this.riwayatSort);
+    if (this.riwayatStatusFilter) result = result.filter(i => i.status === this.riwayatStatusFilter);
+    return result;
+  }
+
 
   earliestNeedByDate(inq: Inquiry): string {
     const dates = inq.items
@@ -163,6 +176,35 @@ export class MarketingComponent implements OnInit {
       .filter((d): d is string => !!d)
       .sort();
     return dates.length ? this.formatDate(dates[0]) : '-';
+  }
+
+  earliestNeedByRaw(inq: Inquiry): string | null {
+    const dates = inq.items.map((it) => it.itemNeedByDate).filter((d): d is string => !!d).sort();
+    return dates[0] ?? null;
+  }
+
+  daysLeft(inq: Inquiry): number | null {
+    const raw = this.earliestNeedByRaw(inq);
+    if (!raw) return null;
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    const target = new Date(raw); target.setHours(0, 0, 0, 0);
+    return Math.round((target.getTime() - today.getTime()) / 86400000);
+  }
+
+  daysLeftLabel(inq: Inquiry): string {
+    const d = this.daysLeft(inq);
+    if (d === null) return '-';
+    if (d < 0) return `${Math.abs(d)}d overdue`;
+    if (d === 0) return 'Today';
+    return `${d}d`;
+  }
+
+  daysLeftClass(inq: Inquiry): string {
+    const d = this.daysLeft(inq);
+    if (d === null) return '';
+    if (d < 0) return 'days-overdue';
+    if (d <= 3) return 'days-warning';
+    return 'days-ok';
   }
 
   /** Columns where marketing/sales can take action */
@@ -189,11 +231,11 @@ export class MarketingComponent implements OnInit {
 
   ngOnInit(): void {
     this.isAdmin = this.authService.hasRole('admin');
-    const tabs: Array<'rfq' | 'price_approved' | 'sent'> = ['rfq', 'price_approved', 'sent'];
+    const tabs: Array<'rfq' | 'price_approved' | 'sent' | 'riwayat'> = ['rfq', 'price_approved', 'sent', 'riwayat'];
     const qTab = this.route.snapshot.queryParamMap.get('tab') as typeof tabs[number] | null;
-    this.activeTab = (qTab && tabs.includes(qTab) && this.canSeeTab(qTab))
+    this.activeTab = (qTab && tabs.includes(qTab) && (qTab === 'riwayat' || this.canSeeTab(qTab)))
       ? qTab
-      : (tabs.find((t) => this.canSeeTab(t)) ?? 'rfq');
+      : (tabs.find((t) => t === 'riwayat' || this.canSeeTab(t)) ?? 'rfq');
     void this.refresh();
     const user = this.authService.getCurrentUser();
     if (user?.role === 'admin' || user?.role === 'manager') {
@@ -229,14 +271,6 @@ export class MarketingComponent implements OnInit {
     }
   }
 
-  get activeInquiries(): Inquiry[] {
-    return this.inquiries.filter((i) => !['deal', 'lost'].includes(i.status));
-  }
-
-  get closedInquiries(): Inquiry[] {
-    return this.inquiries.filter((i) => ['deal', 'lost'].includes(i.status));
-  }
-
   byStatus(status: InquiryStatus): Inquiry[] {
     return this.inquiries.filter((i) => i.status === status);
   }
@@ -249,9 +283,9 @@ export class MarketingComponent implements OnInit {
       price_approved: 'badge-teal',
       quotation_sent: 'badge-purple',
       follow_up: 'badge-purple',
-      deal: 'badge-green',
-      lost: 'badge-red',
       ready_to_purchase: 'badge-indigo',
+      missed: 'badge-red',
+      unsent: 'badge-red',
     };
     return map[status] ?? 'badge-gray';
   }
@@ -846,7 +880,7 @@ export class MarketingComponent implements OnInit {
   }
 
   needsPriceReviewItems(inquiry: Inquiry): InquiryItem[] {
-    return inquiry.items.filter(i => i.needsPriceReview === true);
+    return inquiry.items.filter(i => i.needsPriceReview === true || (i.reviewRound ?? 0) > 0);
   }
 
   unreviewedNeedsPriceReviewItems(inquiry: Inquiry): InquiryItem[] {
@@ -860,15 +894,6 @@ export class MarketingComponent implements OnInit {
     await this.inquiryService.updateHargaJual(inquiry.id, this.editingPriceApprovedItemId, this.priceApprovedInput, user.username, user.name);
     this.cancelEditPriceApproved();
     await this.refreshDetail(inquiry.id);
-  }
-
-  async close(inquiry: Inquiry, outcome: 'deal' | 'lost'): Promise<void> {
-    const user = this.authService.getCurrentUser();
-    if (!user) return;
-    await this.inquiryService.close(inquiry.id, outcome, user.username, user.name, this.closeNote);
-    this.success = `Closed as ${outcome}.`;
-    this.detailInquiry = null;
-    await this.refresh();
   }
 
   async moveToReadyToPurchase(inquiry: Inquiry, event: Event): Promise<void> {

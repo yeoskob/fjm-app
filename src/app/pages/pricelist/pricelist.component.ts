@@ -10,14 +10,16 @@ import { Inquiry, InquiryItem, InquiryNote, PriceApproval } from '../../models/i
   styleUrls: ['./pricelist.component.scss'],
 })
 export class PricelistComponent implements OnInit {
-  activeTab: 'pending' | 'riwayat' = 'pending';
-  pendingApproval: Inquiry[] = [];
+  activeTab: 'pending' | 'review' | 'riwayat' = 'pending';
+  pendingApproval: Inquiry[] = [];   // fresh from sourcing
+  pendingReview: Inquiry[] = [];     // sent back by marketing
   approved: Inquiry[] = [];
   error = '';
   success = '';
 
   approvalForms: Record<string, Partial<PriceApproval> & { marginPct?: number }> = {};
   private defaultMarginPct = 20;
+  deadlineHours = 24;
 
   // Modal
   selectedInquiry: Inquiry | null = null;
@@ -48,11 +50,14 @@ export class PricelistComponent implements OnInit {
 
   // Paging
   pendingPage = 1;
+  reviewPage = 1;
   approvedPage = 1;
   readonly pageSize = 10;
 
   pendingFilter = '';
   pendingSort: { col: string; dir: 'asc' | 'desc' } = { col: '', dir: 'asc' };
+  reviewFilter = '';
+  reviewSort: { col: string; dir: 'asc' | 'desc' } = { col: '', dir: 'asc' };
   approvedFilter = '';
   approvedSort: { col: string; dir: 'asc' | 'desc' } = { col: '', dir: 'asc' };
 
@@ -106,11 +111,17 @@ export class PricelistComponent implements OnInit {
   }
 
   get pendingFiltered(): Inquiry[] { return this.applyFS(this.pendingApproval, this.pendingFilter, this.pendingSort); }
+  get reviewFiltered(): Inquiry[] { return this.applyFS(this.pendingReview, this.reviewFilter, this.reviewSort); }
   get approvedFiltered(): Inquiry[] { return this.applyFS(this.approved, this.approvedFilter, this.approvedSort); }
 
   get pagedPending(): Inquiry[] {
     const s = (this.pendingPage - 1) * this.pageSize;
     return this.pendingFiltered.slice(s, s + this.pageSize);
+  }
+
+  get pagedReview(): Inquiry[] {
+    const s = (this.reviewPage - 1) * this.pageSize;
+    return this.reviewFiltered.slice(s, s + this.pageSize);
   }
 
   get pagedApproved(): Inquiry[] {
@@ -119,6 +130,7 @@ export class PricelistComponent implements OnInit {
   }
 
   pendingPages(): number { return Math.ceil(this.pendingFiltered.length / this.pageSize); }
+  reviewPages(): number { return Math.ceil(this.reviewFiltered.length / this.pageSize); }
   approvedPages(): number { return Math.ceil(this.approvedFiltered.length / this.pageSize); }
 
   constructor(
@@ -130,6 +142,7 @@ export class PricelistComponent implements OnInit {
   ngOnInit(): void {
     void this.settingsService.getAll().then((s) => {
       this.defaultMarginPct = s['default_margin_pct'] ? Number(s['default_margin_pct']) : 20;
+      this.deadlineHours = s['price_review_deadline_hours'] ? Number(s['price_review_deadline_hours']) : 24;
     });
     void this.refresh();
     void this.inquiryService.getUsers().then((users) => {
@@ -143,13 +156,20 @@ export class PricelistComponent implements OnInit {
     return role === 'admin' || role === 'manager';
   }
 
+  isReviewRequest(inquiry: Inquiry): boolean {
+    return inquiry.items.some(item => item.reviewStatus === 'review' || item.needsPriceReview === true);
+  }
+
   async refresh(): Promise<void> {
     const all = await this.inquiryService.getAll();
-    this.pendingApproval = all.filter((i) => i.status === 'price_approval');
+    const priceApproval = all.filter((i) => i.status === 'price_approval');
+    this.pendingApproval = priceApproval.filter((i) => !this.isReviewRequest(i));
+    this.pendingReview   = priceApproval.filter((i) =>  this.isReviewRequest(i));
     this.approved = all.filter((i) =>
-      ['price_approved', 'quotation_sent', 'deal', 'lost'].includes(i.status)
+      ['price_approved', 'quotation_sent'].includes(i.status)
     );
     this.pendingPage = 1;
+    this.reviewPage = 1;
     this.approvedPage = 1;
 
     for (const inq of this.pendingApproval) {
@@ -492,15 +512,37 @@ export class PricelistComponent implements OnInit {
     this.previewImageUrl = null;
   }
 
+  timeLeft(inquiry: Inquiry): { text: string; state: 'ok' | 'warning' | 'overdue' } | null {
+    if (!inquiry.priceApprovalStartedAt) return null;
+    const started = new Date(inquiry.priceApprovalStartedAt).getTime();
+    if (isNaN(started)) return null;
+    const deadlineMs = started + this.deadlineHours * 3600 * 1000;
+    const remaining = deadlineMs - Date.now();
+    if (remaining <= 0) {
+      const overH = Math.floor(Math.abs(remaining) / 3600000);
+      return { text: overH > 0 ? `Overdue ${overH}j` : 'Overdue', state: 'overdue' };
+    }
+    const totalMs = this.deadlineHours * 3600 * 1000;
+    const h = Math.floor(remaining / 3600000);
+    const m = Math.floor((remaining % 3600000) / 60000);
+    const text = h > 0 ? `${h}j ${m}mnt` : `${m}mnt`;
+    const state = remaining / totalMs <= 0.25 ? 'warning' : 'ok';
+    return { text, state };
+  }
+
   statusLabel(status: string): string {
     const map: Record<string, string> = {
       price_approval: 'Price Approval',
       price_approved: 'Price Approved',
       quotation_sent: 'Quotation Sent',
-      deal: 'Deal',
-      lost: 'Lost',
     };
     return map[status] ?? status;
+  }
+
+  ppnTypeLabel(type?: string | null): string {
+    if (!type) return '';
+    const map: Record<string, string> = { incl_ppn: 'Incl. PPN', excl_ppn: 'Excl. PPN', non_ppn: 'Non PPN' };
+    return map[type] ?? type;
   }
 }
 

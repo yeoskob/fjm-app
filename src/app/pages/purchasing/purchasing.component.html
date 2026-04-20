@@ -2,21 +2,9 @@
   <div class="page-header">
     <div>
       <h1>Purchasing</h1>
-      <p>Deals, lost inquiries, and items ready to purchase.</p>
+      <p>Items ready to purchase.</p>
     </div>
     <button type="button" class="ghost" (click)="load()">Refresh</button>
-  </div>
-
-  <div class="tab-bar">
-    <button type="button" class="tab-btn" *ngIf="canSeeTab('deal')" [class.active]="activeTab === 'deal'" (click)="setTab('deal')">
-      Deals
-    </button>
-    <button type="button" class="tab-btn" *ngIf="canSeeTab('ready_to_purchase')" [class.active]="activeTab === 'ready_to_purchase'" (click)="setTab('ready_to_purchase')">
-      Ready to Purchase
-    </button>
-    <button type="button" class="tab-btn" *ngIf="canSeeTab('lost')" [class.active]="activeTab === 'lost'" (click)="setTab('lost')">
-      Lost
-    </button>
   </div>
 
   <div class="empty" *ngIf="loading">Loading...</div>
@@ -26,161 +14,51 @@
       <input class="table-filter" [(ngModel)]="filter" [ngModelOptions]="{standalone:true}" placeholder="Filter..." />
     </div>
 
-    <!-- Deals tab -->
-    <div class="tab-content" *ngIf="activeTab === 'deal'">
-      <table class="pipeline-table">
-        <thead>
-          <tr>
-            <th (click)="toggleSort(dealSort,'rfqNo')" class="sortable">RFQ ID <span class="sort-icon">{{ sortIcon(dealSort,'rfqNo') }}</span></th>
-            <th (click)="toggleSort(dealSort,'customer')" class="sortable">Customer <span class="sort-icon">{{ sortIcon(dealSort,'customer') }}</span></th>
-            <th (click)="toggleSort(dealSort,'salesPic')" class="sortable">Sales <span class="sort-icon">{{ sortIcon(dealSort,'salesPic') }}</span></th>
-            <th (click)="toggleSort(dealSort,'sourcingPic')" class="sortable">Sourcing <span class="sort-icon">{{ sortIcon(dealSort,'sourcingPic') }}</span></th>
-            <th (click)="toggleSort(dealSort,'items')" class="sortable">Items <span class="sort-icon">{{ sortIcon(dealSort,'items') }}</span></th>
-            <th (click)="toggleSort(dealSort,'tanggal')" class="sortable">Inquiry Date <span class="sort-icon">{{ sortIcon(dealSort,'tanggal') }}</span></th>
-            <th (click)="toggleSort(dealSort,'updatedAt')" class="sortable">Closed Date <span class="sort-icon">{{ sortIcon(dealSort,'updatedAt') }}</span></th>
-            <th>Action</th>
+    <!-- Ready to Purchase -->
+    <table class="pipeline-table">
+      <thead>
+        <tr>
+          <th style="width:24px"></th>
+          <th (click)="toggleSort(rtpSort,'rfqNo')" class="sortable">RFQ ID <span class="sort-icon">{{ sortIcon(rtpSort,'rfqNo') }}</span></th>
+          <th (click)="toggleSort(rtpSort,'customer')" class="sortable">Customer <span class="sort-icon">{{ sortIcon(rtpSort,'customer') }}</span></th>
+          <th (click)="toggleSort(rtpSort,'salesPic')" class="sortable">Sales <span class="sort-icon">{{ sortIcon(rtpSort,'salesPic') }}</span></th>
+          <th (click)="toggleSort(rtpSort,'items')" class="sortable">Items <span class="sort-icon">{{ sortIcon(rtpSort,'items') }}</span></th>
+          <th (click)="toggleSort(rtpSort,'tanggal')" class="sortable">Tanggal <span class="sort-icon">{{ sortIcon(rtpSort,'tanggal') }}</span></th>
+        </tr>
+      </thead>
+      <tbody>
+        <ng-container *ngFor="let g of rtpGroups">
+          <tr (click)="toggleExpand(g.inquiry.id)" class="clickable-row" [class.expanded-row]="expandedId === g.inquiry.id">
+            <td class="chevron-cell">{{ expandedId === g.inquiry.id ? '▾' : '▸' }}</td>
+            <td><span class="mono-cell">{{ g.inquiry.rfqNo || '-' }}</span><span class="coupa-badge" *ngIf="g.inquiry.coupaSource">Coupa</span></td>
+            <td>{{ g.inquiry.customer }}</td>
+            <td>{{ g.inquiry.salesPic }}</td>
+            <td><span class="item-count-badge">{{ g.items.length }}</span></td>
+            <td>{{ formatDate(g.inquiry.tanggal) }}</td>
           </tr>
-        </thead>
-        <tbody>
-          <ng-container *ngFor="let inq of tabRows">
-            <tr (click)="toggleExpand(inq.id)" class="clickable-row" [class.expanded-row]="expandedId === inq.id">
-              <td><span class="mono-cell">{{ inq.rfqNo || '-' }}</span><span class="coupa-badge" *ngIf="inq.coupaSource">Coupa</span></td>
-              <td>{{ inq.customer }}</td>
-              <td>{{ inq.salesPic }}</td>
-              <td>{{ inq.sourcingPic || '-' }}</td>
-              <td>{{ itemCount(inq) }}</td>
-              <td>{{ formatDate(inq.tanggal) }}</td>
-              <td>{{ inq.updatedAt ? formatDate(inq.updatedAt) : '-' }}</td>
-              <td (click)="$event.stopPropagation()">
-                <button type="button" class="primary btn-sm" [disabled]="busy[inq.id]" (click)="moveToReadyToPurchase(inq, $event)">
-                  {{ busy[inq.id] ? '...' : 'Ready to Purchase' }}
-                </button>
-              </td>
-            </tr>
-            <tr *ngIf="expandedId === inq.id" class="item-expand-row">
-              <td colspan="8" class="item-expand-cell">
-                <table class="item-sub-table">
-                  <thead>
-                    <tr><th>Nama Barang</th><th>Qty</th><th>Supplier</th><th>Harga Approved</th><th>Foto</th></tr>
-                  </thead>
-                  <tbody>
-                    <tr *ngFor="let item of inq.items">
-                      <td>{{ itemDisplayName(item) }}</td>
-                      <td>{{ item.itemQuantity || '-' }} {{ item.itemUom || '' }}</td>
-                      <td>{{ item.supplier || '-' }}</td>
-                      <td><strong *ngIf="item.approvedPrice" class="price">{{ item.approvedPrice | number }}</strong><span *ngIf="!item.approvedPrice">-</span></td>
-                      <td><img *ngIf="item.itemImage" [src]="item.itemImage" class="item-thumb" alt="photo" /><span *ngIf="!item.itemImage" class="no-photo">-</span></td>
-                    </tr>
-                    <tr *ngIf="inq.items.length === 0"><td colspan="5" class="empty-row">No items.</td></tr>
-                  </tbody>
-                </table>
-              </td>
-            </tr>
-          </ng-container>
-          <tr *ngIf="tabRows.length === 0"><td colspan="8" class="empty-row">No results.</td></tr>
-        </tbody>
-      </table>
-      <div class="table-total">Total: {{ tabRows.length }} items</div>
-    </div>
-
-    <!-- Lost tab -->
-    <div class="tab-content" *ngIf="activeTab === 'lost'">
-      <table class="pipeline-table">
-        <thead>
-          <tr>
-            <th (click)="toggleSort(lostSort,'rfqNo')" class="sortable">RFQ ID <span class="sort-icon">{{ sortIcon(lostSort,'rfqNo') }}</span></th>
-            <th (click)="toggleSort(lostSort,'customer')" class="sortable">Customer <span class="sort-icon">{{ sortIcon(lostSort,'customer') }}</span></th>
-            <th (click)="toggleSort(lostSort,'salesPic')" class="sortable">Sales <span class="sort-icon">{{ sortIcon(lostSort,'salesPic') }}</span></th>
-            <th (click)="toggleSort(lostSort,'sourcingPic')" class="sortable">Sourcing <span class="sort-icon">{{ sortIcon(lostSort,'sourcingPic') }}</span></th>
-            <th (click)="toggleSort(lostSort,'items')" class="sortable">Items <span class="sort-icon">{{ sortIcon(lostSort,'items') }}</span></th>
-            <th (click)="toggleSort(lostSort,'tanggal')" class="sortable">Inquiry Date <span class="sort-icon">{{ sortIcon(lostSort,'tanggal') }}</span></th>
-            <th (click)="toggleSort(lostSort,'updatedAt')" class="sortable">Closed Date <span class="sort-icon">{{ sortIcon(lostSort,'updatedAt') }}</span></th>
+          <tr *ngIf="expandedId === g.inquiry.id" class="item-expand-row">
+            <td colspan="6" class="item-expand-cell">
+              <table class="item-sub-table">
+                <thead>
+                  <tr><th>#</th><th>Nama Barang</th><th>Qty</th><th>Supplier</th><th>Harga Approved</th><th>Foto</th></tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let item of g.items; let i = index">
+                    <td class="muted-num">{{ i + 1 }}</td>
+                    <td>{{ itemDisplayName(item) }}</td>
+                    <td>{{ item.itemQuantity || '-' }} {{ item.itemUom || '' }}</td>
+                    <td>{{ item.supplier || '-' }}</td>
+                    <td><strong *ngIf="item.approvedPrice" class="price">{{ item.approvedPrice | number }}</strong><span *ngIf="!item.approvedPrice">-</span></td>
+                    <td><img *ngIf="item.itemImage" [src]="item.itemImage" class="item-thumb" alt="photo" /><span *ngIf="!item.itemImage" class="no-photo">-</span></td>
+                  </tr>
+                </tbody>
+              </table>
+            </td>
           </tr>
-        </thead>
-        <tbody>
-          <ng-container *ngFor="let inq of tabRows">
-            <tr (click)="toggleExpand(inq.id)" class="clickable-row" [class.expanded-row]="expandedId === inq.id">
-              <td><span class="mono-cell">{{ inq.rfqNo || '-' }}</span><span class="coupa-badge" *ngIf="inq.coupaSource">Coupa</span></td>
-              <td>{{ inq.customer }}</td>
-              <td>{{ inq.salesPic }}</td>
-              <td>{{ inq.sourcingPic || '-' }}</td>
-              <td>{{ itemCount(inq) }}</td>
-              <td>{{ formatDate(inq.tanggal) }}</td>
-              <td>{{ inq.updatedAt ? formatDate(inq.updatedAt) : '-' }}</td>
-            </tr>
-            <tr *ngIf="expandedId === inq.id" class="item-expand-row">
-              <td colspan="7" class="item-expand-cell">
-                <table class="item-sub-table">
-                  <thead>
-                    <tr><th>Nama Barang</th><th>Qty</th><th>Supplier</th><th>Harga Approved</th><th>Foto</th></tr>
-                  </thead>
-                  <tbody>
-                    <tr *ngFor="let item of inq.items">
-                      <td>{{ itemDisplayName(item) }}</td>
-                      <td>{{ item.itemQuantity || '-' }} {{ item.itemUom || '' }}</td>
-                      <td>{{ item.supplier || '-' }}</td>
-                      <td><strong *ngIf="item.approvedPrice" class="price">{{ item.approvedPrice | number }}</strong><span *ngIf="!item.approvedPrice">-</span></td>
-                      <td><img *ngIf="item.itemImage" [src]="item.itemImage" class="item-thumb" alt="photo" /><span *ngIf="!item.itemImage" class="no-photo">-</span></td>
-                    </tr>
-                    <tr *ngIf="inq.items.length === 0"><td colspan="5" class="empty-row">No items.</td></tr>
-                  </tbody>
-                </table>
-              </td>
-            </tr>
-          </ng-container>
-          <tr *ngIf="tabRows.length === 0"><td colspan="7" class="empty-row">No results.</td></tr>
-        </tbody>
-      </table>
-      <div class="table-total">Total: {{ tabRows.length }} items</div>
-    </div>
-
-    <!-- Ready to Purchase tab: grouped by RFQ with accordion -->
-    <div class="tab-content" *ngIf="activeTab === 'ready_to_purchase'">
-      <table class="pipeline-table">
-        <thead>
-          <tr>
-            <th style="width:24px"></th>
-            <th (click)="toggleSort(rtpSort,'rfqNo')" class="sortable">RFQ ID <span class="sort-icon">{{ sortIcon(rtpSort,'rfqNo') }}</span></th>
-            <th (click)="toggleSort(rtpSort,'customer')" class="sortable">Customer <span class="sort-icon">{{ sortIcon(rtpSort,'customer') }}</span></th>
-            <th (click)="toggleSort(rtpSort,'salesPic')" class="sortable">Sales <span class="sort-icon">{{ sortIcon(rtpSort,'salesPic') }}</span></th>
-            <th (click)="toggleSort(rtpSort,'items')" class="sortable">Items <span class="sort-icon">{{ sortIcon(rtpSort,'items') }}</span></th>
-            <th (click)="toggleSort(rtpSort,'tanggal')" class="sortable">Tanggal <span class="sort-icon">{{ sortIcon(rtpSort,'tanggal') }}</span></th>
-          </tr>
-        </thead>
-        <tbody>
-          <ng-container *ngFor="let g of rtpGroups">
-            <tr (click)="toggleExpand(g.inquiry.id)" class="clickable-row" [class.expanded-row]="expandedId === g.inquiry.id">
-              <td class="chevron-cell">{{ expandedId === g.inquiry.id ? '▾' : '▸' }}</td>
-              <td><span class="mono-cell">{{ g.inquiry.rfqNo || '-' }}</span><span class="coupa-badge" *ngIf="g.inquiry.coupaSource">Coupa</span></td>
-              <td>{{ g.inquiry.customer }}</td>
-              <td>{{ g.inquiry.salesPic }}</td>
-              <td><span class="item-count-badge">{{ g.items.length }}</span></td>
-              <td>{{ formatDate(g.inquiry.tanggal) }}</td>
-            </tr>
-            <tr *ngIf="expandedId === g.inquiry.id" class="item-expand-row">
-              <td colspan="6" class="item-expand-cell">
-                <table class="item-sub-table">
-                  <thead>
-                    <tr><th>#</th><th>Nama Barang</th><th>Qty</th><th>Supplier</th><th>Harga Approved</th><th>Foto</th></tr>
-                  </thead>
-                  <tbody>
-                    <tr *ngFor="let item of g.items; let i = index">
-                      <td class="muted-num">{{ i + 1 }}</td>
-                      <td>{{ itemDisplayName(item) }}</td>
-                      <td>{{ item.itemQuantity || '-' }} {{ item.itemUom || '' }}</td>
-                      <td>{{ item.supplier || '-' }}</td>
-                      <td><strong *ngIf="item.approvedPrice" class="price">{{ item.approvedPrice | number }}</strong><span *ngIf="!item.approvedPrice">-</span></td>
-                      <td><img *ngIf="item.itemImage" [src]="item.itemImage" class="item-thumb" alt="photo" /><span *ngIf="!item.itemImage" class="no-photo">-</span></td>
-                    </tr>
-                  </tbody>
-                </table>
-              </td>
-            </tr>
-          </ng-container>
-          <tr *ngIf="rtpGroups.length === 0"><td colspan="6" class="empty-row">No results.</td></tr>
-        </tbody>
-      </table>
-      <div class="table-total">Total: {{ rtpGroups.length }} items</div>
-    </div>
+        </ng-container>
+        <tr *ngIf="rtpGroups.length === 0"><td colspan="6" class="empty-row">No results.</td></tr>
+      </tbody>
+    </table>
+    <div class="table-total">Total: {{ rtpGroups.length }} items</div>
   </ng-container>
 </section>

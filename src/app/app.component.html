@@ -15,9 +15,13 @@
       <a routerLink="/pricelist" routerLinkActive="active" *ngIf="authService.hasMenu('pricelist')">
         Price Approval
       </a>
+      <a routerLink="/report" routerLinkActive="active" *ngIf="authService.hasMenu('report')">
+        Report
+      </a>
       <a routerLink="/admin/users" routerLinkActive="active" *ngIf="authService.hasMenu('admin')">
         Settings
       </a>
+
     </nav>
 
     <div class="user">
@@ -27,20 +31,21 @@
   </header>
 
   <ng-container *ngIf="authService.isLoggedIn() && (rfqNotif.visible$ | async) as notifs">
-    <div class="rfq-notif-banner" *ngIf="notifs.length > 0">
-      <span class="rfq-notif-icon">&#9888;</span>
-      <span class="rfq-notif-text">
-        <ng-container *ngIf="notifs.length === 1; else multiNotif">
-          {{ notifs[0].message }}
-        </ng-container>
-        <ng-template #multiNotif>
-          <strong>{{ notifs.length }}</strong> RFQs need your attention
-        </ng-template>
-      </span>
-      <button type="button" class="rfq-notif-action" (click)="goToPricelist()">
-        Review now &rarr;
-      </button>
-      <button type="button" class="rfq-notif-dismiss" (click)="rfqNotif.dismissAll()" title="Dismiss">&#10005;</button>
+    <div class="rfq-notif-toast" *ngIf="notifs.length > 0">
+      <div class="rfq-notif-toast-header">
+        <span class="rfq-notif-toast-icon">&#9888;</span>
+        <span class="rfq-notif-toast-title">
+          <ng-container *ngIf="notifs.length === 1; else multiNotif">
+            {{ notifs[0].rfqNo || 'RFQ' }} needs attention
+          </ng-container>
+          <ng-template #multiNotif>
+            <strong>{{ notifs.length }}</strong> RFQs need your attention
+          </ng-template>
+        </span>
+        <button type="button" class="rfq-notif-toast-close" (click)="rfqNotif.dismissAll()" title="Dismiss">&#10005;</button>
+      </div>
+      <p class="rfq-notif-toast-body" *ngIf="notifs.length === 1">{{ notifs[0].message }}</p>
+      <button type="button" class="rfq-notif-toast-btn" (click)="goToPricelist()">Review now &rarr;</button>
     </div>
   </ng-container>
 
