@@ -408,7 +408,6 @@ export class SourcingComponent implements OnInit {
     const d = this.daysLeft(dateStr);
     if (d === null) return '-';
     if (d < 0) return `${Math.abs(d)}d overdue`;
-    if (d === 0) return 'Today';
     return `${d}d`;
   }
 

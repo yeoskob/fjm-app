@@ -273,8 +273,15 @@
                   </div>
                   <div class="inline-field-row">
                     <span class="field-label">Harga Beli (Rp) *</span>
-                    <input type="number" [(ngModel)]="fillForm.hargaBeli" [ngModelOptions]="{standalone:true}"
-                      class="form-control" min="0" [disabled]="isMissed(item)" />
+                    <div class="harga-ppn-wrap">
+                      <input type="number" [(ngModel)]="fillForm.hargaBeli" [ngModelOptions]="{standalone:true}"
+                        class="form-control harga-input" min="0" [disabled]="isMissed(item)" />
+                      <div class="ppn-toggle-group">
+                        <button type="button" class="ppn-toggle-btn" [class.active]="ppnType === 'incl_ppn'" (click)="ppnType = 'incl_ppn'">Incl. PPN</button>
+                        <button type="button" class="ppn-toggle-btn" [class.active]="ppnType === 'excl_ppn'" (click)="ppnType = 'excl_ppn'">Excl. PPN</button>
+                        <button type="button" class="ppn-toggle-btn" [class.active]="ppnType === 'non_ppn'" (click)="ppnType = 'non_ppn'">Non PPN</button>
+                      </div>
+                    </div>
                   </div>
                   <div class="inline-field-row">
                     <span class="field-label">Lead Time *</span>
