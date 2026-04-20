@@ -5,7 +5,15 @@ import { AuthService } from '../../services/auth.service';
 import { UserService } from '../../services/user.service';
 import { RoleService, RoleDef } from '../../services/role.service';
 import { OrganizationSetting, SettingsService } from '../../services/settings.service';
-import { DEFAULT_NOTIF_ROLES, NOTIF_ROLES_KEY, RfqNotificationService } from '../../services/rfq-notification.service';
+import {
+  DEFAULT_NOTIF_EVENTS,
+  NOTIF_EVENTS_KEY,
+  LEGACY_NOTIF_ROLES_KEY,
+  NOTIF_TYPES,
+  NOTIF_TYPE_LABELS,
+  NotificationType,
+  RfqNotificationService,
+} from '../../services/rfq-notification.service';
 
 export const PRICE_REVIEW_DEADLINE_HOURS_KEY = 'price_review_deadline_hours';
 
@@ -65,8 +73,13 @@ export class AdminUsersComponent implements OnInit {
 
   readonly modules = ALL_MODULES;
 
-  // Notifications
-  notifRolesMap: Record<string, boolean> = {};
+  // Notifications — matrix of { [type]: { [roleName]: boolean } }
+  readonly notifTypes = NOTIF_TYPES;
+  readonly notifTypeLabels = NOTIF_TYPE_LABELS;
+  notifMatrix: Record<NotificationType, Record<string, boolean>> = {
+    price_approval: {}, price_review: {}, price_approved: {}, return_to_sourcing: {},
+    assigned_sales: {}, assigned_sourcing: {},
+  };
   deadlineHours = 24;
   notifError = '';
   notifSuccess = '';
@@ -114,20 +127,36 @@ export class AdminUsersComponent implements OnInit {
       this.userForm.role = this.roles[0].name;
     }
 
-    // Build notifRolesMap from saved setting (or defaults)
-    let savedRoles: string[] = [...DEFAULT_NOTIF_ROLES];
+    // Build notifMatrix from saved events setting (with legacy + defaults fallback)
+    let savedEvents: Record<NotificationType, string[]> = { ...DEFAULT_NOTIF_EVENTS };
     try {
-      const raw = settings[NOTIF_ROLES_KEY];
-      if (raw) savedRoles = JSON.parse(raw) as string[];
+      const rawEvents = settings[NOTIF_EVENTS_KEY];
+      if (rawEvents) {
+        const parsed = JSON.parse(rawEvents) as Partial<Record<NotificationType, string[]>>;
+        savedEvents = { ...DEFAULT_NOTIF_EVENTS, ...parsed };
+      } else {
+        const rawLegacy = settings[LEGACY_NOTIF_ROLES_KEY];
+        if (rawLegacy) {
+          const legacy = JSON.parse(rawLegacy) as string[];
+          savedEvents = { ...DEFAULT_NOTIF_EVENTS, price_approval: legacy, price_review: legacy };
+        }
+      }
     } catch { /* use defaults */ }
 
-    const map: Record<string, boolean> = {};
-    for (const r of this.roles) map[r.name] = savedRoles.includes(r.name);
-    // Always include built-in roles admin/manager in the map
-    for (const r of ['admin', 'manager']) {
-      if (!(r in map)) map[r] = savedRoles.includes(r);
+    const allRoleNames = new Set<string>(['admin', 'manager', 'marketing', 'sourcing']);
+    for (const r of this.roles) allRoleNames.add(r.name);
+
+    const matrix = {
+      price_approval: {}, price_review: {}, price_approved: {}, return_to_sourcing: {},
+      assigned_sales: {}, assigned_sourcing: {},
+    } as Record<NotificationType, Record<string, boolean>>;
+    for (const t of NOTIF_TYPES) {
+      const rolesForType = savedEvents[t] ?? [];
+      for (const role of allRoleNames) {
+        matrix[t][role] = rolesForType.includes(role);
+      }
     }
-    this.notifRolesMap = map;
+    this.notifMatrix = matrix;
 
     const rawDeadline = settings[PRICE_REVIEW_DEADLINE_HOURS_KEY];
     this.deadlineHours = rawDeadline ? Number(rawDeadline) : 24;
@@ -297,18 +326,28 @@ export class AdminUsersComponent implements OnInit {
       .join(', ');
   }
 
+  matrixRoleNames(): string[] {
+    return Object.keys(this.notifMatrix.price_approval ?? {}).sort();
+  }
+
   async saveNotifRoles(): Promise<void> {
     if (this.notifBusy) return;
     this.notifError = '';
     this.notifSuccess = '';
-    const selected = Object.entries(this.notifRolesMap)
-      .filter(([, v]) => v)
-      .map(([k]) => k);
+    const events: Record<NotificationType, string[]> = {
+      price_approval: [], price_review: [], price_approved: [], return_to_sourcing: [],
+      assigned_sales: [], assigned_sourcing: [],
+    };
+    for (const t of NOTIF_TYPES) {
+      events[t] = Object.entries(this.notifMatrix[t] ?? {})
+        .filter(([, v]) => v)
+        .map(([k]) => k);
+    }
     this.notifBusy = true;
     try {
-      await this.settingsService.set(NOTIF_ROLES_KEY, JSON.stringify(selected));
-      this.rfqNotif.setRoles(selected);
-      this.notifSuccess = 'Notification roles saved.';
+      await this.settingsService.set(NOTIF_EVENTS_KEY, JSON.stringify(events));
+      this.rfqNotif.setEvents(events);
+      this.notifSuccess = 'Notification settings saved.';
     } catch (err: any) {
       this.notifError = err?.error?.error ?? 'Failed to save.';
     } finally {

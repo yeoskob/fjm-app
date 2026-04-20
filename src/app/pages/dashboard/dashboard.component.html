@@ -27,7 +27,7 @@
         <div class="stat-card">
           <div class="stat-value">{{ dashboard.thisMonth }}</div>
           <div class="stat-label">Inquiry Bulan Ini</div>
-          <div class="stat-sub">{{ dashboard.total }} total keseluruhan</div>
+          <div class="stat-sub">{{ marketingPieData?.total ?? dashboard.total }} total keseluruhan</div>
         </div>
         <div class="stat-card highlight-blue">
           <div class="stat-value">{{ marketingConversionRate | number:'1.0-1' }}%</div>
@@ -144,14 +144,14 @@
           <div class="stat-label">Fill Rate</div>
           <div class="stat-sub">{{ dashboard.itemsTerisi }} / {{ dashboard.itemsTerisi + dashboard.itemsTidakTerisi }} items</div>
         </div>
-        <div class="stat-card" [class.highlight-red-soft]="dashboard.rfqsMissedUnassigned > 0">
-          <div class="stat-value">{{ dashboard.rfqsMissedUnassigned }}</div>
+        <div class="stat-card" [class.highlight-red-soft]="dashboard.itemsMissedUnassigned > 0">
+          <div class="stat-value">{{ dashboard.itemsMissedUnassigned }}</div>
           <div class="stat-label">Missed Tanpa PIC</div>
           <div class="stat-sub">perlu perhatian</div>
         </div>
-        <div class="stat-card" [class.highlight-red]="dashboard.rfqsMissed > 0">
-          <div class="stat-value">{{ dashboard.rfqsMissed }}</div>
-          <div class="stat-label">Total Missed RFQ</div>
+        <div class="stat-card" [class.highlight-red]="dashboard.itemsMissed > 0">
+          <div class="stat-value">{{ dashboard.itemsMissed }}</div>
+          <div class="stat-label">Total Missed Items</div>
           <div class="stat-sub">melewati need-by date</div>
         </div>
       </div>
@@ -437,8 +437,8 @@
                     <!-- Detail row -->
                     <div class="achievement-stat-row achievement-detail-row">
                       <div class="achievement-stat">
-                        <div class="achievement-stat-value">{{ userStats.sourcingStats.itemsSourced }}</div>
-                        <div class="achievement-stat-label">Items Sourced</div>
+                        <div class="achievement-stat-value">{{ userStats.sourcingStats.itemsTidakTerisi ?? 0 }}</div>
+                        <div class="achievement-stat-label">Tidak Terisi</div>
                       </div>
                       <div class="achievement-stat">
                         <div class="achievement-stat-value">{{ userStats.sourcingStats.inquiriesContributed }}</div>

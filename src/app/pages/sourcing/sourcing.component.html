@@ -437,8 +437,9 @@
         {{ pendingCount(selectedInquiry) }} item belum terisi.
       </div>
       <button type="button" class="primary" *ngIf="!selectedInquiry.sourcingMissed"
+        [disabled]="sendingToPriceApproval"
         (click)="sendToPriceApproval()">
-        Kirim ke Price Approval
+        {{ sendingToPriceApproval ? 'Sending...' : 'Kirim ke Price Approval' }}
       </button>
     </div>
 

@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 import { InquiryService } from '../../services/inquiry.service';
+import { ToastService } from '../../services/toast.service';
 import { Inquiry, InquiryItem, InquiryNote, SourcingInfo } from '../../models/inquiry';
 
 @Component({
@@ -104,7 +105,7 @@ export class SourcingComponent implements OnInit {
   ppnType: 'incl_ppn' | 'excl_ppn' | 'non_ppn' | null = null;
   previewImageUrl: string | null = null;
 
-  constructor(private inquiryService: InquiryService, private authService: AuthService, private route: ActivatedRoute) {}
+  constructor(private inquiryService: InquiryService, private authService: AuthService, private toast: ToastService, private route: ActivatedRoute) {}
 
   ngOnInit(): void {
     const tabs: Array<'rfq' | 'riwayat'> = ['rfq', 'riwayat'];
@@ -117,6 +118,12 @@ export class SourcingComponent implements OnInit {
         this.sourcingUsers = users.filter((u) => u.role === 'sourcing');
       });
     }
+
+    const initialRefresh = this.route.snapshot.queryParamMap.get('refresh');
+    this.route.queryParams.subscribe((params) => {
+      const r = params['refresh'];
+      if (r && r !== initialRefresh) void this.refresh();
+    });
   }
 
   isAdminOrManager(): boolean {
@@ -340,14 +347,24 @@ export class SourcingComponent implements OnInit {
     }
   }
 
+  sendingToPriceApproval = false;
+
   async sendToPriceApproval(): Promise<void> {
+    if (this.sendingToPriceApproval) return;
     if (!this.selectedInquiry) return;
     const user = this.authService.getCurrentUser();
-    if (!user) { this.error = 'Not logged in.'; return; }
+    if (!user) { this.toast.error('Not logged in.'); return; }
     this.error = '';
-    await this.inquiryService.sendToPriceApproval(this.selectedInquiry.id, user.username, user.name);
-    this.success = 'Sent to Price Approval.';
-    await this.refresh();
+    this.sendingToPriceApproval = true;
+    try {
+      await this.inquiryService.sendToPriceApproval(this.selectedInquiry.id, user.username, user.name);
+      this.toast.success('Sent to Price Approval.');
+      await this.refresh();
+    } catch (e: any) {
+      this.toast.error(e?.error?.error ?? 'Failed to send to Price Approval.');
+    } finally {
+      this.sendingToPriceApproval = false;
+    }
   }
 
   isSourced(item: InquiryItem): boolean {

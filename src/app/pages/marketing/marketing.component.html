@@ -689,7 +689,7 @@
               Sending now will mark this RFQ as incomplete.
             </div>
             <div class="footer-actions">
-              <button type="button" class="ghost sm review-action-btn" [disabled]="(badItems.length === 0 && reviewNeeded.length === 0 && sourcingGaps.length === 0) || unreadReviewItems.length > 0" (click)="openPriceReviewModal(detailInquiry!)">Price Review</button>
+              <button type="button" class="ghost sm review-action-btn" [disabled]="unreadReviewItems.length > 0" (click)="openPriceReviewModal(detailInquiry!)">Price Review</button>
               <button type="button" class="primary sm sent-action-btn" (click)="sendToSent(detailInquiry!)">Sent</button>
             </div>
           </ng-container>

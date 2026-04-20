@@ -140,11 +140,18 @@ export class InquiryService {
     return firstValueFrom(this.http.get<ReportSourcingData>(`${this.base}/report/sourcing`, { params }));
   }
 
-  exportReport(month?: string, salesPic?: string, status?: string): Promise<Blob> {
+  exportReport(
+    month?: string, salesPic?: string, status?: string, search?: string,
+    dateField?: 'tanggal' | 'need_by_date', dateFrom?: string, dateTo?: string,
+  ): Promise<Blob> {
     const params: Record<string, string> = {};
     if (month) params['month'] = month;
     if (salesPic) params['salesPic'] = salesPic;
     if (status) params['status'] = status;
+    if (search) params['search'] = search;
+    if (dateField) params['dateField'] = dateField;
+    if (dateFrom) params['dateFrom'] = dateFrom;
+    if (dateTo) params['dateTo'] = dateTo;
     return firstValueFrom(this.http.get(`${this.base}/report/export`, { params, responseType: 'blob' }));
   }
 }

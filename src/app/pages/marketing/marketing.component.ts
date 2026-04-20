@@ -208,7 +208,6 @@ export class MarketingComponent implements OnInit {
     const d = this.daysLeft(inq);
     if (d === null) return '-';
     if (d < 0) return `${Math.abs(d)}d overdue`;
-    if (d === 0) return 'Today';
     return `${d}d`;
   }
 
@@ -257,6 +256,12 @@ export class MarketingComponent implements OnInit {
       });
     }
     void this.loadOrganizationOptions();
+
+    const initialRefresh = this.route.snapshot.queryParamMap.get('refresh');
+    this.route.queryParams.subscribe((params) => {
+      const r = params['refresh'];
+      if (r && r !== initialRefresh) void this.refresh();
+    });
   }
 
   private async loadOrganizationOptions(): Promise<void> {

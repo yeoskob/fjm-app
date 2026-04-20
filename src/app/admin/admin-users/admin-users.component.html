@@ -216,16 +216,26 @@
   <div class="tab-content" *ngIf="activeTab === 'notifications'">
     <div class="admin-grid">
       <div class="card">
-        <h2>RFQ Approval Notification</h2>
-        <p class="hint">Select which roles receive a notification when an RFQ enters the Price Approval stage.</p>
+        <h2>RFQ Notifications</h2>
+        <p class="hint">Select which roles receive a notification for each event. Targeted events (Price Approved, Returned to Sourcing) are delivered only to the PIC of the RFQ.</p>
 
-        <div class="module-list" style="margin-top: 1rem;">
-          <div class="module-item" *ngFor="let entry of notifRolesMap | keyvalue">
-            <label class="checkbox-label">
-              <input type="checkbox" [(ngModel)]="notifRolesMap[entry.key]" [ngModelOptions]="{standalone:true}" />
-              {{ entry.key }}
-            </label>
-          </div>
+        <div class="notif-matrix" style="margin-top: 1rem; overflow-x: auto;">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Event</th>
+                <th *ngFor="let role of matrixRoleNames()">{{ role }}</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let t of notifTypes">
+                <td>{{ notifTypeLabels[t] }}</td>
+                <td *ngFor="let role of matrixRoleNames()">
+                  <input type="checkbox" [(ngModel)]="notifMatrix[t][role]" [ngModelOptions]="{standalone:true}" />
+                </td>
+              </tr>
+            </tbody>
+          </table>
         </div>
 
         <div class="notice error" *ngIf="notifError">{{ notifError }}</div>
@@ -233,7 +243,7 @@
 
         <div class="actions" style="margin-top: 1.25rem;">
           <button type="button" class="primary" [disabled]="notifBusy" (click)="saveNotifRoles()">
-            {{ notifBusy ? 'Saving...' : 'Save Roles' }}
+            {{ notifBusy ? 'Saving...' : 'Save Settings' }}
           </button>
         </div>
       </div>

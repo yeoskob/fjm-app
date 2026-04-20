@@ -48,8 +48,18 @@
         </select>
       </div>
       <div class="search-bar">
-        <input type="text" class="search-input" placeholder="Search RFQ no, customer, sales PIC..." [(ngModel)]="mSearch" (ngModelChange)="mPage = 1" />
+        <input type="text" class="search-input" placeholder="Search RFQ no, customer..." [(ngModel)]="mSearch" (ngModelChange)="mPage = 1" />
         <button *ngIf="mSearch" class="search-clear" (click)="mSearch = ''">&#10005;</button>
+      </div>
+      <div class="date-filter-row">
+        <select [(ngModel)]="mDateField" (ngModelChange)="onMDateChange()">
+          <option value="tanggal">Inquiry Date</option>
+          <option value="need_by_date">Need By Date</option>
+        </select>
+        <input type="date" [(ngModel)]="mDateFrom" (ngModelChange)="onMDateChange()" />
+        <span class="dim">to</span>
+        <input type="date" [(ngModel)]="mDateTo" (ngModelChange)="onMDateChange()" />
+        <button type="button" class="search-clear" *ngIf="mDateFrom || mDateTo" (click)="clearMDateRange()" title="Clear">&#10005;</button>
       </div>
     </div>
 
@@ -138,8 +148,18 @@
         </select>
       </div>
       <div class="search-bar">
-        <input type="text" class="search-input" placeholder="Search RFQ no, customer, sourcing PIC..." [(ngModel)]="sSearch" (ngModelChange)="sPage = 1" />
+        <input type="text" class="search-input" placeholder="Search RFQ no, customer..." [(ngModel)]="sSearch" (ngModelChange)="sPage = 1" />
         <button *ngIf="sSearch" class="search-clear" (click)="sSearch = ''">&#10005;</button>
+      </div>
+      <div class="date-filter-row">
+        <select [(ngModel)]="sDateField" (ngModelChange)="onSDateChange()">
+          <option value="tanggal">Inquiry Date</option>
+          <option value="need_by_date">Need By Date</option>
+        </select>
+        <input type="date" [(ngModel)]="sDateFrom" (ngModelChange)="onSDateChange()" />
+        <span class="dim">to</span>
+        <input type="date" [(ngModel)]="sDateTo" (ngModelChange)="onSDateChange()" />
+        <button type="button" class="search-clear" *ngIf="sDateFrom || sDateTo" (click)="clearSDateRange()" title="Clear">&#10005;</button>
       </div>
     </div>
 
@@ -240,21 +260,35 @@
           </tr>
         </thead>
         <tbody>
-          <tr *ngFor="let item of detailInquiry.items; let i = index">
-            <td class="dim">{{ i + 1 }}</td>
-            <td>{{ item.itemName || '-' }}</td>
-            <td>{{ item.itemQuantity != null ? item.itemQuantity + ' ' + (item.itemUom || '') : '-' }}</td>
-            <td class="date-cell">{{ formatDate(item.itemNeedByDate) }}</td>
-            <td>{{ item.supplier || '-' }}</td>
-            <td class="num">{{ item.hargaBeli != null ? (item.hargaBeli | number) : '-' }}</td>
-            <td class="num">{{ item.hargaJual != null ? (item.hargaJual | number) : '-' }}</td>
-            <td>
-              <span class="item-status-dot"
-                [class.dot-filled]="item.supplier && item.hargaBeli != null"
-                [class.dot-empty]="!item.supplier || item.hargaBeli == null">
-              </span>
-            </td>
-          </tr>
+          <ng-container *ngFor="let item of detailInquiry.items; let i = index">
+            <tr class="clickable-row" (click)="toggleItemComments(item)">
+              <td class="dim">{{ i + 1 }}</td>
+              <td>{{ item.itemName || '-' }}</td>
+              <td>{{ item.itemQuantity != null ? item.itemQuantity + ' ' + (item.itemUom || '') : '-' }}</td>
+              <td class="date-cell">{{ formatDate(item.itemNeedByDate) }}</td>
+              <td>{{ item.supplier || '-' }}</td>
+              <td class="num">{{ item.hargaBeli != null ? (item.hargaBeli | number) : '-' }}</td>
+              <td class="num">{{ item.hargaJual != null ? (item.hargaJual | number) : '-' }}</td>
+              <td>
+                <span class="item-status-dot"
+                  [class.dot-filled]="item.supplier && item.hargaBeli != null"
+                  [class.dot-empty]="!item.supplier || item.hargaBeli == null">
+                </span>
+              </td>
+            </tr>
+            <tr *ngIf="expandedItemId === item.id" class="item-comments-row">
+              <td colspan="8">
+                <div class="item-comments-feed">
+                  <div class="empty-comments" *ngIf="(itemNotesMap[item.id]?.length ?? 0) === 0">No comments yet.</div>
+                  <div class="comment-bubble" *ngFor="let n of (itemNotesMap[item.id] ?? [])">
+                    <div class="comment-author">{{ n.createdByName }}</div>
+                    <div class="comment-text">{{ n.note }}</div>
+                    <div class="comment-time">{{ formatDate(n.createdAt) }}</div>
+                  </div>
+                </div>
+              </td>
+            </tr>
+          </ng-container>
         </tbody>
       </table>
     </div>

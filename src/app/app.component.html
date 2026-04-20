@@ -25,13 +25,47 @@
     </nav>
 
     <div class="user">
+      <ng-container *ngIf="(rfqNotif.visible$ | async) as notifs">
+        <div class="notif-wrap">
+          <button type="button" class="notif-btn" (click)="toggleNotif()" title="Notifications">
+            <svg class="notif-icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9" />
+              <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+            </svg>
+            <span class="notif-badge" *ngIf="notifs.length > 0">{{ notifs.length }}</span>
+          </button>
+
+          <div class="notif-backdrop" *ngIf="notifOpen" (click)="closeNotif()"></div>
+
+          <div class="notif-panel" *ngIf="notifOpen">
+            <div class="notif-panel-header">
+              <span class="notif-panel-title">Notifications</span>
+              <button type="button" class="notif-panel-clear" *ngIf="notifs.length > 0" (click)="dismissAll()">Mark all read</button>
+            </div>
+
+            <div class="notif-empty" *ngIf="notifs.length === 0">No new notifications</div>
+
+            <ul class="notif-list" *ngIf="notifs.length > 0">
+              <li class="notif-item notif-item-clickable" *ngFor="let n of notifs" (click)="goToReview(n)">
+                <div class="notif-item-title">{{ n.rfqNo || 'RFQ' }}</div>
+                <div class="notif-item-msg">{{ n.message }}</div>
+              </li>
+            </ul>
+
+            <button type="button" class="notif-panel-action" *ngIf="notifs.length > 0" (click)="reviewFirst(notifs)">
+              Review now &rarr;
+            </button>
+          </div>
+        </div>
+      </ng-container>
+
       <span>{{ authService.getCurrentUser()?.name }}</span>
       <button type="button" class="ghost" (click)="logout()">Logout</button>
     </div>
   </header>
 
   <ng-container *ngIf="authService.isLoggedIn() && (rfqNotif.visible$ | async) as notifs">
-    <div class="rfq-notif-toast" *ngIf="notifs.length > 0">
+    <div class="rfq-notif-toast" *ngIf="notifs.length > 0 && toastVisible">
       <div class="rfq-notif-toast-header">
         <span class="rfq-notif-toast-icon">&#9888;</span>
         <span class="rfq-notif-toast-title">
@@ -42,12 +76,20 @@
             <strong>{{ notifs.length }}</strong> RFQs need your attention
           </ng-template>
         </span>
-        <button type="button" class="rfq-notif-toast-close" (click)="rfqNotif.dismissAll()" title="Dismiss">&#10005;</button>
+        <button type="button" class="rfq-notif-toast-close" (click)="closeToast()" title="Close">&#10005;</button>
       </div>
       <p class="rfq-notif-toast-body" *ngIf="notifs.length === 1">{{ notifs[0].message }}</p>
-      <button type="button" class="rfq-notif-toast-btn" (click)="goToPricelist()">Review now &rarr;</button>
+      <button type="button" class="rfq-notif-toast-btn" (click)="reviewFirst(notifs)">Review now &rarr;</button>
     </div>
   </ng-container>
+
+  <div class="toast-stack" *ngIf="(toast.toasts$ | async) as toasts">
+    <div class="toast" *ngFor="let t of toasts" [class.toast-error]="t.kind === 'error'"
+         [class.toast-success]="t.kind === 'success'" [class.toast-info]="t.kind === 'info'">
+      <span class="toast-msg">{{ t.message }}</span>
+      <button type="button" class="toast-close" (click)="toast.dismiss(t.id)" title="Dismiss">&#10005;</button>
+    </div>
+  </div>
 
   <main class="content" [class.full]="!authService.isLoggedIn()">
     <router-outlet></router-outlet>

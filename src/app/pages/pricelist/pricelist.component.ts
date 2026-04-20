@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { ActivatedRoute } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 import { InquiryService } from '../../services/inquiry.service';
 import { SettingsService } from '../../services/settings.service';
@@ -137,6 +138,7 @@ export class PricelistComponent implements OnInit {
     private inquiryService: InquiryService,
     private authService: AuthService,
     private settingsService: SettingsService,
+    private route: ActivatedRoute,
   ) {}
 
   ngOnInit(): void {
@@ -148,6 +150,12 @@ export class PricelistComponent implements OnInit {
     void this.inquiryService.getUsers().then((users) => {
       this.salesUsers = users.filter((u) => u.role === 'marketing');
       this.sourcingUsers = users.filter((u) => u.role === 'sourcing');
+    });
+
+    const initialRefresh = this.route.snapshot.queryParamMap.get('refresh');
+    this.route.queryParams.subscribe((params) => {
+      const r = params['refresh'];
+      if (r && r !== initialRefresh) void this.refresh();
     });
   }
 

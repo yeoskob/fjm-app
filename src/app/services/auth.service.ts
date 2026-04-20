@@ -1,4 +1,4 @@
-﻿import { Injectable } from '@angular/core';
+import { Injectable, OnDestroy } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 import { Role, User } from '../models/user';
@@ -7,13 +7,20 @@ import { environment } from '../../environments/environment';
 @Injectable({
   providedIn: 'root',
 })
-export class AuthService {
+export class AuthService implements OnDestroy {
   private readonly storageKey = 'fjm_current_user';
   private readonly apiBase = `${environment.apiUrl}`;
   private currentUser: User | null = null;
+  private readonly onStorageChange = (event: StorageEvent): void => {
+    if (event.key !== this.storageKey) {
+      return;
+    }
+    this.currentUser = this.load();
+  };
 
   constructor(private http: HttpClient) {
     this.currentUser = this.load();
+    window.addEventListener('storage', this.onStorageChange);
   }
 
   async login(username: string, password: string): Promise<{ ok: true; user: User } | { ok: false; error: string }> {
@@ -116,5 +123,9 @@ export class AuthService {
       return;
     }
     localStorage.setItem(this.storageKey, JSON.stringify(this.currentUser));
+  }
+
+  ngOnDestroy(): void {
+    window.removeEventListener('storage', this.onStorageChange);
   }
 }

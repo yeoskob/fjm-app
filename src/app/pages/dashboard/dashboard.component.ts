@@ -155,7 +155,7 @@ export class DashboardComponent implements OnInit {
 
     const newInquiry  = get('new_inquiry');
     const inPipeline  = get('rfq') + get('price_approval') + get('price_approved');
-    const sentTotal   = get('quotation_sent') + get('ready_to_purchase');
+    const sentTotal   = get('quotation_sent') + get('follow_up');
     const unsent      = get('unsent');
     const total = newInquiry + inPipeline + sentTotal + unsent;
     if (total === 0) return null;

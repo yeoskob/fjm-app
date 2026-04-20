@@ -1,6 +1,6 @@
 import { Component, OnInit, HostListener } from '@angular/core';
 import { InquiryService } from '../../services/inquiry.service';
-import { Inquiry, ReportData, ReportRow, ReportSourcingData, ReportSourcingRow, INQUIRY_STATUS_LABELS } from '../../models/inquiry';
+import { Inquiry, InquiryItem, InquiryNote, ReportData, ReportRow, ReportSourcingData, ReportSourcingRow, INQUIRY_STATUS_LABELS } from '../../models/inquiry';
 
 type ReportTab = 'marketing' | 'sourcing';
 
@@ -20,6 +20,9 @@ export class ReportComponent implements OnInit {
   mSelectedSalesPic = '';
   mSelectedStatus = '';
   mSearch = '';
+  mDateField: 'tanggal' | 'need_by_date' = 'tanggal';
+  mDateFrom = '';
+  mDateTo = '';
   mSortCol: keyof ReportRow | '' = 'tanggal';
   mSortDir: 'asc' | 'desc' = 'desc';
   mUserDropdownOpen = false;
@@ -34,6 +37,9 @@ export class ReportComponent implements OnInit {
   sSelectedSourcingPic = '';
   sSelectedStatus = '';
   sSearch = '';
+  sDateField: 'tanggal' | 'need_by_date' = 'tanggal';
+  sDateFrom = '';
+  sDateTo = '';
   sSortCol: keyof ReportSourcingRow | '' = 'tanggal';
   sSortDir: 'asc' | 'desc' = 'desc';
   sUserDropdownOpen = false;
@@ -67,8 +73,6 @@ export class ReportComponent implements OnInit {
     { value: 'price_approval',    label: 'Price Approval' },
     { value: 'price_approved',    label: 'Price Approved' },
     { value: 'quotation_sent',    label: 'Quotation Sent' },
-    { value: 'follow_up',         label: 'Negotiation' },
-    { value: 'ready_to_purchase', label: 'Ready to Purchase' },
     { value: 'unsent',            label: 'Unsent' },
   ];
 
@@ -77,7 +81,6 @@ export class ReportComponent implements OnInit {
     { value: 'price_approval',    label: 'Price Approval' },
     { value: 'price_approved',    label: 'Price Approved' },
     { value: 'quotation_sent',    label: 'Quotation Sent' },
-    { value: 'ready_to_purchase', label: 'Ready to Purchase' },
     { value: 'missed',            label: 'Missed' },
   ];
 
@@ -89,8 +92,8 @@ export class ReportComponent implements OnInit {
 
   async init(): Promise<void> {
     const users = await this.inquiryService.getUsers();
-    this.marketingUsers = users.filter((u) => u.role === 'marketing').map((u) => u.name).sort();
-    this.sourcingUsers  = users.filter((u) => u.role === 'sourcing').map((u) => u.name).sort();
+    this.marketingUsers = users.filter((u) => u.role !== 'sourcing' && u.role !== 'manager').map((u) => u.name).sort();
+    this.sourcingUsers  = users.filter((u) => u.role !== 'marketing' && u.role !== 'manager').map((u) => u.name).sort();
     void this.loadMarketing();
     void this.loadSourcing();
   }
@@ -141,7 +144,10 @@ export class ReportComponent implements OnInit {
     let rows = this.mSelectedStatus ? this.mData.rows.filter((r) => r.status === this.mSelectedStatus) : this.mData.rows;
     if (this.mSearch.trim()) {
       const q = this.mSearch.trim().toLowerCase();
-      rows = rows.filter((r) => [r.rfq_no, r.customer, r.sales_pic, r.need_by_date, r.tanggal, this.statusLabel(r.status)].some((v) => v && String(v).toLowerCase().includes(q)));
+      rows = rows.filter((r) => [r.rfq_no, r.customer].some((v) => v && String(v).toLowerCase().includes(q)));
+    }
+    if (this.mDateFrom || this.mDateTo) {
+      rows = rows.filter((r) => this.inDateRange(r[this.mDateField] as string | null, this.mDateFrom, this.mDateTo));
     }
     return [...rows].sort((a, b) => {
       const av = a[col as keyof ReportRow] ?? ''; const bv = b[col as keyof ReportRow] ?? '';
@@ -200,7 +206,10 @@ export class ReportComponent implements OnInit {
     let rows = this.sSelectedStatus ? this.sData.rows.filter((r) => r.status === this.sSelectedStatus) : this.sData.rows;
     if (this.sSearch.trim()) {
       const q = this.sSearch.trim().toLowerCase();
-      rows = rows.filter((r) => [r.rfq_no, r.customer, r.sales_pic, r.sourcing_pic, this.statusLabel(r.status)].some((v) => v && String(v).toLowerCase().includes(q)));
+      rows = rows.filter((r) => [r.rfq_no, r.customer].some((v) => v && String(v).toLowerCase().includes(q)));
+    }
+    if (this.sDateFrom || this.sDateTo) {
+      rows = rows.filter((r) => this.inDateRange(r[this.sDateField] as string | null, this.sDateFrom, this.sDateTo));
     }
     return [...rows].sort((a, b) => {
       const av = a[col as keyof ReportSourcingRow] ?? ''; const bv = b[col as keyof ReportSourcingRow] ?? '';
@@ -260,6 +269,19 @@ export class ReportComponent implements OnInit {
     return date.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
   }
 
+  inDateRange(value: string | null, from: string, to: string): boolean {
+    if (!value) return false;
+    const v = String(value).slice(0, 10);
+    if (from && v < from) return false;
+    if (to && v > to) return false;
+    return true;
+  }
+
+  onMDateChange(): void { this.mPage = 1; }
+  onSDateChange(): void { this.sPage = 1; }
+  clearMDateRange(): void { this.mDateFrom = ''; this.mDateTo = ''; this.mPage = 1; }
+  clearSDateRange(): void { this.sDateFrom = ''; this.sDateTo = ''; this.sPage = 1; }
+
   async exportExcel(): Promise<void> {
     if (this.exporting) return;
     this.exporting = true;
@@ -267,11 +289,19 @@ export class ReportComponent implements OnInit {
       const month = this.activeTab === 'marketing' ? this.mSelectedMonth : this.sSelectedMonth;
       const salesPic = this.activeTab === 'marketing' ? this.mSelectedSalesPic : undefined;
       const status = this.activeTab === 'marketing' ? this.mSelectedStatus : this.sSelectedStatus;
-      const blob = await this.inquiryService.exportReport(month || undefined, salesPic, status || undefined);
+      const search = this.activeTab === 'marketing' ? this.mSearch.trim() : this.sSearch.trim();
+      const dateField = this.activeTab === 'marketing' ? this.mDateField : this.sDateField;
+      const dateFrom = this.activeTab === 'marketing' ? this.mDateFrom : this.sDateFrom;
+      const dateTo   = this.activeTab === 'marketing' ? this.mDateTo   : this.sDateTo;
+      const blob = await this.inquiryService.exportReport(
+        month || undefined, salesPic, status || undefined, search || undefined,
+        dateField, dateFrom || undefined, dateTo || undefined,
+      );
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `report${month ? '-' + month : ''}.xlsx`;
+      const today = new Date().toISOString().slice(0, 10);
+      a.download = `report-${today}${month ? '-' + month : ''}.xlsx`;
       a.click();
       URL.revokeObjectURL(url);
     } finally { this.exporting = false; }
@@ -279,11 +309,29 @@ export class ReportComponent implements OnInit {
 
   async openDetail(id: string): Promise<void> {
     this.detailLoading = true; this.detailInquiry = null;
+    this.itemNotesMap = {};
+    this.expandedItemId = null;
     try { this.detailInquiry = await this.inquiryService.getById(id); }
     finally { this.detailLoading = false; }
   }
 
-  closeDetail(): void { this.detailInquiry = null; }
+  closeDetail(): void { this.detailInquiry = null; this.itemNotesMap = {}; this.expandedItemId = null; }
+
+  expandedItemId: string | null = null;
+  itemNotesMap: Record<string, InquiryNote[]> = {};
+
+  async toggleItemComments(item: InquiryItem): Promise<void> {
+    if (!this.detailInquiry) return;
+    if (this.expandedItemId === item.id) { this.expandedItemId = null; return; }
+    this.expandedItemId = item.id;
+    if (!this.itemNotesMap[item.id]) {
+      try {
+        this.itemNotesMap[item.id] = await this.inquiryService.getItemNotes(this.detailInquiry.id, item.id);
+      } catch {
+        this.itemNotesMap[item.id] = [];
+      }
+    }
+  }
 
   @HostListener('document:click', ['$event'])
   onDocClick(e: MouseEvent): void {
