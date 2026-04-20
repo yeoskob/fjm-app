@@ -224,7 +224,6 @@ export class SourcingComponent implements OnInit {
 
   async toggleFill(item: InquiryItem): Promise<void> {
     if (!this.selectedInquiry || this.selectedInquiry.status !== 'rfq') return;
-    if (this.isMissed(item)) return;
     if (this.editingItemId === item.id) {
       this.cancelFill();
       this.itemNewNote = '';

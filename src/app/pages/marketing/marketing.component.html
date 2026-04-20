@@ -2,7 +2,6 @@
   <div class="page-header">
     <div>
       <h1>Marketing</h1>
-      <p>Manage inquiries from customer intake to deal closing.</p>
     </div>
     <div class="actions">
       <button type="button" class="ghost" (click)="openImport()">Import Coupa Excel</button>
@@ -44,7 +43,7 @@
         </tr>
       </thead>
       <tbody>
-        <tr *ngFor="let inq of rfqTabFiltered" (click)="openDetail(inq)" class="clickable-row">
+        <tr *ngFor="let inq of pagedRfq" (click)="openDetail(inq)" class="clickable-row">
           <td>
             <span class="mono-cell">{{ inq.rfqNo || '-' }}</span>
             <span class="coupa-badge" *ngIf="inq.coupaSource">Coupa</span>
@@ -68,6 +67,11 @@
       </tbody>
     </table>
     <div class="table-total">Total: {{ rfqTabFiltered.length }} items</div>
+    <div class="pager" *ngIf="rfqPages() > 1">
+      <button class="ghost sm" (click)="rfqPage = rfqPage - 1" [disabled]="rfqPage === 1">‹ Prev</button>
+      <span>{{ rfqPage }} / {{ rfqPages() }}</span>
+      <button class="ghost sm" (click)="rfqPage = rfqPage + 1" [disabled]="rfqPage === rfqPages()">Next ›</button>
+    </div>
   </div>
 
   <!-- Price Approved Tab -->
@@ -89,7 +93,7 @@
         </tr>
       </thead>
       <tbody>
-        <tr *ngFor="let inq of priceApprovedTabFiltered" (click)="openDetail(inq)" class="clickable-row">
+        <tr *ngFor="let inq of pagedPriceApproved" (click)="openDetail(inq)" class="clickable-row">
           <td>
             <span class="mono-cell">{{ inq.rfqNo || '-' }}</span>
             <span class="coupa-badge" *ngIf="inq.coupaSource">Coupa</span>
@@ -114,6 +118,11 @@
       </tbody>
     </table>
     <div class="table-total">Total: {{ priceApprovedTabFiltered.length }} items</div>
+    <div class="pager" *ngIf="priceApprovedPages() > 1">
+      <button class="ghost sm" (click)="priceApprovedPage = priceApprovedPage - 1" [disabled]="priceApprovedPage === 1">‹ Prev</button>
+      <span>{{ priceApprovedPage }} / {{ priceApprovedPages() }}</span>
+      <button class="ghost sm" (click)="priceApprovedPage = priceApprovedPage + 1" [disabled]="priceApprovedPage === priceApprovedPages()">Next ›</button>
+    </div>
   </div>
 
   <!-- Sent Tab -->
@@ -135,7 +144,7 @@
         </tr>
       </thead>
       <tbody>
-        <tr *ngFor="let inq of quotationTabFiltered" (click)="openDetail(inq)" class="clickable-row">
+        <tr *ngFor="let inq of pagedQuotation" (click)="openDetail(inq)" class="clickable-row">
           <td>
             <span class="mono-cell">{{ inq.rfqNo || '-' }}</span>
             <span class="coupa-badge" *ngIf="inq.coupaSource">Coupa</span>
@@ -160,6 +169,11 @@
       </tbody>
     </table>
     <div class="table-total">Total: {{ quotationTabFiltered.length }} items</div>
+    <div class="pager" *ngIf="quotationPages() > 1">
+      <button class="ghost sm" (click)="quotationPage = quotationPage - 1" [disabled]="quotationPage === 1">‹ Prev</button>
+      <span>{{ quotationPage }} / {{ quotationPages() }}</span>
+      <button class="ghost sm" (click)="quotationPage = quotationPage + 1" [disabled]="quotationPage === quotationPages()">Next ›</button>
+    </div>
   </div>
 
 </section>
@@ -635,7 +649,7 @@
             </div>
             <div class="footer-actions">
               <button type="button" class="ghost sm review-action-btn" [disabled]="!hasReviewedAllItems(detailInquiry!) || (badItems.length === 0 && reviewNeeded.length === 0 && sourcingGaps.length === 0)" (click)="openPriceReviewModal(detailInquiry!)">Price Review</button>
-              <button type="button" class="primary sm sent-action-btn" [disabled]="!hasReviewedAllItems(detailInquiry!)" (click)="sendToSent(detailInquiry!)">Sent</button>
+              <button type="button" class="primary sm sent-action-btn" [disabled]="!hasReviewedAllItems(detailInquiry!) || badItems.length > 0" (click)="sendToSent(detailInquiry!)">Sent</button>
             </div>
           </ng-container>
           </ng-container>
