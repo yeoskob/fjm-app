@@ -2,7 +2,6 @@
   <div class="page-header">
     <div>
       <h1>Sourcing</h1>
-      <p>Isi informasi supplier untuk setiap RFQ yang masuk.</p>
     </div>
     <button type="button" class="ghost" (click)="refresh()">Refresh</button>
   </div>
@@ -165,6 +164,10 @@
         <span>{{ formatDate(selectedInquiry.tanggal) }}</span>
       </div>
       <div class="modal-header-row">
+        <span class="header-label">Need by Date:</span>
+        <span>{{ formatDate(selectedInquiry.needByDate) }}</span>
+      </div>
+      <div class="modal-header-row">
         <span class="header-label">Sales:</span>
         <span class="assign-row">
           <ng-container *ngIf="!assigningSalesPic">
@@ -266,53 +269,46 @@
                   <div class="inline-field-row">
                     <span class="field-label">Supplier *</span>
                     <input type="text" [(ngModel)]="fillForm.supplier" [ngModelOptions]="{standalone:true}"
-                      class="form-control" placeholder="Nama supplier" />
+                      class="form-control" placeholder="Nama supplier" [disabled]="isMissed(item)" />
                   </div>
                   <div class="inline-field-row">
                     <span class="field-label">Harga Beli (Rp) *</span>
-                    <div class="harga-beli-row">
-                      <input type="number" [(ngModel)]="fillForm.hargaBeli" [ngModelOptions]="{standalone:true}"
-                        class="form-control harga-beli-input" min="0" />
-                      <div class="ppn-radio-group">
-                        <label class="ppn-radio-label"><input type="radio" name="ppnType" value="incl_ppn" [(ngModel)]="ppnType" [ngModelOptions]="{standalone:true}" /> Incl. PPN</label>
-                        <label class="ppn-radio-label"><input type="radio" name="ppnType" value="excl_ppn" [(ngModel)]="ppnType" [ngModelOptions]="{standalone:true}" /> Excl. PPN</label>
-                        <label class="ppn-radio-label"><input type="radio" name="ppnType" value="non_ppn" [(ngModel)]="ppnType" [ngModelOptions]="{standalone:true}" /> Non PPN</label>
-                      </div>
-                    </div>
+                    <input type="number" [(ngModel)]="fillForm.hargaBeli" [ngModelOptions]="{standalone:true}"
+                      class="form-control" min="0" [disabled]="isMissed(item)" />
                   </div>
                   <div class="inline-field-row">
                     <span class="field-label">Lead Time *</span>
                     <div class="lead-time-input-wrap">
                       <input type="number" [(ngModel)]="fillForm.leadTimeNum" [ngModelOptions]="{standalone:true}"
-                        class="form-control" min="0" />
+                        class="form-control" min="0" [disabled]="isMissed(item)" />
                       <span class="lead-time-unit">hari</span>
                     </div>
                   </div>
                   <div class="inline-field-row">
                     <span class="field-label">MOQ</span>
                     <input type="number" [(ngModel)]="fillForm.moq" [ngModelOptions]="{standalone:true}"
-                      class="form-control" min="0" />
+                      class="form-control" min="0" [disabled]="isMissed(item)" />
                   </div>
                   <div class="inline-field-row">
                     <span class="field-label">Stock</span>
                     <input type="text" [(ngModel)]="fillForm.stockAvailability" [ngModelOptions]="{standalone:true}"
-                      class="form-control" placeholder="cth: Ready 500pcs" />
+                      class="form-control" placeholder="cth: Ready 500pcs" [disabled]="isMissed(item)" />
                   </div>
                   <div class="inline-field-row">
                     <span class="field-label">Shipping Term</span>
                     <input type="text" [(ngModel)]="fillForm.termPembayaran" [ngModelOptions]="{standalone:true}"
-                      class="form-control" placeholder="cth: NET 30, COD" />
+                      class="form-control" placeholder="cth: NET 30, COD" [disabled]="isMissed(item)" />
                   </div>
                   <div class="inline-field-row">
                     <span class="field-label">Supplier Item Name</span>
                     <input type="text" [(ngModel)]="fillForm.alternateName" [ngModelOptions]="{standalone:true}"
-                      class="form-control" placeholder="Supplier item name" />
+                      class="form-control" placeholder="Supplier item name" [disabled]="isMissed(item)" />
                   </div>
                   <div class="inline-field-row inline-actions-row">
                     <span></span>
                     <div class="inline-actions">
                       <button type="button" class="ghost sm" (click)="cancelFill()">Batal</button>
-                      <button type="button" class="primary sm" (click)="submitSourcingInfo()">Submit</button>
+                      <button type="button" class="primary sm" *ngIf="!isMissed(item)" (click)="submitSourcingInfo()">Submit</button>
                     </div>
                   </div>
                 </div>
@@ -430,13 +426,10 @@
       <div class="all-sourced-notice" *ngIf="pendingCount(selectedInquiry) === 0 && !selectedInquiry.sourcingMissed">
         ✓ Semua item sudah terisi. Siap dikirim ke Price Approval.
       </div>
-      <div class="missed-notice-block" *ngIf="selectedInquiry.sourcingMissed">
-        RFQ ini melewati need-by date dan ditandai sebagai Missed. Sourcing tidak dapat mengisi item.
-      </div>
-      <div class="pending-notice" *ngIf="pendingCount(selectedInquiry) > 0">
+<div class="pending-notice" *ngIf="pendingCount(selectedInquiry) > 0 && !selectedInquiry.sourcingMissed">
         {{ pendingCount(selectedInquiry) }} item belum terisi.
       </div>
-      <button type="button" class="primary"
+      <button type="button" class="primary" *ngIf="!selectedInquiry.sourcingMissed"
         (click)="sendToPriceApproval()">
         Kirim ke Price Approval
       </button>

@@ -2,7 +2,6 @@
   <div class="page-header">
     <div>
       <h1>Price Approval</h1>
-      <p>Review pricing dari sourcing dan approve sebelum quotation dikirim ke customer.</p>
     </div>
     <button type="button" class="ghost" (click)="refresh()">Refresh</button>
   </div>
@@ -201,6 +200,10 @@
       <div class="modal-header-row">
         <span class="header-label">Inquiry Date:</span>
         <span>{{ formatDate(selectedInquiry.tanggal) }}</span>
+      </div>
+      <div class="modal-header-row">
+        <span class="header-label">Need by Date:</span>
+        <span>{{ formatDate(selectedInquiry.needByDate) }}</span>
       </div>
       <div class="modal-header-row">
         <span class="header-label">Sales:</span>

@@ -58,6 +58,11 @@ export class MarketingComponent implements OnInit {
 
   activeTab: 'rfq' | 'price_approved' | 'sent' | 'riwayat' = 'rfq';
 
+  readonly pageSize = 10;
+  rfqPage = 1;
+  priceApprovedPage = 1;
+  quotationPage = 1;
+
   canSeeTab(tab: string): boolean {
     return this.authService.hasTab('marketing', tab);
   }
@@ -169,6 +174,14 @@ export class MarketingComponent implements OnInit {
     return result;
   }
 
+
+  get pagedRfq(): Inquiry[] { const s = (this.rfqPage - 1) * this.pageSize; return this.rfqTabFiltered.slice(s, s + this.pageSize); }
+  get pagedPriceApproved(): Inquiry[] { const s = (this.priceApprovedPage - 1) * this.pageSize; return this.priceApprovedTabFiltered.slice(s, s + this.pageSize); }
+  get pagedQuotation(): Inquiry[] { const s = (this.quotationPage - 1) * this.pageSize; return this.quotationTabFiltered.slice(s, s + this.pageSize); }
+
+  rfqPages(): number { return Math.ceil(this.rfqTabFiltered.length / this.pageSize); }
+  priceApprovedPages(): number { return Math.ceil(this.priceApprovedTabFiltered.length / this.pageSize); }
+  quotationPages(): number { return Math.ceil(this.quotationTabFiltered.length / this.pageSize); }
 
   earliestNeedByDate(inq: Inquiry): string {
     const dates = inq.items
