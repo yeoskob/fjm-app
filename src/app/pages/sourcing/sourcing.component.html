@@ -27,28 +27,30 @@
         placeholder="Filter RFQ, customer, PIC..." />
     </div>
     <div class="rfq-table-wrap" *ngIf="rfqInquiries.length > 0">
-      <table class="rfq-table">
+      <table class="pipeline-table compact-rfq-table">
         <thead>
           <tr>
-            <th (click)="toggleSort(rfqSort,'rfqNo')" class="sortable">RFQ No <span class="sort-icon">{{ sortIcon(rfqSort,'rfqNo') }}</span></th>
+            <th (click)="toggleSort(rfqSort,'rfqNo')" class="sortable">RFQ ID <span class="sort-icon">{{ sortIcon(rfqSort,'rfqNo') }}</span></th>
             <th (click)="toggleSort(rfqSort,'customer')" class="sortable">Customer <span class="sort-icon">{{ sortIcon(rfqSort,'customer') }}</span></th>
-            <th (click)="toggleSort(rfqSort,'salesPic')" class="sortable">Sales PIC <span class="sort-icon">{{ sortIcon(rfqSort,'salesPic') }}</span></th>
-            <th (click)="toggleSort(rfqSort,'sourcingPic')" class="sortable">Sourcing PIC <span class="sort-icon">{{ sortIcon(rfqSort,'sourcingPic') }}</span></th>
+            <th (click)="toggleSort(rfqSort,'salesPic')" class="sortable">Sales <span class="sort-icon">{{ sortIcon(rfqSort,'salesPic') }}</span></th>
+            <th (click)="toggleSort(rfqSort,'sourcingPic')" class="sortable">Sourcing <span class="sort-icon">{{ sortIcon(rfqSort,'sourcingPic') }}</span></th>
             <th (click)="toggleSort(rfqSort,'items')" class="sortable col-center">Items <span class="sort-icon">{{ sortIcon(rfqSort,'items') }}</span></th>
             <th (click)="toggleSort(rfqSort,'pending')" class="sortable col-center">Tidak Terisi <span class="sort-icon">{{ sortIcon(rfqSort,'pending') }}</span></th>
-            <th (click)="toggleSort(rfqSort,'tanggal')" class="sortable">Need By Date <span class="sort-icon">{{ sortIcon(rfqSort,'tanggal') }}</span></th>
+            <th (click)="toggleSort(rfqSort,'tanggal')" class="sortable">Need by Date <span class="sort-icon">{{ sortIcon(rfqSort,'tanggal') }}</span></th>
             <th (click)="toggleSort(rfqSort,'daysLeft')" class="sortable col-center">Days Left <span class="sort-icon">{{ sortIcon(rfqSort,'daysLeft') }}</span></th>
           </tr>
         </thead>
         <tbody>
-          <tr class="rfq-row" *ngFor="let inq of pagedRfq" (click)="openModal(inq)"
-              [class.missed-row]="inq.sourcingMissed">
-            <td class="mono-blue">
-              {{ inq.rfqNo }}
+          <tr class="clickable-row" *ngFor="let inq of pagedRfq" (click)="openModal(inq)"
+              [class.urgent-row]="inq.sourcingMissed">
+            <td>
+              <span class="mono-cell">{{ inq.rfqNo }}</span>
               <span class="coupa-badge" *ngIf="inq.coupaSource">Coupa</span>
-              <span class="missed-pill" *ngIf="inq.sourcingMissed">Missed</span>
+              <span class="org-badge org-badge-fjm" *ngIf="!inq.organization || inq.organization === 'FJM'">{{ inq.organization || 'FJM' }}</span>
+              <span class="org-badge org-badge-fmi" *ngIf="inq.organization === 'FMI'">FMI</span>
+              <span class="org-badge org-badge-fsa" *ngIf="inq.organization === 'FSA'">FSA</span>
             </td>
-            <td><strong>{{ inq.customer }}</strong></td>
+            <td>{{ inq.customer }}</td>
             <td class="muted">{{ inq.salesPic }}</td>
             <td>
               <span class="sourcing-assigned" *ngIf="inq.sourcingPic">{{ inq.sourcingPic }}</span>
@@ -94,13 +96,13 @@
         placeholder="Filter RFQ, customer, PIC..." />
     </div>
     <div class="rfq-table-wrap" *ngIf="doneInquiries.length > 0">
-      <table class="rfq-table">
+      <table class="pipeline-table">
         <thead>
           <tr>
-            <th (click)="toggleSort(doneSort,'rfqNo')" class="sortable">RFQ No <span class="sort-icon">{{ sortIcon(doneSort,'rfqNo') }}</span></th>
+            <th (click)="toggleSort(doneSort,'rfqNo')" class="sortable">RFQ ID <span class="sort-icon">{{ sortIcon(doneSort,'rfqNo') }}</span></th>
             <th (click)="toggleSort(doneSort,'customer')" class="sortable">Customer <span class="sort-icon">{{ sortIcon(doneSort,'customer') }}</span></th>
-            <th (click)="toggleSort(doneSort,'salesPic')" class="sortable">Sales PIC <span class="sort-icon">{{ sortIcon(doneSort,'salesPic') }}</span></th>
-            <th (click)="toggleSort(doneSort,'sourcingPic')" class="sortable">Sourcing PIC <span class="sort-icon">{{ sortIcon(doneSort,'sourcingPic') }}</span></th>
+            <th (click)="toggleSort(doneSort,'salesPic')" class="sortable">Sales <span class="sort-icon">{{ sortIcon(doneSort,'salesPic') }}</span></th>
+            <th (click)="toggleSort(doneSort,'sourcingPic')" class="sortable">Sourcing <span class="sort-icon">{{ sortIcon(doneSort,'sourcingPic') }}</span></th>
             <th (click)="toggleSort(doneSort,'items')" class="sortable col-center">Items <span class="sort-icon">{{ sortIcon(doneSort,'items') }}</span></th>
             <th (click)="toggleSort(doneSort,'sourced')" class="sortable col-center">Terisi <span class="sort-icon">{{ sortIcon(doneSort,'sourced') }}</span></th>
             <th (click)="toggleSort(doneSort,'status')" class="sortable">Status <span class="sort-icon">{{ sortIcon(doneSort,'status') }}</span></th>
@@ -108,12 +110,15 @@
           </tr>
         </thead>
         <tbody>
-          <tr class="rfq-row" *ngFor="let inq of pagedDone" (click)="openModal(inq)">
-            <td class="mono-blue">
-              {{ inq.rfqNo }}
+          <tr class="clickable-row" *ngFor="let inq of pagedDone" (click)="openModal(inq)">
+            <td>
+              <span class="mono-cell">{{ inq.rfqNo }}</span>
               <span class="coupa-badge" *ngIf="inq.coupaSource">Coupa</span>
+              <span class="org-badge org-badge-fjm" *ngIf="!inq.organization || inq.organization === 'FJM'">{{ inq.organization || 'FJM' }}</span>
+              <span class="org-badge org-badge-fmi" *ngIf="inq.organization === 'FMI'">FMI</span>
+              <span class="org-badge org-badge-fsa" *ngIf="inq.organization === 'FSA'">FSA</span>
             </td>
-            <td><strong>{{ inq.customer }}</strong></td>
+            <td>{{ inq.customer }}</td>
             <td class="muted">{{ inq.salesPic }}</td>
             <td>
               <span class="sourcing-assigned" *ngIf="inq.sourcingPic">{{ inq.sourcingPic }}</span>
@@ -156,64 +161,70 @@
         <span class="org-badge" [ngClass]="organizationClass(selectedInquiry.organization)">{{ selectedInquiry.organization || 'FJM' }}</span>
         <span class="badge" [ngClass]="statusClass(selectedInquiry.status)">{{ statusLabel(selectedInquiry.status) }}</span>
       </div>
-      <div class="modal-header-row">
-        <span class="header-label">Customer:</span>
-        <span>{{ selectedInquiry.customer }}</span>
-      </div>
-      <div class="modal-header-row">
-        <span class="header-label">Inquiry Date:</span>
-        <span>{{ formatDate(selectedInquiry.tanggal) }}</span>
-      </div>
-      <div class="modal-header-row">
-        <span class="header-label">Need by Date:</span>
-        <span>{{ formatDate(selectedInquiry.needByDate) }}</span>
-      </div>
-      <div class="modal-header-row">
-        <span class="header-label">Sales:</span>
-        <span class="assign-row">
-          <ng-container *ngIf="!assigningSalesPic">
-            <span [class.clickable-pic]="isAdminOrManager()"
-              (click)="isAdminOrManager() && (assigningSalesPic = true) && (newSalesPic = selectedInquiry!.salesPic)"
-              [title]="isAdminOrManager() ? 'Click to reassign' : ''">{{ selectedInquiry.salesPic }}</span>
-            <span class="edit-hint" *ngIf="isAdminOrManager()">✏</span>
-          </ng-container>
-          <ng-container *ngIf="assigningSalesPic">
-            <select [(ngModel)]="newSalesPic" [ngModelOptions]="{standalone:true}" class="inline-select">
-              <option *ngFor="let u of salesUsers" [value]="u.name">{{ u.name }}</option>
-            </select>
-            <button type="button" class="primary xs" (click)="saveSalesPic()">Save</button>
-            <button type="button" class="ghost xs" (click)="assigningSalesPic = false">Cancel</button>
-          </ng-container>
-        </span>
-      </div>
-      <div class="modal-header-row">
-        <span class="header-label">Sourcing:</span>
-        <span class="assign-row">
-          <ng-container *ngIf="!assigningSourcingPic">
-            <span [class.clickable-pic]="isAdminOrManager()"
-              (click)="isAdminOrManager() && (assigningSourcingPic = true) && (newSourcingPic = selectedInquiry!.sourcingPic || '')"
-              [title]="isAdminOrManager() ? 'Click to reassign' : ''">
-              <span class="sourcing-assigned" *ngIf="selectedInquiry.sourcingPic">{{ selectedInquiry.sourcingPic }}</span>
-              <span class="muted" *ngIf="!selectedInquiry.sourcingPic">Unassigned</span>
+      <div class="modal-header-grid">
+        <div class="modal-header-col">
+          <div class="modal-header-row">
+            <span class="header-label">Customer:</span>
+            <span class="header-value">{{ selectedInquiry.customer }}</span>
+          </div>
+          <div class="modal-header-row">
+            <span class="header-label">Sales:</span>
+            <span class="assign-row header-value">
+              <ng-container *ngIf="!assigningSalesPic">
+                <span [class.clickable-pic]="isAdminOrManager() && activeTab !== 'riwayat'"
+                  (click)="isAdminOrManager() && activeTab !== 'riwayat' && (assigningSalesPic = true) && (newSalesPic = selectedInquiry!.salesPic)"
+                  [title]="(isAdminOrManager() && activeTab !== 'riwayat') ? 'Click to reassign' : ''">{{ selectedInquiry.salesPic }}</span>
+                <span class="edit-hint" *ngIf="isAdminOrManager() && activeTab !== 'riwayat'">✏</span>
+              </ng-container>
+              <ng-container *ngIf="assigningSalesPic">
+                <select [(ngModel)]="newSalesPic" [ngModelOptions]="{standalone:true}" class="inline-select">
+                  <option *ngFor="let u of salesUsers" [value]="u.name">{{ u.name }}</option>
+                </select>
+                <button type="button" class="primary xs" (click)="saveSalesPic()">Save</button>
+                <button type="button" class="ghost xs" (click)="assigningSalesPic = false">Cancel</button>
+              </ng-container>
             </span>
-            <span class="edit-hint" *ngIf="isAdminOrManager()">✏</span>
-            <button type="button" class="primary xs" *ngIf="!selectedInquiry.sourcingPic && !isAdminOrManager()"
-              (click)="assignToMe()">Assign to Me</button>
-          </ng-container>
-          <ng-container *ngIf="assigningSourcingPic">
-            <select [(ngModel)]="newSourcingPic" [ngModelOptions]="{standalone:true}" class="inline-select">
-              <option value="">— Unassign —</option>
-              <option *ngFor="let u of sourcingUsers" [value]="u.name">{{ u.name }}</option>
-            </select>
-            <button type="button" class="primary xs" (click)="saveSourcingPic()">Save</button>
-            <button type="button" class="ghost xs" (click)="assigningSourcingPic = false">Cancel</button>
-          </ng-container>
-        </span>
+          </div>
+          <div class="modal-header-row">
+            <span class="header-label">Sourcing:</span>
+            <span class="assign-row header-value">
+              <ng-container *ngIf="!assigningSourcingPic">
+                <span [class.clickable-pic]="isAdminOrManager() && activeTab !== 'riwayat'"
+                  (click)="isAdminOrManager() && activeTab !== 'riwayat' && (assigningSourcingPic = true) && (newSourcingPic = selectedInquiry!.sourcingPic || '')"
+                  [title]="(isAdminOrManager() && activeTab !== 'riwayat') ? 'Click to reassign' : ''">
+                  <span class="sourcing-assigned" *ngIf="selectedInquiry.sourcingPic">{{ selectedInquiry.sourcingPic }}</span>
+                  <span class="muted" *ngIf="!selectedInquiry.sourcingPic">Unassigned</span>
+                </span>
+                <span class="edit-hint" *ngIf="isAdminOrManager() && activeTab !== 'riwayat'">✏</span>
+                <button type="button" class="primary xs" *ngIf="!selectedInquiry.sourcingPic && !isAdminOrManager() && activeTab !== 'riwayat'"
+                  (click)="assignToMe()">Assign to Me</button>
+              </ng-container>
+              <ng-container *ngIf="assigningSourcingPic">
+                <select [(ngModel)]="newSourcingPic" [ngModelOptions]="{standalone:true}" class="inline-select">
+                  <option value="">— Unassign —</option>
+                  <option *ngFor="let u of sourcingUsers" [value]="u.name">{{ u.name }}</option>
+                </select>
+                <button type="button" class="primary xs" (click)="saveSourcingPic()">Save</button>
+                <button type="button" class="ghost xs" (click)="assigningSourcingPic = false">Cancel</button>
+              </ng-container>
+            </span>
+          </div>
+        </div>
+        <div class="modal-header-col modal-header-col-right">
+          <div class="modal-header-row">
+            <span class="header-label">Inquiry Date:</span>
+            <span class="header-value">{{ formatDate(selectedInquiry.tanggal) }}</span>
+          </div>
+          <div class="modal-header-row">
+            <span class="header-label">Need by Date:</span>
+            <span class="header-value">{{ formatDate(selectedInquiry.needByDate) }}</span>
+          </div>
+        </div>
       </div>
     </div>
 
-    <div class="notice error" style="margin: 0 1.5rem" *ngIf="error">{{ error }}</div>
-    <div class="notice success" style="margin: 0 1.5rem" *ngIf="success">{{ success }}</div>
+    <div class="notice error" *ngIf="error">{{ error }}</div>
+    <div class="notice success" *ngIf="success">{{ success }}</div>
 
   <div class="modal-body">
     <div class="items-wrap">
@@ -235,8 +246,9 @@
           <ng-container *ngFor="let item of selectedInquiry.items; let i = index">
             <!-- Item row -->
             <tr class="item-row"
-              [class.sourced-row]="isSourced(item)"
-              [class.approved-row]="item.priceApproved"
+              [class.row-alt]="i % 2 === 1"
+              [class.sourced-row]="activeTab !== 'riwayat' && isSourced(item)"
+              [class.approved-row]="activeTab !== 'riwayat' && item.priceApproved"
               [class.editing-row]="editingItemId === item.id || viewingItemId === item.id"
               [class.clickable-row]="selectedInquiry.status === 'rfq' ? !item.priceApproved : activeTab === 'riwayat'"
               (click)="activeTab === 'riwayat' ? toggleView(item) : (!item.priceApproved && toggleFill(item))">
@@ -326,26 +338,6 @@
             <tr *ngIf="activeTab === 'riwayat' && viewingItemId === item.id" class="inline-input-row">
               <td colspan="9">
                 <div class="inline-field-list">
-                  <div class="inline-field-row" *ngIf="item.itemQuantity != null">
-                    <span class="field-label">Expected Qty</span>
-                    <span class="field-value-ro">{{ item.itemQuantity }} {{ item.itemUom }}</span>
-                  </div>
-                  <div class="inline-field-row" *ngIf="item.itemNeedByDate">
-                    <span class="field-label">Need by Date</span>
-                    <span class="field-value-ro">{{ formatDate(item.itemNeedByDate) }}</span>
-                  </div>
-                  <div class="inline-field-row" *ngIf="item.itemManufacturerName">
-                    <span class="field-label">Manufacturer</span>
-                    <span class="field-value-ro">{{ item.itemManufacturerName }}</span>
-                  </div>
-                  <div class="inline-field-row" *ngIf="item.itemManufacturerPartNumber">
-                    <span class="field-label">Part Number</span>
-                    <span class="field-value-ro">{{ item.itemManufacturerPartNumber }}</span>
-                  </div>
-                  <div class="inline-field-row" *ngIf="item.itemExtendedDescription">
-                    <span class="field-label">Description</span>
-                    <span class="field-value-ro">{{ item.itemExtendedDescription }}</span>
-                  </div>
                   <div class="inline-field-row">
                     <span class="field-label">Supplier</span>
                     <span class="field-value-ro">{{ item.supplier || '-' }}</span>
@@ -358,25 +350,21 @@
                     <span class="field-label">Lead Time</span>
                     <span class="field-value-ro">{{ item.leadTime || '-' }}</span>
                   </div>
-                  <div class="inline-field-row" *ngIf="item.moq != null">
+                  <div class="inline-field-row">
                     <span class="field-label">MOQ</span>
-                    <span class="field-value-ro">{{ item.moq }}</span>
+                    <span class="field-value-ro">{{ item.moq != null ? item.moq : '-' }}</span>
                   </div>
-                  <div class="inline-field-row" *ngIf="item.stockAvailability">
+                  <div class="inline-field-row">
                     <span class="field-label">Stock</span>
-                    <span class="field-value-ro">{{ item.stockAvailability }}</span>
+                    <span class="field-value-ro">{{ item.stockAvailability || '-' }}</span>
                   </div>
-                  <div class="inline-field-row" *ngIf="item.termPembayaran">
+                  <div class="inline-field-row">
                     <span class="field-label">Shipping Term</span>
-                    <span class="field-value-ro">{{ item.termPembayaran }}</span>
+                    <span class="field-value-ro">{{ item.termPembayaran || '-' }}</span>
                   </div>
-                  <div class="inline-field-row" *ngIf="item.alternateName">
+                  <div class="inline-field-row">
                     <span class="field-label">Supplier Item Name</span>
-                    <span class="field-value-ro">{{ item.alternateName }}</span>
-                  </div>
-                  <div class="inline-field-row" *ngIf="item.hargaJual">
-                    <span class="field-label">Harga Jual</span>
-                    <span class="field-value-ro">{{ formatCurrency(item.hargaJual) }}</span>
+                    <span class="field-value-ro">{{ item.alternateName || '-' }}</span>
                   </div>
                 </div>
               </td>

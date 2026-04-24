@@ -32,32 +32,35 @@
         placeholder="Filter RFQ, customer, PIC..." />
     </div>
     <div class="rfq-table-wrap" *ngIf="pendingApproval.length > 0">
-      <table class="rfq-table">
+      <table class="pipeline-table">
         <thead>
           <tr>
-            <th (click)="toggleSort(pendingSort,'rfqNo')" class="sortable">RFQ No <span class="sort-icon">{{ sortIcon(pendingSort,'rfqNo') }}</span></th>
+            <th (click)="toggleSort(pendingSort,'rfqNo')" class="sortable">RFQ ID <span class="sort-icon">{{ sortIcon(pendingSort,'rfqNo') }}</span></th>
             <th (click)="toggleSort(pendingSort,'customer')" class="sortable">Customer <span class="sort-icon">{{ sortIcon(pendingSort,'customer') }}</span></th>
-            <th (click)="toggleSort(pendingSort,'salesPic')" class="sortable">Sales PIC <span class="sort-icon">{{ sortIcon(pendingSort,'salesPic') }}</span></th>
-            <th (click)="toggleSort(pendingSort,'sourcingPic')" class="sortable">Sourcing PIC <span class="sort-icon">{{ sortIcon(pendingSort,'sourcingPic') }}</span></th>
+            <th (click)="toggleSort(pendingSort,'salesPic')" class="sortable">Sales <span class="sort-icon">{{ sortIcon(pendingSort,'salesPic') }}</span></th>
+            <th (click)="toggleSort(pendingSort,'sourcingPic')" class="sortable">Sourcing <span class="sort-icon">{{ sortIcon(pendingSort,'sourcingPic') }}</span></th>
             <th (click)="toggleSort(pendingSort,'items')" class="sortable col-center">Items <span class="sort-icon">{{ sortIcon(pendingSort,'items') }}</span></th>
             <th (click)="toggleSort(pendingSort,'pending')" class="sortable col-center">Pending <span class="sort-icon">{{ sortIcon(pendingSort,'pending') }}</span></th>
-            <th (click)="toggleSort(pendingSort,'needByDate')" class="sortable">Need By Date <span class="sort-icon">{{ sortIcon(pendingSort,'needByDate') }}</span></th>
+            <th (click)="toggleSort(pendingSort,'needByDate')" class="sortable">Need by Date <span class="sort-icon">{{ sortIcon(pendingSort,'needByDate') }}</span></th>
             <th>Sisa Waktu</th>
           </tr>
         </thead>
         <tbody>
-          <tr class="rfq-row" *ngFor="let inq of pagedPending" (click)="openModal(inq)">
-            <td class="mono-blue">
-              {{ inq.rfqNo }}
+          <tr class="clickable-row" *ngFor="let inq of pagedPending" (click)="openModal(inq)">
+            <td>
+              <span class="mono-cell">{{ inq.rfqNo }}</span>
               <span class="coupa-badge" *ngIf="inq.coupaSource">Coupa</span>
+              <span class="org-badge org-badge-fjm" *ngIf="!inq.organization || inq.organization === 'FJM'">{{ inq.organization || 'FJM' }}</span>
+              <span class="org-badge org-badge-fmi" *ngIf="inq.organization === 'FMI'">FMI</span>
+              <span class="org-badge org-badge-fsa" *ngIf="inq.organization === 'FSA'">FSA</span>
             </td>
-            <td><strong>{{ inq.customer }}</strong></td>
+            <td>{{ inq.customer }}</td>
             <td class="muted">{{ inq.salesPic }}</td>
             <td>
               <span class="sourcing-assigned" *ngIf="inq.sourcingPic">{{ inq.sourcingPic }}</span>
               <span class="muted" *ngIf="!inq.sourcingPic">Unassigned</span>
             </td>
-            <td class="col-center">{{ inq.items?.length ?? 0 }}</td>
+            <td class="col-center">{{ inq.items.length }}</td>
             <td class="col-center">
               <span class="pending-pill" *ngIf="pendingItemCount(inq) > 0">{{ pendingItemCount(inq) }}</span>
               <span class="done-pill" *ngIf="pendingItemCount(inq) === 0">✓ Done</span>
@@ -65,9 +68,10 @@
             <td class="muted">{{ earliestNeedByDate(inq) }}</td>
             <td>
               <ng-container *ngIf="timeLeft(inq) as tl; else noDeadline">
-                <span [class.time-ok]="tl.state === 'ok'"
-                      [class.time-warning]="tl.state === 'warning'"
-                      [class.time-overdue]="tl.state === 'overdue'">{{ tl.text }}</span>
+                <span class="days-left-cell"
+                      [class.days-ok]="tl.state === 'ok'"
+                      [class.days-warning]="tl.state === 'warning'"
+                      [class.days-overdue]="tl.state === 'overdue'">{{ tl.text }}</span>
               </ng-container>
               <ng-template #noDeadline><span class="muted">-</span></ng-template>
             </td>
@@ -91,41 +95,45 @@
         placeholder="Filter RFQ, customer, PIC..." />
     </div>
     <div class="rfq-table-wrap" *ngIf="pendingReview.length > 0">
-      <table class="rfq-table">
+      <table class="pipeline-table">
         <thead>
           <tr>
-            <th (click)="toggleSort(reviewSort,'rfqNo')" class="sortable">RFQ No <span class="sort-icon">{{ sortIcon(reviewSort,'rfqNo') }}</span></th>
+            <th (click)="toggleSort(reviewSort,'rfqNo')" class="sortable">RFQ ID <span class="sort-icon">{{ sortIcon(reviewSort,'rfqNo') }}</span></th>
             <th (click)="toggleSort(reviewSort,'customer')" class="sortable">Customer <span class="sort-icon">{{ sortIcon(reviewSort,'customer') }}</span></th>
-            <th (click)="toggleSort(reviewSort,'salesPic')" class="sortable">Sales PIC <span class="sort-icon">{{ sortIcon(reviewSort,'salesPic') }}</span></th>
-            <th (click)="toggleSort(reviewSort,'sourcingPic')" class="sortable">Sourcing PIC <span class="sort-icon">{{ sortIcon(reviewSort,'sourcingPic') }}</span></th>
+            <th (click)="toggleSort(reviewSort,'salesPic')" class="sortable">Sales <span class="sort-icon">{{ sortIcon(reviewSort,'salesPic') }}</span></th>
+            <th (click)="toggleSort(reviewSort,'sourcingPic')" class="sortable">Sourcing <span class="sort-icon">{{ sortIcon(reviewSort,'sourcingPic') }}</span></th>
             <th (click)="toggleSort(reviewSort,'items')" class="sortable col-center">Items <span class="sort-icon">{{ sortIcon(reviewSort,'items') }}</span></th>
             <th (click)="toggleSort(reviewSort,'pending')" class="sortable col-center">To Review <span class="sort-icon">{{ sortIcon(reviewSort,'pending') }}</span></th>
-            <th (click)="toggleSort(reviewSort,'needByDate')" class="sortable">Need By Date <span class="sort-icon">{{ sortIcon(reviewSort,'needByDate') }}</span></th>
+            <th (click)="toggleSort(reviewSort,'needByDate')" class="sortable">Need by Date <span class="sort-icon">{{ sortIcon(reviewSort,'needByDate') }}</span></th>
             <th>Sisa Waktu</th>
           </tr>
         </thead>
         <tbody>
-          <tr class="rfq-row review-row" *ngFor="let inq of pagedReview" (click)="openModal(inq)">
-            <td class="mono-blue">
-              {{ inq.rfqNo }}
+          <tr class="clickable-row review-row" *ngFor="let inq of pagedReview" (click)="openModal(inq)">
+            <td>
+              <span class="mono-cell">{{ inq.rfqNo }}</span>
               <span class="coupa-badge" *ngIf="inq.coupaSource">Coupa</span>
+              <span class="org-badge org-badge-fjm" *ngIf="!inq.organization || inq.organization === 'FJM'">{{ inq.organization || 'FJM' }}</span>
+              <span class="org-badge org-badge-fmi" *ngIf="inq.organization === 'FMI'">FMI</span>
+              <span class="org-badge org-badge-fsa" *ngIf="inq.organization === 'FSA'">FSA</span>
             </td>
-            <td><strong>{{ inq.customer }}</strong></td>
+            <td>{{ inq.customer }}</td>
             <td class="muted">{{ inq.salesPic }}</td>
             <td>
               <span class="sourcing-assigned" *ngIf="inq.sourcingPic">{{ inq.sourcingPic }}</span>
               <span class="muted" *ngIf="!inq.sourcingPic">Unassigned</span>
             </td>
-            <td class="col-center">{{ inq.items?.length ?? 0 }}</td>
+            <td class="col-center">{{ inq.items.length }}</td>
             <td class="col-center">
               <span class="pending-pill">{{ pendingItemCount(inq) }}</span>
             </td>
             <td class="muted">{{ earliestNeedByDate(inq) }}</td>
             <td>
               <ng-container *ngIf="timeLeft(inq) as tl; else noDeadlineR">
-                <span [class.time-ok]="tl.state === 'ok'"
-                      [class.time-warning]="tl.state === 'warning'"
-                      [class.time-overdue]="tl.state === 'overdue'">{{ tl.text }}</span>
+                <span class="days-left-cell"
+                      [class.days-ok]="tl.state === 'ok'"
+                      [class.days-warning]="tl.state === 'warning'"
+                      [class.days-overdue]="tl.state === 'overdue'">{{ tl.text }}</span>
               </ng-container>
               <ng-template #noDeadlineR><span class="muted">-</span></ng-template>
             </td>
@@ -149,26 +157,29 @@
         placeholder="Filter RFQ, customer, PIC..." />
     </div>
     <div class="rfq-table-wrap" *ngIf="approved.length > 0">
-      <table class="rfq-table">
+      <table class="pipeline-table">
         <thead>
           <tr>
-            <th (click)="toggleSort(approvedSort,'rfqNo')" class="sortable">RFQ No <span class="sort-icon">{{ sortIcon(approvedSort,'rfqNo') }}</span></th>
+            <th (click)="toggleSort(approvedSort,'rfqNo')" class="sortable">RFQ ID <span class="sort-icon">{{ sortIcon(approvedSort,'rfqNo') }}</span></th>
             <th (click)="toggleSort(approvedSort,'customer')" class="sortable">Customer <span class="sort-icon">{{ sortIcon(approvedSort,'customer') }}</span></th>
-            <th (click)="toggleSort(approvedSort,'salesPic')" class="sortable">Sales PIC <span class="sort-icon">{{ sortIcon(approvedSort,'salesPic') }}</span></th>
+            <th (click)="toggleSort(approvedSort,'salesPic')" class="sortable">Sales <span class="sort-icon">{{ sortIcon(approvedSort,'salesPic') }}</span></th>
             <th (click)="toggleSort(approvedSort,'items')" class="sortable col-center">Items <span class="sort-icon">{{ sortIcon(approvedSort,'items') }}</span></th>
             <th (click)="toggleSort(approvedSort,'status')" class="sortable">Status <span class="sort-icon">{{ sortIcon(approvedSort,'status') }}</span></th>
             <th (click)="toggleSort(approvedSort,'tanggal')" class="sortable">Inquiry Date <span class="sort-icon">{{ sortIcon(approvedSort,'tanggal') }}</span></th>
           </tr>
         </thead>
         <tbody>
-          <tr class="rfq-row" *ngFor="let inq of pagedApproved" (click)="openModal(inq)">
-            <td class="mono-blue">
-              {{ inq.rfqNo }}
+          <tr class="clickable-row" *ngFor="let inq of pagedApproved" (click)="openModal(inq)">
+            <td>
+              <span class="mono-cell">{{ inq.rfqNo }}</span>
               <span class="coupa-badge" *ngIf="inq.coupaSource">Coupa</span>
+              <span class="org-badge org-badge-fjm" *ngIf="!inq.organization || inq.organization === 'FJM'">{{ inq.organization || 'FJM' }}</span>
+              <span class="org-badge org-badge-fmi" *ngIf="inq.organization === 'FMI'">FMI</span>
+              <span class="org-badge org-badge-fsa" *ngIf="inq.organization === 'FSA'">FSA</span>
             </td>
-            <td><strong>{{ inq.customer }}</strong></td>
+            <td>{{ inq.customer }}</td>
             <td class="muted">{{ inq.salesPic }}</td>
-            <td class="col-center">{{ inq.items?.length ?? 0 }}</td>
+            <td class="col-center">{{ inq.items.length }}</td>
             <td><span class="status-pill" [attr.data-status]="inq.status">{{ statusLabel(inq.status) }}</span></td>
             <td class="muted">{{ formatDate(inq.tanggal) }}</td>
           </tr>
@@ -194,30 +205,36 @@
         <span class="org-badge" [ngClass]="organizationClass(selectedInquiry.organization)">{{ selectedInquiry.organization || 'FJM' }}</span>
         <span class="badge" [ngClass]="statusClass(selectedInquiry.status)">{{ statusLabel(selectedInquiry.status) }}</span>
       </div>
-      <div class="modal-header-row">
-        <span class="header-label">Customer:</span>
-        <span>{{ selectedInquiry.customer }}</span>
-      </div>
-      <div class="modal-header-row">
-        <span class="header-label">Inquiry Date:</span>
-        <span>{{ formatDate(selectedInquiry.tanggal) }}</span>
-      </div>
-      <div class="modal-header-row">
-        <span class="header-label">Need by Date:</span>
-        <span>{{ formatDate(selectedInquiry.needByDate) }}</span>
-      </div>
-      <div class="modal-header-row">
-        <span class="header-label">Sales:</span>
-        <span>{{ selectedInquiry.salesPic }}</span>
-      </div>
-      <div class="modal-header-row">
-        <span class="header-label">Sourcing:</span>
-        <span>{{ selectedInquiry.sourcingPic || 'Unassigned' }}</span>
+      <div class="modal-header-grid">
+        <div class="modal-header-col">
+          <div class="modal-header-row">
+            <span class="header-label">Customer:</span>
+            <span class="header-value">{{ selectedInquiry.customer }}</span>
+          </div>
+          <div class="modal-header-row">
+            <span class="header-label">Sales:</span>
+            <span class="header-value">{{ selectedInquiry.salesPic }}</span>
+          </div>
+          <div class="modal-header-row">
+            <span class="header-label">Sourcing:</span>
+            <span class="header-value">{{ selectedInquiry.sourcingPic || 'Unassigned' }}</span>
+          </div>
+        </div>
+        <div class="modal-header-col modal-header-col-right">
+          <div class="modal-header-row">
+            <span class="header-label">Inquiry Date:</span>
+            <span class="header-value">{{ formatDate(selectedInquiry.tanggal) }}</span>
+          </div>
+          <div class="modal-header-row">
+            <span class="header-label">Need by Date:</span>
+            <span class="header-value">{{ formatDate(selectedInquiry.needByDate) }}</span>
+          </div>
+        </div>
       </div>
     </div>
 
-    <div class="notice error" style="margin: 0 1.5rem" *ngIf="error">{{ error }}</div>
-    <div class="notice success" style="margin: 0 1.5rem" *ngIf="success">{{ success }}</div>
+    <div class="notice error" *ngIf="error">{{ error }}</div>
+    <div class="notice success" *ngIf="success">{{ success }}</div>
 
     <div class="items-wrap">
       <table class="items-table">
@@ -238,6 +255,7 @@
         <tbody>
           <ng-container *ngFor="let item of selectedInquiry.items; let i = index">
             <tr class="item-row"
+              [class.row-alt]="i % 2 === 1"
               [class.approved-row]="isApproved(item)"
               [class.review-row]="isNeedsReview(item)"
               [class.editing-row]="editingItemId === item.id"

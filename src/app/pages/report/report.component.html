@@ -13,11 +13,9 @@
   <div class="tab-bar">
     <button type="button" class="tab-btn" [class.active]="activeTab === 'marketing'" (click)="setTab('marketing')">
       Marketing
-      <span class="tab-count">{{ mData?.rows?.length ?? 0 }}</span>
     </button>
     <button type="button" class="tab-btn" [class.active]="activeTab === 'sourcing'" (click)="setTab('sourcing')">
       Sourcing
-      <span class="tab-count">{{ sData?.rows?.length ?? 0 }}</span>
     </button>
   </div>
 
@@ -201,6 +199,7 @@
                   {{ row.sourced_items }}/{{ row.total_items }}
                 </span>
               </td>
+
               <td>
                 <span class="status-chip" [ngClass]="statusClass(row.status)">{{ statusLabel(row.status) }}</span>
               </td>
@@ -294,3 +293,5 @@
     </div>
   </ng-container>
 </div>
+
+

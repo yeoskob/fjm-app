@@ -45,7 +45,7 @@ export class SourcingComponent implements OnInit {
   }
 
   sortIcon(state: { col: string; dir: 'asc' | 'desc' }, col: string): string {
-    return state.col !== col ? '-' : state.dir === 'asc' ? '^' : 'v';
+    return state.col !== col ? '↕' : state.dir === 'asc' ? '↑' : '↓';
   }
 
   private applyFS(items: Inquiry[], filter: string, sort: { col: string; dir: 'asc' | 'desc' }): Inquiry[] {

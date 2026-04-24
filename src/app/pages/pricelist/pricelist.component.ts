@@ -68,7 +68,7 @@ export class PricelistComponent implements OnInit {
   }
 
   sortIcon(state: { col: string; dir: 'asc' | 'desc' }, col: string): string {
-    return state.col !== col ? '-' : state.dir === 'asc' ? '^' : 'v';
+    return state.col !== col ? '↕' : state.dir === 'asc' ? '↑' : '↓';
   }
 
   isUrgent(inquiry: Inquiry): boolean {
@@ -545,18 +545,17 @@ export class PricelistComponent implements OnInit {
     if (!inquiry.priceApprovalStartedAt) return null;
     const started = new Date(inquiry.priceApprovalStartedAt).getTime();
     if (isNaN(started)) return null;
-    const deadlineMs = started + this.deadlineHours * 3600 * 1000;
+    const hourMs = 3600 * 1000;
+    const deadlineMs = started + this.deadlineHours * hourMs;
     const remaining = deadlineMs - Date.now();
     if (remaining <= 0) {
-      const overH = Math.floor(Math.abs(remaining) / 3600000);
-      return { text: overH > 0 ? `Overdue ${overH}j` : 'Overdue', state: 'overdue' };
+      const overHours = Math.floor(Math.abs(remaining) / hourMs);
+      return { text: overHours > 0 ? `${overHours}h overdue` : 'overdue', state: 'overdue' };
     }
-    const totalMs = this.deadlineHours * 3600 * 1000;
-    const h = Math.floor(remaining / 3600000);
-    const m = Math.floor((remaining % 3600000) / 60000);
-    const text = h > 0 ? `${h}j ${m}mnt` : `${m}mnt`;
+    const totalMs = this.deadlineHours * hourMs;
+    const hours = Math.ceil(remaining / hourMs);
     const state = remaining / totalMs <= 0.25 ? 'warning' : 'ok';
-    return { text, state };
+    return { text: `${hours}h`, state };
   }
 
   statusLabel(status: string): string {

@@ -228,6 +228,7 @@ export class ReportComponent implements OnInit {
     return this.sSortedRows.filter((r) => statuses.includes(r.status)).length;
   }
 
+
   sourcedPct(row: ReportSourcingRow): number {
     if (!row.total_items) return 0;
     return Math.round((row.sourced_items / row.total_items) * 100);
@@ -342,3 +343,5 @@ export class ReportComponent implements OnInit {
     }
   }
 }
+
+

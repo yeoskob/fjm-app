@@ -19,6 +19,9 @@
     <button type="button" class="tab-btn" [class.active]="activeTab === 'notifications'" (click)="setTab('notifications')">
       Notifications
     </button>
+    <button type="button" class="tab-btn" [class.active]="activeTab === 'deadline'" (click)="setTab('deadline')">
+      Batas Waktu Review
+    </button>
   </div>
 
   <!-- ── Users Tab ── -->
@@ -247,7 +250,12 @@
           </button>
         </div>
       </div>
+    </div>
+  </div>
 
+  <!-- Deadline Tab -->
+  <div class="tab-content" *ngIf="activeTab === 'deadline'">
+    <div class="admin-grid">
       <div class="card">
         <h2>Batas Waktu Review Harga</h2>
         <p class="hint">Waktu (dalam jam) yang diberikan kepada admin untuk me-review RFQ setelah masuk ke Price Approval. Ditampilkan sebagai countdown di tabel Menunggu Approval dan Menunggu Review.</p>

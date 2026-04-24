@@ -26,7 +26,7 @@ export const ALL_MODULES: { key: string; label: string }[] = [
   { key: 'report', label: 'Report' },
 ];
 
-type AdminTab = 'users' | 'roles' | 'organizations' | 'notifications';
+type AdminTab = 'users' | 'roles' | 'organizations' | 'notifications' | 'deadline';
 
 @Component({
   selector: 'app-admin-users',

@@ -366,11 +366,22 @@ export class MarketingComponent implements OnInit {
   async submitCreate(): Promise<void> {
     this.error = '';
     const user = this.authService.getCurrentUser();
-    if (!user) { this.error = 'Not logged in.'; return; }
-    if (!this.createCustomer.trim()) { this.error = 'Customer is required.'; return; }
-    if (!this.createOrganization) { this.error = 'Organization is required.'; return; }
-    const validItems = this.createItems.filter(i => i.itemName.trim());
-    if (validItems.length === 0) { this.error = 'Add at least one item with a name.'; return; }
+    if (!user) { this.error = 'Anda belum login.'; return; }
+    if (!this.createCustomer.trim()) { this.error = 'Customer wajib diisi.'; return; }
+    if (!this.createOrganization) { this.error = 'Organisasi wajib dipilih.'; return; }
+    if (!this.createNeedByDate) { this.error = 'Need by Date wajib diisi.'; return; }
+    if (this.createItems.length === 0) { this.error = 'Tambahkan minimal satu item.'; return; }
+    const invalidItemIndex = this.createItems.findIndex((item) =>
+      !item.itemName.trim() ||
+      item.itemQuantity == null ||
+      item.itemQuantity <= 0 ||
+      !item.itemUom?.trim()
+    );
+    if (invalidItemIndex >= 0) {
+      this.error = `Item ${invalidItemIndex + 1} wajib mengisi Item Name, Expected Quantity, dan Unit of Measurement.`;
+      return;
+    }
+    const validItems = this.createItems;
 
     this.submittingCreate = true;
     try {
@@ -401,11 +412,11 @@ export class MarketingComponent implements OnInit {
           doneByName: user.name,
         });
       }
-      this.success = 'Inquiry created.';
+      this.success = 'Inquiry berhasil dibuat.';
       this.showCreate = false;
       await this.refresh();
     } catch {
-      this.error = 'Failed to create inquiry.';
+      this.error = 'Gagal membuat inquiry.';
     } finally {
       this.submittingCreate = false;
     }
@@ -420,9 +431,9 @@ export class MarketingComponent implements OnInit {
     this.error = '';
     this.clearImportWarning();
     const user = this.authService.getCurrentUser();
-    if (!user) { this.error = 'Not logged in.'; return; }
-    if (!this.importFile) { this.error = 'Please choose an Excel file.'; return; }
-    if (!this.importOrganization) { this.error = 'Organization is required.'; return; }
+    if (!user) { this.error = 'Anda belum login.'; return; }
+    if (!this.importFile) { this.error = 'Silakan pilih file Excel.'; return; }
+    if (!this.importOrganization) { this.error = 'Organisasi wajib dipilih.'; return; }
 
     this.importing = true;
     try {
@@ -436,15 +447,15 @@ export class MarketingComponent implements OnInit {
       });
       const importedInquiry = await this.inquiryService.getById(result.id);
       const warningItems = this.getImportedDateWarnings(importedInquiry);
-      this.success = `Imported Coupa file. ${result.itemCount} items loaded.`;
+      this.success = `File Coupa berhasil diimpor. ${result.itemCount} item dimuat.`;
       if (warningItems.length > 0) {
         this.importWarningItems = warningItems;
-        this.importWarning = `Imported successfully, but ${warningItems.length} item${warningItems.length > 1 ? 's have' : ' has'} Need by Date earlier than Inquiry Date.`;
+        this.importWarning = `Import berhasil, tetapi ${warningItems.length} item memiliki Need by Date yang lebih awal daripada tanggal inquiry.`;
       }
       this.showImport = false;
       await this.refresh();
     } catch (err) {
-      this.error = 'Failed to import Coupa file.';
+      this.error = 'Gagal mengimpor file Coupa.';
       this.clearImportWarning();
     } finally {
       this.importing = false;
