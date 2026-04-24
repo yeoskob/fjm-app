@@ -3,7 +3,7 @@ import { ActivatedRoute } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 import { InquiryService } from '../../services/inquiry.service';
 import { SettingsService } from '../../services/settings.service';
-import { Inquiry, InquiryCreate, InquiryItem, InquiryNote, InquiryStatus, INQUIRY_STATUS_LABELS } from '../../models/inquiry';
+import { ActivityLog, Inquiry, InquiryCreate, InquiryItem, InquiryNote, InquiryStatus, INQUIRY_STATUS_LABELS } from '../../models/inquiry';
 import { todayLocalISO } from '../../utils/date';
 
 @Component({
@@ -29,6 +29,8 @@ export class MarketingComponent implements OnInit {
   importFile: File | null = null;
   importOrganization = '';
   importing = false;
+  importWarning = '';
+  importWarningItems: Array<{ itemName: string; inquiryDate: string; needByDate: string }> = [];
 
   detailInquiry: Inquiry | null = null;
   showLog = false;
@@ -42,7 +44,6 @@ export class MarketingComponent implements OnInit {
   editInquiry: Inquiry | null = null;
   editForm: Partial<InquiryCreate> = {};
   closeNote = '';
-  rfqNote = '';
 
   reviewingItemId: string | null = null;
   reviewItemForm: { itemImage?: string } = {};
@@ -352,12 +353,14 @@ export class MarketingComponent implements OnInit {
     this.importOrganization = '';
     this.error = '';
     this.success = '';
+    this.clearImportWarning();
   }
 
   cancelImport(): void {
     this.showImport = false;
     this.importFile = null;
     this.importOrganization = '';
+    this.clearImportWarning();
   }
 
   async submitCreate(): Promise<void> {
@@ -415,6 +418,7 @@ export class MarketingComponent implements OnInit {
 
   async submitImport(): Promise<void> {
     this.error = '';
+    this.clearImportWarning();
     const user = this.authService.getCurrentUser();
     if (!user) { this.error = 'Not logged in.'; return; }
     if (!this.importFile) { this.error = 'Please choose an Excel file.'; return; }
@@ -430,14 +434,64 @@ export class MarketingComponent implements OnInit {
         createdByName: user.name,
         organization: this.importOrganization,
       });
+      const importedInquiry = await this.inquiryService.getById(result.id);
+      const warningItems = this.getImportedDateWarnings(importedInquiry);
       this.success = `Imported Coupa file. ${result.itemCount} items loaded.`;
+      if (warningItems.length > 0) {
+        this.importWarningItems = warningItems;
+        this.importWarning = `Imported successfully, but ${warningItems.length} item${warningItems.length > 1 ? 's have' : ' has'} Need by Date earlier than Inquiry Date.`;
+      }
       this.showImport = false;
       await this.refresh();
     } catch (err) {
       this.error = 'Failed to import Coupa file.';
+      this.clearImportWarning();
     } finally {
       this.importing = false;
     }
+  }
+
+  clearImportWarning(): void {
+    this.importWarning = '';
+    this.importWarningItems = [];
+  }
+
+  private getImportedDateWarnings(inquiry: Inquiry): Array<{ itemName: string; inquiryDate: string; needByDate: string }> {
+    const inquiryDate = this.toDateOnlyValue(inquiry.tanggal);
+    if (!inquiryDate) return [];
+
+    return (inquiry.items ?? [])
+      .filter((item) => {
+        const needByDate = this.toDateOnlyValue(item.itemNeedByDate);
+        return !!needByDate && inquiryDate > needByDate;
+      })
+      .map((item) => ({
+        itemName: item.itemName?.trim() || item.itemExtendedDescription?.trim() || 'Unnamed item',
+        inquiryDate,
+        needByDate: this.toDateOnlyValue(item.itemNeedByDate)!,
+      }));
+  }
+
+  private toDateOnlyValue(value?: string | null): string | null {
+    if (!value) return null;
+    const match = value.match(/^(\d{4}-\d{2}-\d{2})/);
+    if (match) return match[1];
+
+    const parsed = new Date(value);
+    if (Number.isNaN(parsed.getTime())) return null;
+    parsed.setHours(0, 0, 0, 0);
+    const year = parsed.getFullYear();
+    const month = `${parsed.getMonth() + 1}`.padStart(2, '0');
+    const day = `${parsed.getDate()}`.padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
+
+  get visibleImportWarningItems(): Array<{ itemName: string; inquiryDate: string; needByDate: string }> {
+    return this.importWarningItems.slice(0, 3);
+  }
+
+  get remainingImportWarningCount(): number {
+    return Math.max(0, this.importWarningItems.length - this.visibleImportWarningItems.length);
   }
 
   private readFileAsBase64(file: File): Promise<string> {
@@ -465,7 +519,6 @@ export class MarketingComponent implements OnInit {
     this.showCreate = false;
     this.showImport = false;
     this.closeNote = '';
-    this.rfqNote = '';
     this.itemNotesMap = {};
     this.openCommentItemId = null;
     this.itemNewNote = '';
@@ -770,7 +823,7 @@ export class MarketingComponent implements OnInit {
   async sendRfq(inquiry: Inquiry): Promise<void> {
     const user = this.authService.getCurrentUser();
     if (!user) return;
-    await this.inquiryService.sendRfq(inquiry.id, user.username, user.name, this.rfqNote);
+    await this.inquiryService.sendRfq(inquiry.id, user.username, user.name);
     this.success = 'RFQ sent to Sourcing.';
     this.detailInquiry = null;
     await this.refresh();
@@ -944,6 +997,14 @@ export class MarketingComponent implements OnInit {
     if (value == null) return '-';
     return 'Rp ' + value.toLocaleString('id-ID');
   }
+  visibleActivityLog(inquiry: Inquiry | null): ActivityLog[] {
+    if (!inquiry?.activityLog?.length) return [];
+    return inquiry.activityLog.filter((log) => !this.isPerItemSourcingLog(log));
+  }
+
+  private isPerItemSourcingLog(log: ActivityLog): boolean {
+    return log.action.trim().toLowerCase() === 'sourcing info submitted';
+  }
 
   getSellingPrice(item: InquiryItem): number | undefined {
     return item.hargaJual ?? item.approvedPrice;
@@ -984,3 +1045,4 @@ export class MarketingComponent implements OnInit {
     }
   }
 }
+

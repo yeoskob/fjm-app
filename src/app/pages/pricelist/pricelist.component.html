@@ -191,7 +191,8 @@
       <div class="modal-header-row title-row">
         <span class="mono-blue">{{ selectedInquiry.rfqNo }}</span>
         <span class="coupa-badge" *ngIf="selectedInquiry.coupaSource">Coupa</span>
-        <span class="status-pill" [attr.data-status]="selectedInquiry.status">{{ statusLabel(selectedInquiry.status) }}</span>
+        <span class="org-badge" [ngClass]="organizationClass(selectedInquiry.organization)">{{ selectedInquiry.organization || 'FJM' }}</span>
+        <span class="badge" [ngClass]="statusClass(selectedInquiry.status)">{{ statusLabel(selectedInquiry.status) }}</span>
       </div>
       <div class="modal-header-row">
         <span class="header-label">Customer:</span>

@@ -11,14 +11,30 @@
 
   <div class="notice error" *ngIf="error">{{ error }}<button class="notice-close" (click)="error=''">✕</button></div>
   <div class="notice success" *ngIf="success">{{ success }}<button class="notice-close" (click)="success=''">✕</button></div>
-
+  <div class="notice warning" *ngIf="importWarning">
+    <div class="notice-body">
+      <div>{{ importWarning }}</div>
+      <ul class="warning-list" *ngIf="visibleImportWarningItems.length > 0">
+        <li *ngFor="let item of visibleImportWarningItems">
+          <strong>{{ item.itemName }}</strong>:
+          Inquiry Date {{ formatDateOnly(item.inquiryDate) }} is later than Need by Date {{ formatDateOnly(item.needByDate) }}.
+        </li>
+        <li *ngIf="remainingImportWarningCount > 0">
+          And {{ remainingImportWarningCount }} more item{{ remainingImportWarningCount > 1 ? 's' : '' }}.
+        </li>
+      </ul>
+    </div>
+    <button class="notice-close" (click)="clearImportWarning()">✕</button>
+  </div>
   <!-- Tabs -->
   <div class="tab-bar">
     <button type="button" class="tab-btn" *ngIf="canSeeTab('rfq')" [class.active]="activeTab === 'rfq'" (click)="activeTab = 'rfq'">
       New Inquiry
+      <span class="tab-count" *ngIf="rfqTabInquiries.length > 0">{{ rfqTabInquiries.length }}</span>
     </button>
     <button type="button" class="tab-btn" *ngIf="canSeeTab('price_approved')" [class.active]="activeTab === 'price_approved'" (click)="activeTab = 'price_approved'">
       Price Approved
+      <span class="tab-count" *ngIf="priceApprovedTabInquiries.length > 0">{{ priceApprovedTabInquiries.length }}</span>
     </button>
     <button type="button" class="tab-btn" *ngIf="canSeeTab('sent')" [class.active]="activeTab === 'sent'" (click)="activeTab = 'sent'">
       Sent
@@ -316,6 +332,7 @@
     <label>Excel File (.xlsx)
       <input type="file" (change)="onImportFileChange($event)" class="form-control" accept=".xlsx" />
     </label>
+    <div class="notice error" *ngIf="error">{{ error }}</div>
     <div class="actions">
       <button type="button" class="primary" [disabled]="importing" (click)="submitImport()">
         {{ importing ? 'Importing...' : 'Import' }}
@@ -636,13 +653,13 @@
 
 
     <!-- Activity Log -->
-    <div class="activity-log" *ngIf="detailInquiry.activityLog?.length">
+    <div class="activity-log" *ngIf="visibleActivityLog(detailInquiry).length">
       <button type="button" class="log-toggle" (click)="showLog = !showLog">
-        <span>Activity Log ({{ detailInquiry.activityLog!.length }})</span>
+        <span>Activity Log ({{ visibleActivityLog(detailInquiry).length }})</span>
         <span class="log-chevron" [class.open]="showLog">›</span>
       </button>
       <ng-container *ngIf="showLog">
-        <div class="log-entry" *ngFor="let log of detailInquiry.activityLog">
+        <div class="log-entry" *ngFor="let log of visibleActivityLog(detailInquiry)">
           <span class="log-time">{{ formatDate(log.createdAt) }}</span>
           <span class="log-action">{{ log.action }}</span>
           <span class="log-by">by {{ log.doneByName }}</span>
@@ -656,9 +673,6 @@
     <div class="modal-footer" *ngIf="activeTab !== 'riwayat'">
       <ng-container [ngSwitch]="detailInquiry.status">
         <ng-container *ngSwitchCase="'new_inquiry'">
-          <label class="footer-note-label">Note (optional)
-            <input type="text" [(ngModel)]="rfqNote" [ngModelOptions]="{standalone:true}" class="form-control" placeholder="Add a note..." />
-          </label>
           <div class="footer-actions">
             <button type="button" class="ghost sm" *ngIf="isSingleItem(detailInquiry!)" (click)="startEdit(detailInquiry!)">Edit</button>
             <button type="button" class="primary sm" (click)="sendRfq(detailInquiry!)">Send to Sourcing (RFQ)</button>
@@ -744,3 +758,6 @@
     </div>
   </div>
 </div>
+
+
+

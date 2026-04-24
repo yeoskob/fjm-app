@@ -242,6 +242,27 @@ export class PricelistComponent implements OnInit {
     this.rejectTargetItem = null;
   }
 
+  organizationClass(org?: string): string {
+    if (org === 'FMI') return 'org-badge-fmi';
+    if (org === 'FSA') return 'org-badge-fsa';
+    return 'org-badge-fjm';
+  }
+
+  statusClass(status: string): string {
+    const map: Record<string, string> = {
+      new_inquiry: 'badge-blue',
+      rfq: 'badge-yellow',
+      price_approval: 'badge-orange',
+      price_approved: 'badge-teal',
+      quotation_sent: 'badge-purple',
+      follow_up: 'badge-purple',
+      ready_to_purchase: 'badge-indigo',
+      missed: 'badge-red',
+      unsent: 'badge-red',
+    };
+    return map[status] ?? 'badge-gray';
+  }
+
   async toggleComments(): Promise<void> {
     this.showComments = !this.showComments;
     if (this.showComments && this.selectedInquiry && this.notes.length === 0) {
