@@ -71,6 +71,7 @@ export class ReportComponent implements OnInit {
     { value: 'new_inquiry',       label: 'New Inquiry' },
     { value: 'rfq',               label: 'RFQ to Sourcing' },
     { value: 'price_approval',    label: 'Price Approval' },
+    { value: 'follow_up',         label: 'Price Review' },
     { value: 'price_approved',    label: 'Price Approved' },
     { value: 'quotation_sent',    label: 'Quotation Sent' },
     { value: 'unsent',            label: 'Unsent' },
@@ -79,6 +80,7 @@ export class ReportComponent implements OnInit {
   readonly SOURCING_STATUS_OPTIONS = [
     { value: 'rfq',               label: 'RFQ to Sourcing' },
     { value: 'price_approval',    label: 'Price Approval' },
+    { value: 'follow_up',         label: 'Price Review' },
     { value: 'price_approved',    label: 'Price Approved' },
     { value: 'quotation_sent',    label: 'Quotation Sent' },
     { value: 'missed',            label: 'Missed' },
@@ -251,7 +253,7 @@ export class ReportComponent implements OnInit {
       quotation_sent: 'chip-sent', ready_to_purchase: 'chip-sent',
       unsent: 'chip-unsent', missed: 'chip-missed',
       price_approved: 'chip-approved', price_approval: 'chip-approval',
-      rfq: 'chip-rfq', new_inquiry: 'chip-new', follow_up: 'chip-followup',
+      rfq: 'chip-rfq', new_inquiry: 'chip-new', follow_up: 'chip-review',
     };
     return map[status] ?? '';
   }

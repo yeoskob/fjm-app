@@ -3,7 +3,7 @@ import { ActivatedRoute } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 import { InquiryService } from '../../services/inquiry.service';
 import { SettingsService } from '../../services/settings.service';
-import { Inquiry, InquiryItem, InquiryNote, PriceApproval } from '../../models/inquiry';
+import { Inquiry, InquiryItem, InquiryNote, PriceApproval, getInquiryDisplayStatus } from '../../models/inquiry';
 
 @Component({
   selector: 'app-pricelist',
@@ -164,17 +164,16 @@ export class PricelistComponent implements OnInit {
     return role === 'admin' || role === 'manager';
   }
 
-  isReviewRequest(inquiry: Inquiry): boolean {
-    return inquiry.items.some(item => item.reviewStatus === 'review' || item.needsPriceReview === true);
+  canEditApproval(inq: Inquiry | null): boolean {
+    return !!inq && (inq.status === 'price_approval' || inq.status === 'follow_up');
   }
 
   async refresh(): Promise<void> {
     const all = await this.inquiryService.getAll();
-    const priceApproval = all.filter((i) => i.status === 'price_approval');
-    this.pendingApproval = priceApproval.filter((i) => !this.isReviewRequest(i));
-    this.pendingReview   = priceApproval.filter((i) =>  this.isReviewRequest(i));
+    this.pendingApproval = all.filter((i) => i.status === 'price_approval' && this.displayStatus(i) !== 'follow_up');
+    this.pendingReview = all.filter((i) => this.displayStatus(i) === 'follow_up');
     this.approved = all.filter((i) =>
-      ['price_approved', 'quotation_sent'].includes(i.status)
+      ['follow_up', 'price_approved', 'quotation_sent'].includes(this.displayStatus(i))
     );
     this.pendingPage = 1;
     this.reviewPage = 1;
@@ -255,12 +254,16 @@ export class PricelistComponent implements OnInit {
       price_approval: 'badge-orange',
       price_approved: 'badge-teal',
       quotation_sent: 'badge-purple',
-      follow_up: 'badge-purple',
+      follow_up: 'badge-orange',
       ready_to_purchase: 'badge-indigo',
       missed: 'badge-red',
       unsent: 'badge-red',
     };
     return map[status] ?? 'badge-gray';
+  }
+
+  displayStatus(inquiry: Inquiry): string {
+    return getInquiryDisplayStatus(inquiry);
   }
 
   async toggleComments(): Promise<void> {
@@ -316,14 +319,14 @@ export class PricelistComponent implements OnInit {
   }
 
   toggleApprove(item: InquiryItem): void {
-    if (!this.selectedInquiry || this.selectedInquiry.status !== 'price_approval') return;
+    if (!this.canEditApproval(this.selectedInquiry)) return;
     if (this.editingItemId === item.id) {
       this.cancelApprove();
       return;
     }
     this.startApprove(item);
     if (!this.itemNotesMap[item.id]) {
-      void this.loadItemNotes(this.selectedInquiry.id, item.id);
+      void this.loadItemNotes(this.selectedInquiry!.id, item.id);
     }
   }
 
@@ -415,13 +418,13 @@ export class PricelistComponent implements OnInit {
   }
 
   async sendToPriceApproved(): Promise<void> {
-    if (!this.selectedInquiry || this.selectedInquiry.status !== 'price_approval') return;
+    if (!this.canEditApproval(this.selectedInquiry)) return;
     const user = this.authService.getCurrentUser();
     if (!user) return;
     this.error = '';
     this.success = '';
     try {
-      await this.inquiryService.sendToPriceApproved(this.selectedInquiry.id, user.username, user.name);
+      await this.inquiryService.sendToPriceApproved(this.selectedInquiry!.id, user.username, user.name);
       this.success = 'Inquiry sent to Price Approved.';
       await this.refresh();
       this.closeModal();
@@ -561,6 +564,7 @@ export class PricelistComponent implements OnInit {
   statusLabel(status: string): string {
     const map: Record<string, string> = {
       price_approval: 'Price Approval',
+      follow_up: 'Price Review',
       price_approved: 'Price Approved',
       quotation_sent: 'Quotation Sent',
     };
@@ -573,5 +577,6 @@ export class PricelistComponent implements OnInit {
     return map[type] ?? type;
   }
 }
+
 
 

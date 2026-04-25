@@ -15,7 +15,7 @@ export const INQUIRY_STATUS_LABELS: Record<InquiryStatus, string> = {
   price_approval: 'Price Approval',
   price_approved: 'Price Approved',
   quotation_sent: 'Quotation Sent',
-  follow_up: 'Negotiation',
+  follow_up: 'Price Review',
   ready_to_purchase: 'Ready to Purchase',
   missed: 'Missed',
   unsent: 'Unsent',
@@ -104,6 +104,21 @@ export interface Inquiry {
   sourcingMissed?: boolean;
   priceApprovalStartedAt?: string | null;
   activityLog?: ActivityLog[];
+}
+
+function isItemInPriceReview(item: Pick<InquiryItem, 'needsPriceReview' | 'reviewStatus'>): boolean {
+  return item.needsPriceReview === true || item.reviewStatus === 'review';
+}
+
+export function getInquiryDisplayStatus(inquiry: Pick<Inquiry, 'status'> & { items?: Array<Pick<InquiryItem, 'needsPriceReview' | 'reviewStatus'>> }): InquiryStatus {
+  if (inquiry.status === 'follow_up') return 'follow_up';
+  if (
+    ['price_approved', 'quotation_sent'].includes(inquiry.status) &&
+    (inquiry.items ?? []).some((item) => isItemInPriceReview(item))
+  ) {
+    return 'follow_up';
+  }
+  return inquiry.status;
 }
 
 export interface InquiryNote {
@@ -238,3 +253,4 @@ export interface UserStats {
     inquiriesApproved: number;
   };
 }
+

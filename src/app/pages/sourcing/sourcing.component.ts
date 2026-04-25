@@ -196,7 +196,7 @@ export class SourcingComponent implements OnInit {
       price_approval: 'badge-orange',
       price_approved: 'badge-teal',
       quotation_sent: 'badge-purple',
-      follow_up: 'badge-purple',
+      follow_up: 'badge-orange',
       ready_to_purchase: 'badge-indigo',
       missed: 'badge-red',
       unsent: 'badge-red',
@@ -296,7 +296,11 @@ export class SourcingComponent implements OnInit {
 
     const { supplier, hargaBeli, leadTimeNum } = this.fillForm;
     if (!supplier?.trim() || hargaBeli == null || leadTimeNum == null) {
-      this.error = 'Supplier, harga beli, dan lead time wajib diisi.';
+      this.error = 'Supplier, harga beli, lead time, dan PPN wajib diisi.';
+      return;
+    }
+    if (!this.ppnType) {
+      this.error = 'Supplier, harga beli, lead time, dan PPN wajib diisi.';
       return;
     }
     const leadTime = `${leadTimeNum} hari`;
@@ -312,7 +316,7 @@ export class SourcingComponent implements OnInit {
       stockAvailability: this.fillForm.stockAvailability?.trim(),
       termPembayaran: this.fillForm.termPembayaran?.trim(),
       alternateName: this.fillForm.alternateName?.trim(),
-      ppnType: this.ppnType ?? undefined,
+      ppnType: this.ppnType,
       doneBy: user.username,
       doneByName: user.name,
     };
@@ -419,7 +423,7 @@ export class SourcingComponent implements OnInit {
   statusLabel(status: string): string {
     const map: Record<string, string> = {
       rfq: 'RFQ', price_approval: 'Price Approval', price_approved: 'Price Approved',
-      quotation_sent: 'Quotation Sent', follow_up: 'Negotiation', ready_to_purchase: 'Ready to Purchase',
+      quotation_sent: 'Quotation Sent', follow_up: 'Price Review', ready_to_purchase: 'Ready to Purchase',
       missed: 'Missed', unsent: 'Unsent',
     };
     return map[status] ?? status;
@@ -479,3 +483,4 @@ export class SourcingComponent implements OnInit {
     return map[type] ?? type;
   }
 }
+

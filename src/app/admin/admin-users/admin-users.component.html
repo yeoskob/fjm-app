@@ -2,7 +2,6 @@
   <div class="page-header">
     <div>
       <h1>Settings</h1>
-      <p>Manage users and roles.</p>
     </div>
   </div>
 
@@ -15,9 +14,6 @@
     </button>
     <button type="button" class="tab-btn" [class.active]="activeTab === 'organizations'" (click)="setTab('organizations')">
       Organizations
-    </button>
-    <button type="button" class="tab-btn" [class.active]="activeTab === 'notifications'" (click)="setTab('notifications')">
-      Notifications
     </button>
     <button type="button" class="tab-btn" [class.active]="activeTab === 'deadline'" (click)="setTab('deadline')">
       Batas Waktu Review
@@ -216,43 +212,6 @@
     </div>
   </div>
   <!-- Notifications Tab -->
-  <div class="tab-content" *ngIf="activeTab === 'notifications'">
-    <div class="admin-grid">
-      <div class="card">
-        <h2>RFQ Notifications</h2>
-        <p class="hint">Select which roles receive a notification for each event. Targeted events (Price Approved, Returned to Sourcing) are delivered only to the PIC of the RFQ.</p>
-
-        <div class="notif-matrix" style="margin-top: 1rem; overflow-x: auto;">
-          <table class="data-table">
-            <thead>
-              <tr>
-                <th>Event</th>
-                <th *ngFor="let role of matrixRoleNames()">{{ role }}</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr *ngFor="let t of notifTypes">
-                <td>{{ notifTypeLabels[t] }}</td>
-                <td *ngFor="let role of matrixRoleNames()">
-                  <input type="checkbox" [(ngModel)]="notifMatrix[t][role]" [ngModelOptions]="{standalone:true}" />
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-
-        <div class="notice error" *ngIf="notifError">{{ notifError }}</div>
-        <div class="notice success" *ngIf="notifSuccess">{{ notifSuccess }}</div>
-
-        <div class="actions" style="margin-top: 1.25rem;">
-          <button type="button" class="primary" [disabled]="notifBusy" (click)="saveNotifRoles()">
-            {{ notifBusy ? 'Saving...' : 'Save Settings' }}
-          </button>
-        </div>
-      </div>
-    </div>
-  </div>
-
   <!-- Deadline Tab -->
   <div class="tab-content" *ngIf="activeTab === 'deadline'">
     <div class="admin-grid">

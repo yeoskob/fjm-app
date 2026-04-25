@@ -168,7 +168,7 @@
   white-space: nowrap;
   &[data-status="price_approval"] { background: #ffedd5; color: #c2410c; }
   &[data-status="quotation_sent"] { background: #ccfbf1; color: #0f766e; }
-  &[data-status="follow_up"]      { background: #ede9fe; color: #6d28d9; }
+  &[data-status="follow_up"]      { background: #ffedd5; color: #c2410c; }
 }
 
 .empty { color: #64748b; padding: 0.5rem 0; }

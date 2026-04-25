@@ -15,7 +15,7 @@
       RFQ
     </button>
     <button type="button" class="tab-btn" [class.active]="activeTab === 'riwayat'" (click)="activeTab = 'riwayat'">
-      Riwayat
+      History
     </button>
   </div>
 
@@ -285,10 +285,11 @@
                       class="form-control" placeholder="Nama supplier" [disabled]="isMissed(item)" />
                   </div>
                   <div class="inline-field-row">
-                    <span class="field-label">Harga Beli (Rp) *</span>
+                    <span class="field-label">Harga Beli (Rp) / PPN</span>
                     <div class="harga-ppn-wrap">
                       <input type="number" [(ngModel)]="fillForm.hargaBeli" [ngModelOptions]="{standalone:true}"
                         class="form-control harga-input" min="0" [disabled]="isMissed(item)" />
+                      <span class="field-required-sep" aria-hidden="true">*</span>
                       <div class="ppn-toggle-group">
                         <button type="button" class="ppn-toggle-btn" [class.active]="ppnType === 'incl_ppn'" (click)="ppnType = 'incl_ppn'">Incl. PPN</button>
                         <button type="button" class="ppn-toggle-btn" [class.active]="ppnType === 'excl_ppn'" (click)="ppnType = 'excl_ppn'">Excl. PPN</button>

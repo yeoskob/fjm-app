@@ -3,7 +3,7 @@ import { ActivatedRoute } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 import { InquiryService } from '../../services/inquiry.service';
 import { SettingsService } from '../../services/settings.service';
-import { ActivityLog, Inquiry, InquiryCreate, InquiryItem, InquiryNote, InquiryStatus, INQUIRY_STATUS_LABELS } from '../../models/inquiry';
+import { ActivityLog, Inquiry, InquiryCreate, InquiryItem, InquiryNote, InquiryStatus, INQUIRY_STATUS_LABELS, getInquiryDisplayStatus } from '../../models/inquiry';
 import { todayLocalISO } from '../../utils/date';
 
 @Component({
@@ -88,12 +88,12 @@ export class MarketingComponent implements OnInit {
 
   readonly STATUS_LABELS = INQUIRY_STATUS_LABELS;
   readonly PIPELINE_STAGES: InquiryStatus[] = [
-    'new_inquiry', 'rfq', 'price_approval', 'price_approved', 'quotation_sent', 'follow_up', 'ready_to_purchase', 'missed', 'unsent'
+    'new_inquiry', 'rfq', 'price_approval', 'price_approved', 'quotation_sent', 'follow_up', 'missed', 'unsent'
   ];
 
-  rfqFilter = ''; rfqSort = { col: 'needByDate', dir: 'asc' as 'asc'|'desc' };
-  priceApprovedFilter = ''; priceApprovedSort = { col: 'daysLeft', dir: 'asc' as 'asc'|'desc' };
-  quotationFilter = ''; quotationSort = { col: 'needByDate', dir: 'asc' as 'asc'|'desc' };
+  rfqFilter = ''; rfqSort = { col: 'updatedAt', dir: 'desc' as 'asc'|'desc' };
+  priceApprovedFilter = ''; priceApprovedSort = { col: 'updatedAt', dir: 'desc' as 'asc'|'desc' };
+  quotationFilter = ''; quotationSort = { col: 'updatedAt', dir: 'desc' as 'asc'|'desc' };
   riwayatFilter = ''; riwayatStatusFilter = ''; riwayatSort = { col: 'updatedAt', dir: 'desc' as 'asc'|'desc' };
 
   // Price editing for price_approved status
@@ -120,7 +120,8 @@ export class MarketingComponent implements OnInit {
         i.customer.toLowerCase().includes(f) ||
         i.salesPic.toLowerCase().includes(f) ||
         (i.sourcingPic ?? '').toLowerCase().includes(f) ||
-        i.status.toLowerCase().includes(f)
+        this.displayStatus(i).toLowerCase().includes(f) ||
+        this.STATUS_LABELS[this.displayStatus(i)].toLowerCase().includes(f)
       );
     }
     if (sort.col) {
@@ -130,9 +131,9 @@ export class MarketingComponent implements OnInit {
         else if (sort.col === 'customer') { av = a.customer; bv = b.customer; }
         else if (sort.col === 'salesPic') { av = a.salesPic; bv = b.salesPic; }
         else if (sort.col === 'sourcingPic') { av = a.sourcingPic ?? ''; bv = b.sourcingPic ?? ''; }
-        else if (sort.col === 'status') { av = a.status; bv = b.status; }
+        else if (sort.col === 'status') { av = this.displayStatus(a); bv = this.displayStatus(b); }
         else if (sort.col === 'tanggal') { av = a.tanggal; bv = b.tanggal; }
-        else if (sort.col === 'updatedAt') { av = a.updatedAt ?? ''; bv = b.updatedAt ?? ''; }
+        else if (sort.col === 'updatedAt') { av = this.lastUpdatedValue(a); bv = this.lastUpdatedValue(b); }
         else if (sort.col === 'items') { av = a.items.length; bv = b.items.length; }
         else if (sort.col === 'needByDate') {
           const earliest = (inq: Inquiry) => inq.items.map(i => i.itemNeedByDate).filter(Boolean).sort()[0] ?? '';
@@ -171,8 +172,12 @@ export class MarketingComponent implements OnInit {
   }
   get riwayatTabFiltered(): Inquiry[] {
     let result = this.applyFS(this.riwayatTabInquiries, this.riwayatFilter, this.riwayatSort);
-    if (this.riwayatStatusFilter) result = result.filter(i => i.status === this.riwayatStatusFilter);
+    if (this.riwayatStatusFilter) result = result.filter(i => this.displayStatus(i) === this.riwayatStatusFilter);
     return result;
+  }
+
+  private lastUpdatedValue(inquiry: Inquiry): string {
+    return inquiry.updatedAt ?? inquiry.tanggal ?? '';
   }
 
 
@@ -291,7 +296,16 @@ export class MarketingComponent implements OnInit {
   }
 
   byStatus(status: InquiryStatus): Inquiry[] {
-    return this.inquiries.filter((i) => i.status === status);
+    return this.inquiries.filter((i) => this.displayStatus(i) === status);
+  }
+
+  displayStatus(inquiry: Inquiry): InquiryStatus {
+    return getInquiryDisplayStatus(inquiry);
+  }
+
+  canUsePriceReviewFlow(inquiry: Inquiry | null): boolean {
+    if (!inquiry) return false;
+    return ['price_approved', 'quotation_sent', 'follow_up'].includes(this.displayStatus(inquiry));
   }
 
   statusClass(status: InquiryStatus): string {
@@ -301,7 +315,7 @@ export class MarketingComponent implements OnInit {
       price_approval: 'badge-orange',
       price_approved: 'badge-teal',
       quotation_sent: 'badge-purple',
-      follow_up: 'badge-purple',
+      follow_up: 'badge-orange',
       ready_to_purchase: 'badge-indigo',
       missed: 'badge-red',
       unsent: 'badge-red',
@@ -881,12 +895,12 @@ export class MarketingComponent implements OnInit {
     this.error = '';
     try {
       await this.inquiryService.returnToPriceApproval(inquiry.id, user.username, user.name, reviewReason);
-      this.success = 'Sent back to Price Approval for review.';
+      this.success = 'Sent to Price Review.';
       this.closePriceReviewModal();
       this.detailInquiry = null;
       await this.refresh();
     } catch (e: any) {
-      this.error = e?.error?.error ?? 'Failed to return to price approval.';
+      this.error = e?.error?.error ?? 'Failed to send to Price Review.';
     }
   }
 
@@ -1056,4 +1070,5 @@ export class MarketingComponent implements OnInit {
     }
   }
 }
+
 

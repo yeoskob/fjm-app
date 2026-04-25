@@ -2,7 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 import { InquiryService } from '../../services/inquiry.service';
-import { DashboardStats, UserStats } from '../../models/inquiry';
+import { DashboardStats, Inquiry, InquiryStatus, UserStats, getInquiryDisplayStatus } from '../../models/inquiry';
 
 @Component({
   selector: 'app-dashboard',
@@ -11,6 +11,7 @@ import { DashboardStats, UserStats } from '../../models/inquiry';
 })
 export class DashboardComponent implements OnInit {
   dashboard: DashboardStats | null = null;
+  allInquiries: Inquiry[] = [];
   isAdmin = false;
   activeTab: 'sales' | 'sourcing' = 'sales';
 
@@ -24,11 +25,17 @@ export class DashboardComponent implements OnInit {
   readonly PIE_R = 40;
   readonly PIE_C = 2 * Math.PI * 40;
 
-  private readonly PIPELINE_STATUSES = [
-    'new_inquiry', 'rfq', 'price_approval', 'price_approved', 'quotation_sent',
+  private readonly PIPELINE_STATUSES: InquiryStatus[] = [
+    'new_inquiry', 'rfq', 'price_approval', 'follow_up', 'price_approved', 'quotation_sent',
   ];
 
   get marketingBreakdown() {
+    if (this.allInquiries.length > 0) {
+      return this.PIPELINE_STATUSES.map((status) => ({
+        status,
+        count: this.allInquiries.filter((inquiry) => getInquiryDisplayStatus(inquiry) === status).length,
+      }));
+    }
     const rows = this.dashboard?.statusBreakdown ?? [];
     return this.PIPELINE_STATUSES.map((status) => ({
       status,
@@ -59,13 +66,14 @@ export class DashboardComponent implements OnInit {
 
   get funnelData() {
     if (!this.dashboard) return [];
-    const rows = this.dashboard.statusBreakdown ?? [];
+    const rows = this.marketingBreakdown;
     const get = (s: string) => rows.find((r) => r.status === s)?.count ?? 0;
     const base = this.dashboard.total || 1;
     const steps = [
       { label: 'New Inquiry',    count: get('new_inquiry'),                               color: '#1d4ed8', route: '/marketing',  tab: 'rfq'           },
       { label: 'Sourcing',       count: get('rfq'),                                       color: '#7c3aed', route: '/sourcing',   tab: 'rfq'           },
-      { label: 'Price Approval', count: get('price_approval'),                            color: '#c2410c', route: '/pricelist',  tab: null            },
+      { label: 'Price Approval', count: get('price_approval'),                            color: '#c2410c', route: '/pricelist',  tab: 'pending'       },
+      { label: 'Price Review',   count: get('follow_up'),                                 color: '#ea580c', route: '/pricelist',  tab: 'review'        },
       { label: 'Price Approved', count: get('price_approved'),                            color: '#d97706', route: '/marketing',  tab: 'price_approved'},
       { label: 'Sent',           count: get('quotation_sent') + get('ready_to_purchase'), color: '#15803d', route: '/marketing',  tab: 'sent'          },
     ];
@@ -73,7 +81,7 @@ export class DashboardComponent implements OnInit {
   }
 
   get marketingPieData() {
-    const rows = this.dashboard?.statusBreakdown ?? [];
+    const rows = this.marketingBreakdown;
     return this.buildMarketingPie(rows, this.dashboard?.unsent ?? 0);
   }
 
@@ -154,8 +162,8 @@ export class DashboardComponent implements OnInit {
     const get = (status: string) => rows.find((r) => r.status === status)?.count ?? 0;
 
     const newInquiry  = get('new_inquiry');
-    const inPipeline  = get('rfq') + get('price_approval') + get('price_approved');
-    const sentTotal   = get('quotation_sent') + get('follow_up');
+    const inPipeline  = get('rfq') + get('price_approval') + get('follow_up') + get('price_approved');
+    const sentTotal   = get('quotation_sent');
     const unsent      = get('unsent');
     const total = newInquiry + inPipeline + sentTotal + unsent;
     if (total === 0) return null;
@@ -204,7 +212,12 @@ export class DashboardComponent implements OnInit {
   }
 
   async load(): Promise<void> {
-    this.dashboard = await this.inquiryService.getDashboard();
+    const [dashboard, allInquiries] = await Promise.all([
+      this.inquiryService.getDashboard(),
+      this.inquiryService.getAll(),
+    ]);
+    this.dashboard = dashboard;
+    this.allInquiries = allInquiries;
   }
 
   async loadUsers(): Promise<void> {
@@ -232,7 +245,7 @@ export class DashboardComponent implements OnInit {
       price_approval: 'Price Approval',
       price_approved: 'Price Approved',
       quotation_sent: 'Quotation Sent',
-      follow_up: 'Negotiation',
+      follow_up: 'Price Review',
       deal: 'Deal',
       lost: 'Lost',
       ready_to_purchase: 'Ready to Purchase',

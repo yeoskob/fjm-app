@@ -40,7 +40,7 @@
       Sent
     </button>
     <button type="button" class="tab-btn" [class.active]="activeTab === 'riwayat'" (click)="activeTab = 'riwayat'">
-      Riwayat
+      History
     </button>
   </div>
 
@@ -75,7 +75,7 @@
           <td>{{ itemCount(inq) }}</td>
           <td>
             <div class="status-stack">
-              <span class="badge" [ngClass]="statusClass(inq.status)">{{ STATUS_LABELS[inq.status] }}</span>
+              <span class="badge" [ngClass]="statusClass(displayStatus(inq))">{{ STATUS_LABELS[displayStatus(inq)] }}</span>
             </div>
           </td>
         </tr>
@@ -126,7 +126,7 @@
           <td>{{ inq.sourcingPic || '-' }}</td>
           <td>{{ itemCount(inq) }}</td>
           <td>
-            <span class="badge" [ngClass]="statusClass(inq.status)">{{ STATUS_LABELS[inq.status] }}</span>
+            <span class="badge" [ngClass]="statusClass(displayStatus(inq))">{{ STATUS_LABELS[displayStatus(inq)] }}</span>
           </td>
         </tr>
         <tr *ngIf="priceApprovedTabFiltered.length === 0">
@@ -161,7 +161,7 @@
           <th (click)="toggleSort(riwayatSort,'sourcingPic')" class="sortable">Sourcing <span class="sort-icon">{{ sortIcon(riwayatSort,'sourcingPic') }}</span></th>
           <th (click)="toggleSort(riwayatSort,'items')" class="sortable">Items <span class="sort-icon">{{ sortIcon(riwayatSort,'items') }}</span></th>
           <th (click)="toggleSort(riwayatSort,'needByDate')" class="sortable">Need By <span class="sort-icon">{{ sortIcon(riwayatSort,'needByDate') }}</span></th>
-          <th (click)="toggleSort(riwayatSort,'updatedAt')" class="sortable">Last Update <span class="sort-icon">{{ sortIcon(riwayatSort,'updatedAt') }}</span></th>
+          <th (click)="toggleSort(riwayatSort,'tanggal')" class="sortable">Inquiry Date <span class="sort-icon">{{ sortIcon(riwayatSort,'tanggal') }}</span></th>
           <th>Status</th>
         </tr>
       </thead>
@@ -177,10 +177,10 @@
           <td>{{ inq.sourcingPic || '-' }}</td>
           <td>{{ itemCount(inq) }}</td>
           <td class="muted">{{ earliestNeedByDate(inq) }}</td>
-          <td class="muted">{{ formatDate(inq.updatedAt) }}</td>
+          <td class="muted">{{ formatDate(inq.tanggal) }}</td>
           <td>
             <div class="status-stack">
-              <span class="badge" [ngClass]="statusClass(inq.status)">{{ STATUS_LABELS[inq.status] }}</span>
+              <span class="badge" [ngClass]="statusClass(displayStatus(inq))">{{ STATUS_LABELS[displayStatus(inq)] }}</span>
             </div>
           </td>
         </tr>
@@ -222,7 +222,7 @@
           <td>{{ itemCount(inq) }}</td>
           <td>
             <div class="status-stack">
-              <span class="badge" [ngClass]="statusClass(inq.status)">{{ STATUS_LABELS[inq.status] }}</span>
+              <span class="badge" [ngClass]="statusClass(displayStatus(inq))">{{ STATUS_LABELS[displayStatus(inq)] }}</span>
             </div>
           </td>
         </tr>
@@ -444,7 +444,7 @@
         <span class="mono-blue">{{ detailInquiry.rfqNo }}</span>
         <span class="coupa-badge" *ngIf="detailInquiry.coupaSource">Coupa</span>
         <span class="org-badge" [ngClass]="organizationClass(detailInquiry.organization)">{{ detailInquiry.organization || 'FJM' }}</span>
-        <span class="badge" [ngClass]="statusClass(detailInquiry.status)">{{ STATUS_LABELS[detailInquiry.status] }}</span>
+        <span class="badge" [ngClass]="statusClass(displayStatus(detailInquiry))">{{ STATUS_LABELS[displayStatus(detailInquiry)] }}</span>
       </div>
       <div class="modal-header-grid">
         <div class="modal-header-col">
@@ -531,7 +531,7 @@
           </div>
         </div>
 
-        <ng-container *ngIf="detailInquiry.status === 'price_approved'; else legacyItemReviewList">
+        <ng-container *ngIf="canUsePriceReviewFlow(detailInquiry); else legacyItemReviewList">
           <div class="price-approved-table-wrap">
             <table class="price-approved-table">
               <thead>
@@ -660,9 +660,9 @@
         <div class="item-review-list">
           <div class="item-review-row clickable-row" *ngFor="let item of detailInquiry.items"
             [class.is-editing]="reviewingItemId === item.id"
-            [class.is-below-approved-floor]="detailInquiry.status === 'price_approved' && isItemBelowApprovedFloor(item)"
-            [class.is-rejected]="['price_approved','quotation_sent'].includes(detailInquiry.status) && item.reviewStatus === 'rejected'"
-            [class.needs-review-unread]="detailInquiry.status === 'price_approved' && (item.needsPriceReview || (item.reviewRound ?? 0) > 0) && !reviewedItemIds.has(item.id)"
+            [class.is-below-approved-floor]="canUsePriceReviewFlow(detailInquiry) && isItemBelowApprovedFloor(item)"
+            [class.is-rejected]="canUsePriceReviewFlow(detailInquiry) && item.reviewStatus === 'rejected'"
+            [class.needs-review-unread]="canUsePriceReviewFlow(detailInquiry) && (item.needsPriceReview || (item.reviewRound ?? 0) > 0) && !reviewedItemIds.has(item.id)"
             (click)="detailInquiry.status === 'new_inquiry' ? (reviewingItemId === item.id ? cancelReviewItem() : startReviewItem(item)) : toggleViewItem(item.id)">
             <div class="item-review-main">
               <img *ngIf="item.itemImage" [src]="item.itemImage" class="item-thumb clickable"
@@ -696,7 +696,7 @@
                 <tr *ngIf="item.hargaJual || getApprovedPrice(item)">
                   <td>Harga Jual</td>
                   <td>
-                    <ng-container *ngIf="detailInquiry.status === 'price_approved'; else hjLegacyEdit">
+                    <ng-container *ngIf="canUsePriceReviewFlow(detailInquiry); else hjLegacyEdit">
                       <ng-container *ngIf="editingPriceApprovedItemId === item.id; else paDisplay">
                         <div (click)="$event.stopPropagation()">
                           <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
@@ -824,7 +824,7 @@
 
     <!-- Fixed Footer: Actions -->
     <div class="modal-footer" *ngIf="activeTab !== 'riwayat'">
-      <ng-container [ngSwitch]="detailInquiry.status">
+      <ng-container [ngSwitch]="detailInquiry!.status">
         <ng-container *ngSwitchCase="'new_inquiry'">
           <div class="footer-actions">
             <button type="button" class="ghost sm" *ngIf="isSingleItem(detailInquiry!)" (click)="startEdit(detailInquiry!)">Edit</button>
@@ -838,46 +838,77 @@
           <span class="status-info">Waiting for manager price approval.</span>
         </ng-container>
         <ng-container *ngSwitchCase="'price_approved'">
-          <ng-container *ngIf="itemsBelowApprovedFloor(detailInquiry!) as badItems">
-          <ng-container *ngIf="reviewNeededItems(detailInquiry!) as reviewNeeded">
-          <ng-container *ngIf="sourcingTidakTerisiItems(detailInquiry!) as sourcingGaps">
-          <ng-container *ngIf="unreviewedNeedsPriceReviewItems(detailInquiry!) as unreadReviewItems">
-            <div class="footer-layout">
-              <div class="footer-warning-list">
-                <div class="footer-warning" *ngIf="sourcingGaps.length > 0">
-                  {{ sourcingGaps.length }} item sourcing belum terisi - kirim ke Price Review.
-                </div>
-                <div class="footer-warning" *ngIf="badItems.length > 0">
-                  {{ badItems.length }} item memiliki harga di bawah batas approved - kirim ke Price Review.
-                </div>
-                <div class="footer-warning" *ngIf="reviewNeeded.length > 0">
-                  {{ reviewNeeded.length }} item perlu update review - kirim ke Price Review.
-                </div>
-              </div>
-              <div class="footer-actions compact-footer-actions">
-                <button type="button" class="ghost sm review-action-btn" [disabled]="unreadReviewItems.length > 0" (click)="openPriceReviewModal(detailInquiry!)">Price Review</button>
-                <button type="button" class="primary sm sent-action-btn" (click)="sendToSent(detailInquiry!)">Sent</button>
-              </div>
-            </div>
-          </ng-container>
-          </ng-container>
-          </ng-container>
-          </ng-container>
+          <ng-container *ngTemplateOutlet="priceReviewFooter"></ng-container>
+        </ng-container>
+        <ng-container *ngSwitchCase="'follow_up'">
+          <span class="status-info">Waiting for manager price review.</span>
         </ng-container>
         <ng-container *ngSwitchCase="'quotation_sent'">
-          <span class="status-info" *ngIf="detailInquiry.sentIncomplete">
-            RFQ sent as incomplete.
-            <span *ngIf="rejectedItemCount(detailInquiry) > 0">{{ rejectedItemCount(detailInquiry) }} item{{ rejectedItemCount(detailInquiry) > 1 ? 's' : '' }} still need review.</span>
-          </span>
-          <div class="footer-actions">
-            <button type="button" class="ghost sm" (click)="exportCoupa(detailInquiry!)">Export Coupa Excel</button>
-          </div>
+          <ng-container *ngTemplateOutlet="quotationFooter"></ng-container>
         </ng-container>
       </ng-container>
     </div>
 
   </div>
 </div>
+
+<ng-template #priceReviewFooter>
+  <ng-container *ngIf="itemsBelowApprovedFloor(detailInquiry!) as badItems">
+  <ng-container *ngIf="reviewNeededItems(detailInquiry!) as reviewNeeded">
+  <ng-container *ngIf="sourcingTidakTerisiItems(detailInquiry!) as sourcingGaps">
+  <ng-container *ngIf="unreviewedNeedsPriceReviewItems(detailInquiry!) as unreadReviewItems">
+    <div class="footer-layout">
+      <div class="footer-warning-list">
+        <div class="footer-warning" *ngIf="sourcingGaps.length > 0">
+          {{ sourcingGaps.length }} item sourcing belum terisi - kirim ke Price Review.
+        </div>
+        <div class="footer-warning" *ngIf="badItems.length > 0">
+          {{ badItems.length }} item memiliki harga di bawah batas approved - kirim ke Price Review.
+        </div>
+        <div class="footer-warning" *ngIf="reviewNeeded.length > 0">
+          {{ reviewNeeded.length }} item perlu update review - kirim ke Price Review.
+        </div>
+      </div>
+      <div class="footer-actions compact-footer-actions">
+        <button type="button" class="ghost sm review-action-btn" [disabled]="(badItems.length + reviewNeeded.length + sourcingGaps.length) === 0" (click)="openPriceReviewModal(detailInquiry!)">Price Review</button>
+        <button type="button" class="primary sm sent-action-btn" (click)="sendToSent(detailInquiry!)">Sent</button>
+      </div>
+    </div>
+  </ng-container>
+  </ng-container>
+  </ng-container>
+  </ng-container>
+</ng-template>
+
+<ng-template #quotationFooter>
+  <ng-container *ngIf="itemsBelowApprovedFloor(detailInquiry!) as badItems">
+  <ng-container *ngIf="reviewNeededItems(detailInquiry!) as reviewNeeded">
+  <ng-container *ngIf="sourcingTidakTerisiItems(detailInquiry!) as sourcingGaps">
+    <div class="footer-layout">
+      <div class="footer-warning-list">
+        <span class="status-info" *ngIf="detailInquiry?.sentIncomplete">
+          RFQ sent as incomplete.
+          <span *ngIf="detailInquiry && rejectedItemCount(detailInquiry) > 0">{{ rejectedItemCount(detailInquiry) }} item{{ rejectedItemCount(detailInquiry) > 1 ? 's' : '' }} still need review.</span>
+        </span>
+        <div class="footer-warning" *ngIf="sourcingGaps.length > 0">
+          {{ sourcingGaps.length }} item sourcing belum terisi - kirim ke Price Review.
+        </div>
+        <div class="footer-warning" *ngIf="badItems.length > 0">
+          {{ badItems.length }} item memiliki harga di bawah batas approved - kirim ke Price Review.
+        </div>
+        <div class="footer-warning" *ngIf="reviewNeeded.length > 0">
+          {{ reviewNeeded.length }} item perlu update review - kirim ke Price Review.
+        </div>
+      </div>
+      <div class="footer-actions compact-footer-actions">
+        <button type="button" class="ghost sm review-action-btn" [disabled]="(badItems.length + reviewNeeded.length + sourcingGaps.length) === 0" (click)="openPriceReviewModal(detailInquiry!)">Price Review</button>
+        <button type="button" class="ghost sm" (click)="exportCoupa(detailInquiry!)">Export Coupa Excel</button>
+      </div>
+    </div>
+  </ng-container>
+  </ng-container>
+  </ng-container>
+</ng-template>
 
 <!-- Price Review Reason Modal -->
 <div class="modal-overlay" *ngIf="showPriceReviewModal" (click)="closePriceReviewModal()">
@@ -910,6 +941,7 @@
     </div>
   </div>
 </div>
+
 
 
 

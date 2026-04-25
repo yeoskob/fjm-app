@@ -12,15 +12,15 @@
   <!-- Tabs -->
   <div class="tab-bar">
     <button type="button" class="tab-btn" [class.active]="activeTab === 'pending'" (click)="activeTab = 'pending'">
-      Menunggu Approval
+      New Approval
       <span class="tab-count" *ngIf="pendingApproval.length > 0">{{ pendingApproval.length }}</span>
     </button>
     <button type="button" class="tab-btn" [class.active]="activeTab === 'review'" (click)="activeTab = 'review'">
-      Menunggu Review
+      Price Review
       <span class="tab-count tab-count-review" *ngIf="pendingReview.length > 0">{{ pendingReview.length }}</span>
     </button>
     <button type="button" class="tab-btn" [class.active]="activeTab === 'riwayat'" (click)="activeTab = 'riwayat'">
-      Riwayat
+      History
     </button>
   </div>
 
@@ -87,7 +87,7 @@
     </div>
   </div>
 
-  <!-- Menunggu Review Tab -->
+  <!-- Price Review Tab -->
   <div class="tab-content" *ngIf="activeTab === 'review'">
     <div class="empty" *ngIf="pendingReview.length === 0">Tidak ada yang perlu di-review.</div>
     <div class="table-toolbar" *ngIf="pendingReview.length > 0">
@@ -180,7 +180,7 @@
             <td>{{ inq.customer }}</td>
             <td class="muted">{{ inq.salesPic }}</td>
             <td class="col-center">{{ inq.items.length }}</td>
-            <td><span class="status-pill" [attr.data-status]="inq.status">{{ statusLabel(inq.status) }}</span></td>
+            <td><span class="status-pill" [attr.data-status]="displayStatus(inq)">{{ statusLabel(displayStatus(inq)) }}</span></td>
             <td class="muted">{{ formatDate(inq.tanggal) }}</td>
           </tr>
         </tbody>
@@ -203,7 +203,7 @@
         <span class="mono-blue">{{ selectedInquiry.rfqNo }}</span>
         <span class="coupa-badge" *ngIf="selectedInquiry.coupaSource">Coupa</span>
         <span class="org-badge" [ngClass]="organizationClass(selectedInquiry.organization)">{{ selectedInquiry.organization || 'FJM' }}</span>
-        <span class="badge" [ngClass]="statusClass(selectedInquiry.status)">{{ statusLabel(selectedInquiry.status) }}</span>
+        <span class="badge" [ngClass]="statusClass(displayStatus(selectedInquiry))">{{ statusLabel(displayStatus(selectedInquiry)) }}</span>
       </div>
       <div class="modal-header-grid">
         <div class="modal-header-col">
@@ -259,8 +259,8 @@
               [class.approved-row]="isApproved(item)"
               [class.review-row]="isNeedsReview(item)"
               [class.editing-row]="editingItemId === item.id"
-              [class.clickable-row]="selectedInquiry.status === 'price_approval'"
-              (click)="selectedInquiry.status === 'price_approval' && toggleApprove(item)">
+              [class.clickable-row]="canEditApproval(selectedInquiry)"
+              (click)="canEditApproval(selectedInquiry) && toggleApprove(item)">
               <td class="muted">{{ i + 1 }}</td>
               <td class="item-name">
                 <img *ngIf="item.itemImage" [src]="item.itemImage" class="item-thumb clickable"
@@ -289,7 +289,7 @@
             </tr>
 
             <!-- Inline approval form -->
-            <tr *ngIf="editingItemId === item.id && selectedInquiry.status === 'price_approval'" class="inline-form-row" (click)="$event.stopPropagation()">
+            <tr *ngIf="editingItemId === item.id && canEditApproval(selectedInquiry)" class="inline-form-row" (click)="$event.stopPropagation()">
               <td colspan="10" class="inline-form-cell">
                 <div class="inline-form">
                   <div class="inline-field-list approval-grid">
@@ -345,7 +345,7 @@
             </tr>
 
             <!-- Comments row -->
-            <tr *ngIf="editingItemId === item.id && selectedInquiry.status === 'price_approval'" class="item-comment-row" (click)="$event.stopPropagation()">
+            <tr *ngIf="editingItemId === item.id && canEditApproval(selectedInquiry)" class="item-comment-row" (click)="$event.stopPropagation()">
               <td colspan="10">
                 <div class="item-comments-feed">
                   <div class="empty-comments" *ngIf="(itemNotesMap[item.id]?.length ?? 0) === 0">No comments yet.</div>
@@ -384,12 +384,12 @@
         {{ pendingItemCount(selectedInquiry) }} item belum di-approve.
       </div>
       <button type="button" class="primary"
-        *ngIf="selectedInquiry.status === 'price_approval'"
+        *ngIf="canEditApproval(selectedInquiry)"
         (click)="sendToPriceApproved()">
         Send to Price Approved
       </button>
       <button type="button" class="ghost danger"
-        *ngIf="selectedInquiry.status === 'price_approval'"
+        *ngIf="canEditApproval(selectedInquiry)"
         (click)="returnToSourcing()">
         Kembalikan ke Sourcing
       </button>
@@ -401,7 +401,7 @@
 <div class="modal-overlay" *ngIf="showRejectModal" (click)="closeRejectModal()">
   <div class="modal-card reject-modal" (click)="$event.stopPropagation()">
     <div class="form-header">
-      <h2>Update Price for Negotiation</h2>
+      <h2>Update Price for Price Review</h2>
     </div>
     <div class="reject-modal-body">
       <div class="notice error" *ngIf="error">{{ error }}</div>
@@ -411,7 +411,7 @@
       </div>
       <label>Counter Price (Rp) *</label>
       <input type="number" class="form-control" min="1" [(ngModel)]="rejectCounterPrice" [ngModelOptions]="{standalone:true}" />
-      <label>Negotiation note (optional)</label>
+      <label>Price Review note (optional)</label>
       <textarea class="form-control" rows="3" [(ngModel)]="rejectReason" [ngModelOptions]="{standalone:true}"
         placeholder="Type note for marketing"></textarea>
       <div class="actions">
@@ -430,4 +430,5 @@
     <img [src]="previewImageUrl" class="img-preview-full" />
   </div>
 </div>
+
 

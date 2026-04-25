@@ -264,7 +264,7 @@
   &[data-status="price_approval"]   { background: #ffedd5; color: #c2410c; }
   &[data-status="price_approved"]   { background: #d1fae5; color: #065f46; }
   &[data-status="quotation_sent"]   { background: #ccfbf1; color: #0f766e; }
-  &[data-status="follow_up"]        { background: #ede9fe; color: #6d28d9; }
+  &[data-status="follow_up"]        { background: #ffedd5; color: #c2410c; }
   &[data-status="missed"]           { background: #fee2e2; color: #b91c1c; }
   &[data-status="unsent"]           { background: #fee2e2; color: #b91c1c; }
   &[data-status="ready_to_purchase"]{ background: #e0e7ff; color: #3730a3; }
@@ -855,6 +855,13 @@ button.sm { padding: 0.3rem 0.65rem; font-size: 0.78rem; }
   min-width: 0;
   flex-wrap: nowrap;
   .harga-input { flex: 1 1 0; min-width: 0; }
+}
+
+.field-required-sep {
+  flex: 0 0 auto;
+  color: #475569;
+  font-weight: 700;
+  line-height: 1;
 }
 
 .ppn-toggle-group {
