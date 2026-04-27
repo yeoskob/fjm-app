@@ -679,6 +679,15 @@ button.sm { padding: 0.3rem 0.65rem; font-size: 0.78rem; }
   color: #92400e;
 }
 
+.send-approval-btn:disabled {
+  background: #e5e7eb;
+  border-color: #cbd5e1;
+  color: #64748b;
+  cursor: not-allowed;
+  opacity: 1;
+  box-shadow: none;
+}
+
 .pager {
   display: flex;
   align-items: center;
@@ -831,6 +840,15 @@ button.sm { padding: 0.3rem 0.65rem; font-size: 0.78rem; }
   justify-content: space-between;
   align-items: center;
   margin-top: 0.35rem;
+}
+
+.comment-send-row button.sm {
+  width: auto;
+  min-height: 0;
+  padding: 0.3rem 0.65rem;
+  font-size: 0.78rem;
+  line-height: 1.2;
+  flex: 0 0 auto;
 }
 
 .comment-hint { font-size: 0.72rem; color: #94a3b8; }

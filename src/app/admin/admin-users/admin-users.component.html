@@ -18,6 +18,9 @@
     <button type="button" class="tab-btn" [class.active]="activeTab === 'deadline'" (click)="setTab('deadline')">
       Batas Waktu Review
     </button>
+    <button type="button" class="tab-btn" *ngIf="isAdmin" [class.active]="activeTab === 'backup'" (click)="setTab('backup')">
+      Database Backup
+    </button>
   </div>
 
   <!-- ── Users Tab ── -->
@@ -247,6 +250,25 @@
         <div class="actions" style="margin-top: 1.25rem;">
           <button type="button" class="primary" [disabled]="deadlineBusy" (click)="saveDeadlineHours()">
             {{ deadlineBusy ? 'Saving...' : 'Save Deadline' }}
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Backup Tab -->
+  <div class="tab-content" *ngIf="activeTab === 'backup'">
+    <div class="admin-grid">
+      <div class="card" *ngIf="isAdmin">
+        <h2>Database Backup</h2>
+        <p class="hint">Download a snapshot of the current application database.</p>
+
+        <div class="notice error" *ngIf="backupError">{{ backupError }}</div>
+        <div class="notice success" *ngIf="backupSuccess">{{ backupSuccess }}</div>
+
+        <div class="actions" style="margin-top: 1.25rem;">
+          <button type="button" class="primary" [disabled]="backupBusy" (click)="backupDatabase()">
+            {{ backupBusy ? 'Backing up...' : 'Backup Database' }}
           </button>
         </div>
       </div>

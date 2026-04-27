@@ -110,6 +110,24 @@ export class AppComponent implements OnInit, OnDestroy {
     return this.authService.getLandingRoute();
   }
 
+  private tabForType(type: NotificationType): string | null {
+    switch (type) {
+      case 'price_approval':
+        return 'pending';
+      case 'price_review':
+        return 'review';
+      case 'price_approved':
+        return 'price_approved';
+      case 'return_to_sourcing':
+      case 'assigned_sourcing':
+        return 'rfq';
+      case 'assigned_sales':
+        return 'rfq';
+      default:
+        return null;
+    }
+  }
+
   reviewFirst(notifs: NotificationItem[] | null): void {
     const first = notifs?.[0];
     if (!first) return;
@@ -121,7 +139,9 @@ export class AppComponent implements OnInit, OnDestroy {
     this.notifOpen = false;
     this.toastVisible = false;
     const target = this.resolveNotificationRoute(n.type);
-    void this.router.navigate([target], { queryParams: { refresh: Date.now() } });
+    const preferredTarget = this.routeForType(n.type);
+    const tab = target === preferredTarget ? this.tabForType(n.type) : null;
+    void this.router.navigate([target], { queryParams: { refresh: Date.now(), ...(tab ? { tab } : {}) } });
   }
 
   dismissAll(): void {

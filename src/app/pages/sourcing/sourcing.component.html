@@ -406,7 +406,7 @@
                     <button type="button" class="primary sm"
                       [disabled]="!itemNewNote.trim() || itemSubmittingNote"
                       (click)="submitItemNote(item)">
-                      {{ itemSubmittingNote ? '...' : 'Send' }}
+                      {{ itemSubmittingNote ? 'Sending...' : 'Send Comment' }}
                     </button>
                   </div>
                 </div>
@@ -426,8 +426,11 @@
 <div class="pending-notice" *ngIf="pendingCount(selectedInquiry) > 0 && !selectedInquiry.sourcingMissed">
         {{ pendingCount(selectedInquiry) }} item belum terisi.
       </div>
-      <button type="button" class="primary" *ngIf="!selectedInquiry.sourcingMissed"
-        [disabled]="sendingToPriceApproval"
+      <div class="pending-notice" *ngIf="submittedSourcingCount(selectedInquiry) === 0 && !selectedInquiry.sourcingMissed">
+        Minimal 1 item terisi sebelum dikirim ke Price Approval.
+      </div>
+      <button type="button" class="primary send-approval-btn" *ngIf="!selectedInquiry.sourcingMissed"
+        [disabled]="!canSendToPriceApproval(selectedInquiry)"
         (click)="sendToPriceApproval()">
         {{ sendingToPriceApproval ? 'Sending...' : 'Kirim ke Price Approval' }}
       </button>

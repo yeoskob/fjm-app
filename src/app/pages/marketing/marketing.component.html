@@ -660,7 +660,7 @@
                               <button type="button" class="primary sm"
                                 [disabled]="!itemNewNote.trim() || itemSubmittingNote"
                                 (click)="submitItemNote(detailInquiry!, item)">
-                                {{ itemSubmittingNote ? '...' : 'Kirim' }}
+                                {{ itemSubmittingNote ? 'Sending...' : 'Send Comment' }}
                               </button>
                             </div>
                           </div>
@@ -812,7 +812,7 @@
                   <button type="button" class="primary sm"
                     [disabled]="!itemNewNote.trim() || itemSubmittingNote"
                     (click)="submitItemNote(detailInquiry!, item)">
-                    {{ itemSubmittingNote ? '...' : 'Send' }}
+                    {{ itemSubmittingNote ? 'Sending...' : 'Send Comment' }}
                   </button>
                 </div>
               </div>
@@ -877,11 +877,15 @@
   <ng-container *ngIf="itemsBelowApprovedFloor(detailInquiry!) as badItems">
   <ng-container *ngIf="reviewNeededItems(detailInquiry!) as reviewNeeded">
   <ng-container *ngIf="sourcingTidakTerisiItems(detailInquiry!) as sourcingGaps">
+  <ng-container *ngIf="emptyPriceApprovedItems(detailInquiry!) as emptyPriceItems">
   <ng-container *ngIf="unreviewedNeedsPriceReviewItems(detailInquiry!) as unreadReviewItems">
     <div class="footer-layout">
       <div class="footer-warning-list">
         <div class="footer-warning" *ngIf="sourcingGaps.length > 0">
           {{ sourcingGaps.length }} item sourcing belum terisi - kirim ke Price Review.
+        </div>
+        <div class="footer-warning" *ngIf="emptyPriceItems.length > 0">
+          {{ emptyPriceItems.length }} item belum memiliki Harga Jual - kirim ke Price Review.
         </div>
         <div class="footer-warning" *ngIf="badItems.length > 0">
           {{ badItems.length }} item memiliki harga di bawah batas approved - kirim ke Price Review.
@@ -891,10 +895,11 @@
         </div>
       </div>
       <div class="footer-actions compact-footer-actions">
-        <button type="button" class="ghost sm review-action-btn" [disabled]="(badItems.length + reviewNeeded.length + sourcingGaps.length) === 0" (click)="openPriceReviewModal(detailInquiry!)">Price Review</button>
+        <button type="button" class="ghost sm review-action-btn" [disabled]="(badItems.length + reviewNeeded.length + sourcingGaps.length + emptyPriceItems.length) === 0" (click)="openPriceReviewModal(detailInquiry!)">Price Review</button>
         <button type="button" class="primary sm sent-action-btn" (click)="sendToSent(detailInquiry!)">Sent</button>
       </div>
     </div>
+  </ng-container>
   </ng-container>
   </ng-container>
   </ng-container>
@@ -905,6 +910,7 @@
   <ng-container *ngIf="itemsBelowApprovedFloor(detailInquiry!) as badItems">
   <ng-container *ngIf="reviewNeededItems(detailInquiry!) as reviewNeeded">
   <ng-container *ngIf="sourcingTidakTerisiItems(detailInquiry!) as sourcingGaps">
+  <ng-container *ngIf="emptyPriceApprovedItems(detailInquiry!) as emptyPriceItems">
     <div class="footer-layout">
       <div class="footer-warning-list">
         <span class="status-info" *ngIf="detailInquiry?.sentIncomplete">
@@ -914,6 +920,9 @@
         <div class="footer-warning" *ngIf="sourcingGaps.length > 0">
           {{ sourcingGaps.length }} item sourcing belum terisi - kirim ke Price Review.
         </div>
+        <div class="footer-warning" *ngIf="emptyPriceItems.length > 0">
+          {{ emptyPriceItems.length }} item belum memiliki Harga Jual - kirim ke Price Review.
+        </div>
         <div class="footer-warning" *ngIf="badItems.length > 0">
           {{ badItems.length }} item memiliki harga di bawah batas approved - kirim ke Price Review.
         </div>
@@ -922,10 +931,11 @@
         </div>
       </div>
       <div class="footer-actions compact-footer-actions">
-        <button type="button" class="ghost sm review-action-btn" [disabled]="(badItems.length + reviewNeeded.length + sourcingGaps.length) === 0" (click)="openPriceReviewModal(detailInquiry!)">Price Review</button>
+        <button type="button" class="ghost sm review-action-btn" [disabled]="(badItems.length + reviewNeeded.length + sourcingGaps.length + emptyPriceItems.length) === 0" (click)="openPriceReviewModal(detailInquiry!)">Price Review</button>
         <button type="button" class="ghost sm" (click)="exportCoupa(detailInquiry!)">Export Coupa Excel</button>
       </div>
     </div>
+  </ng-container>
   </ng-container>
   </ng-container>
   </ng-container>

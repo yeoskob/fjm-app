@@ -315,6 +315,7 @@
                           [ngModelOptions]="{standalone:true}" class="form-control sm" />
                         <span class="percent-suffix">%</span>
                       </div>
+                      <span class="margin-alert-indicator" *ngIf="hasNonPositiveMargin(item)" title="Margin harus lebih dari 0%">!</span>
                     </div>
                     <div class="inline-field-row">
                       <span class="field-label">Lead Time Customer</span>
@@ -365,7 +366,7 @@
                     <button type="button" class="primary sm"
                       [disabled]="!itemNewNote.trim() || itemSubmittingNote"
                       (click)="submitItemNote(item)">
-                      {{ itemSubmittingNote ? '...' : 'Send' }}
+                      {{ itemSubmittingNote ? 'Sending...' : 'Send Comment' }}
                     </button>
                   </div>
                 </div>

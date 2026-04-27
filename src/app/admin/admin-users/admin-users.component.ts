@@ -16,7 +16,7 @@ export const ALL_MODULES: { key: string; label: string }[] = [
   { key: 'report', label: 'Report' },
 ];
 
-type AdminTab = 'users' | 'roles' | 'organizations' | 'deadline';
+type AdminTab = 'users' | 'roles' | 'organizations' | 'deadline' | 'backup';
 type ReportAccessTab = 'marketing' | 'sourcing' | 'purchasing';
 
 const REPORT_ACCESS_TABS: Array<{ key: ReportAccessTab; label: string }> = [
@@ -77,6 +77,10 @@ export class AdminUsersComponent implements OnInit {
   deadlineError = '';
   deadlineSuccess = '';
 
+  backupBusy = false;
+  backupError = '';
+  backupSuccess = '';
+
   constructor(
     private userService: UserService,
     private authService: AuthService,
@@ -96,6 +100,8 @@ export class AdminUsersComponent implements OnInit {
     this.cancelRoleEdit();
     this.orgError = '';
     this.orgSuccess = '';
+    this.backupError = '';
+    this.backupSuccess = '';
   }
 
   async refresh(): Promise<void> {
@@ -359,6 +365,21 @@ export class AdminUsersComponent implements OnInit {
       this.orgError = err?.error?.error ?? 'Failed to add organization.';
     } finally {
       this.orgBusy = false;
+    }
+  }
+
+  async backupDatabase(): Promise<void> {
+    if (!this.isAdmin || this.backupBusy) return;
+    this.backupError = '';
+    this.backupSuccess = '';
+    this.backupBusy = true;
+    try {
+      const filename = await this.settingsService.downloadBackup();
+      this.backupSuccess = `Backup downloaded: ${filename}`;
+    } catch (err: any) {
+      this.backupError = err?.error?.error ?? 'Failed to backup database.';
+    } finally {
+      this.backupBusy = false;
     }
   }
 }

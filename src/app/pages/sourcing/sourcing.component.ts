@@ -108,9 +108,7 @@ export class SourcingComponent implements OnInit {
   constructor(private inquiryService: InquiryService, private authService: AuthService, private toast: ToastService, private route: ActivatedRoute) {}
 
   ngOnInit(): void {
-    const tabs: Array<'rfq' | 'riwayat'> = ['rfq', 'riwayat'];
-    const qTab = this.route.snapshot.queryParamMap.get('tab') as typeof tabs[number] | null;
-    if (qTab && tabs.includes(qTab)) this.activeTab = qTab;
+    this.applyTabParam(this.route.snapshot.queryParamMap.get('tab'));
     void this.refresh();
     if (this.isAdminOrManager()) {
       void this.inquiryService.getUsers().then((users) => {
@@ -121,9 +119,16 @@ export class SourcingComponent implements OnInit {
 
     const initialRefresh = this.route.snapshot.queryParamMap.get('refresh');
     this.route.queryParams.subscribe((params) => {
+      this.applyTabParam(params['tab']);
       const r = params['refresh'];
       if (r && r !== initialRefresh) void this.refresh();
     });
+  }
+
+  private applyTabParam(tab: string | null | undefined): void {
+    const tabs: Array<'rfq' | 'riwayat'> = ['rfq', 'riwayat'];
+    const qTab = tab as typeof tabs[number] | null;
+    if (qTab && tabs.includes(qTab)) this.activeTab = qTab;
   }
 
   isAdminOrManager(): boolean {
@@ -377,6 +382,10 @@ export class SourcingComponent implements OnInit {
   async sendToPriceApproval(): Promise<void> {
     if (this.sendingToPriceApproval) return;
     if (!this.selectedInquiry) return;
+    if (!this.canSendToPriceApproval(this.selectedInquiry)) {
+      this.toast.error('Minimal 1 item terisi sebelum dikirim ke Price Approval.');
+      return;
+    }
     const user = this.authService.getCurrentUser();
     if (!user) { this.toast.error('Not logged in.'); return; }
     this.error = '';
@@ -394,6 +403,14 @@ export class SourcingComponent implements OnInit {
 
   isSourced(item: InquiryItem): boolean {
     return !!(item.supplier && item.hargaBeli != null && item.leadTime);
+  }
+
+  submittedSourcingCount(inquiry: Inquiry): number {
+    return inquiry.items?.filter((item) => this.isSourced(item) && !item.sourcingMissed).length ?? 0;
+  }
+
+  canSendToPriceApproval(inquiry: Inquiry): boolean {
+    return !this.sendingToPriceApproval && !inquiry.sourcingMissed && this.submittedSourcingCount(inquiry) > 0;
   }
 
   isMissed(_item?: InquiryItem): boolean {

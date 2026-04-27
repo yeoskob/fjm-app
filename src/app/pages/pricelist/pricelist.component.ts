@@ -142,6 +142,7 @@ export class PricelistComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
+    this.applyTabParam(this.route.snapshot.queryParamMap.get('tab'));
     void this.settingsService.getAll().then((s) => {
       this.defaultMarginPct = s['default_margin_pct'] ? Number(s['default_margin_pct']) : 20;
       this.deadlineHours = s['price_review_deadline_hours'] ? Number(s['price_review_deadline_hours']) : 24;
@@ -154,9 +155,16 @@ export class PricelistComponent implements OnInit {
 
     const initialRefresh = this.route.snapshot.queryParamMap.get('refresh');
     this.route.queryParams.subscribe((params) => {
+      this.applyTabParam(params['tab']);
       const r = params['refresh'];
       if (r && r !== initialRefresh) void this.refresh();
     });
+  }
+
+  private applyTabParam(tab: string | null | undefined): void {
+    const tabs: Array<'pending' | 'review' | 'riwayat'> = ['pending', 'review', 'riwayat'];
+    const qTab = tab as typeof tabs[number] | null;
+    if (qTab && tabs.includes(qTab)) this.activeTab = qTab;
   }
 
   isAdminOrManager(): boolean {
@@ -517,6 +525,12 @@ export class PricelistComponent implements OnInit {
   getMarginPct(item: InquiryItem, id: string): number {
     if (!item.hargaBeli) return 0;
     return (this.getMargin(item, id) / item.hargaBeli) * 100;
+  }
+
+  hasNonPositiveMargin(item: InquiryItem): boolean {
+    if (!item.hargaBeli || item.hargaBeli <= 0) return false;
+    const marginPct = this.approvalForms[item.id]?.marginPct;
+    return marginPct != null && Number(marginPct) <= 0;
   }
 
   formatCurrency(value?: number): string {

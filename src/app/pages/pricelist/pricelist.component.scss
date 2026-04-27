@@ -589,6 +589,21 @@
   color: #92400e;
 }
 
+.margin-alert-indicator {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.1rem;
+  height: 1.1rem;
+  border-radius: 999px;
+  background: #dc2626;
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 800;
+  line-height: 1;
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.92);
+}
+
 .ppn-badge {
   display: inline-block;
   margin-left: 0.45rem;
@@ -694,6 +709,15 @@ button.sm { padding: 0.3rem 0.65rem; font-size: 0.78rem; }
   justify-content: space-between;
   align-items: center;
   margin-top: 0.35rem;
+}
+
+.comment-send-row button.sm {
+  width: auto;
+  min-height: 0;
+  padding: 0.3rem 0.65rem;
+  font-size: 0.78rem;
+  line-height: 1.2;
+  flex: 0 0 auto;
 }
 
 .comment-hint { font-size: 0.72rem; color: #94a3b8; }

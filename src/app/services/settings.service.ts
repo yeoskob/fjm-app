@@ -31,4 +31,22 @@ export class SettingsService {
   addOrganization(code: string): Promise<OrganizationSetting> {
     return firstValueFrom(this.http.post<OrganizationSetting>(`${this.base}/organizations`, { code }));
   }
+
+  async downloadBackup(): Promise<string> {
+    const response = await firstValueFrom(this.http.get(`${this.base}/backup`, {
+      observe: 'response',
+      responseType: 'blob',
+    }));
+    const blob = response.body ?? new Blob();
+    const disposition = response.headers.get('content-disposition') ?? '';
+    const match = /filename="?([^"]+)"?/i.exec(disposition);
+    const filename = match?.[1] ?? `fjm-db-backup-${new Date().toISOString().slice(0, 10)}.db`;
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    link.click();
+    URL.revokeObjectURL(url);
+    return filename;
+  }
 }

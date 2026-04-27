@@ -249,11 +249,7 @@ export class MarketingComponent implements OnInit {
 
   ngOnInit(): void {
     this.isAdmin = this.authService.hasRole('admin');
-    const tabs: Array<'rfq' | 'price_approved' | 'sent' | 'riwayat'> = ['rfq', 'price_approved', 'sent', 'riwayat'];
-    const qTab = this.route.snapshot.queryParamMap.get('tab') as typeof tabs[number] | null;
-    this.activeTab = (qTab && tabs.includes(qTab) && (qTab === 'riwayat' || this.canSeeTab(qTab)))
-      ? qTab
-      : (tabs.find((t) => t === 'riwayat' || this.canSeeTab(t)) ?? 'rfq');
+    this.applyTabParam(this.route.snapshot.queryParamMap.get('tab'));
     void this.refresh();
     const user = this.authService.getCurrentUser();
     if (user?.role === 'admin' || user?.role === 'manager') {
@@ -265,9 +261,18 @@ export class MarketingComponent implements OnInit {
 
     const initialRefresh = this.route.snapshot.queryParamMap.get('refresh');
     this.route.queryParams.subscribe((params) => {
+      this.applyTabParam(params['tab']);
       const r = params['refresh'];
       if (r && r !== initialRefresh) void this.refresh();
     });
+  }
+
+  private applyTabParam(tab: string | null | undefined): void {
+    const tabs: Array<'rfq' | 'price_approved' | 'sent' | 'riwayat'> = ['rfq', 'price_approved', 'sent', 'riwayat'];
+    const qTab = tab as typeof tabs[number] | null;
+    this.activeTab = (qTab && tabs.includes(qTab) && (qTab === 'riwayat' || this.canSeeTab(qTab)))
+      ? qTab
+      : (this.activeTab || (tabs.find((t) => t === 'riwayat' || this.canSeeTab(t)) ?? 'rfq'));
   }
 
   private async loadOrganizationOptions(): Promise<void> {
@@ -313,7 +318,8 @@ export class MarketingComponent implements OnInit {
   hasPriceReviewIndicator(inquiry: Inquiry): boolean {
     return ['price_approved', 'quotation_sent'].includes(inquiry.status) && (
       this.itemsBelowApprovedFloor(inquiry).length > 0 ||
-      this.reviewNeededItems(inquiry).length > 0
+      this.reviewNeededItems(inquiry).length > 0 ||
+      (inquiry.items.length > 0 && this.emptyPriceApprovedItems(inquiry).length === inquiry.items.length)
     );
   }
 
@@ -945,6 +951,20 @@ export class MarketingComponent implements OnInit {
     return inquiry.items.filter((item) => item.needsPriceReview === true || item.reviewStatus === 'review');
   }
 
+  emptyPriceApprovedItems(inquiry: Inquiry): InquiryItem[] {
+    if (this.hasValidApprovedItem(inquiry)) return [];
+    return inquiry.items.filter((item) => item.hargaJual == null && item.approvedPrice == null);
+  }
+
+  hasValidApprovedItem(inquiry: Inquiry): boolean {
+    return inquiry.items.some((item) =>
+      this.getSellingPrice(item) != null &&
+      item.needsPriceReview !== true &&
+      item.reviewStatus !== 'review' &&
+      !this.isItemBelowApprovedFloor(item)
+    );
+  }
+
   rejectedItems(inquiry: Inquiry): InquiryItem[] {
     return this.reviewNeededItems(inquiry);
   }
@@ -954,6 +974,7 @@ export class MarketingComponent implements OnInit {
   }
 
   sourcingTidakTerisiItems(inquiry: Inquiry): InquiryItem[] {
+    if (this.hasValidApprovedItem(inquiry)) return [];
     return inquiry.items.filter((item) => this.isSourcingTidakTerisi(item));
   }
 
@@ -971,8 +992,10 @@ export class MarketingComponent implements OnInit {
   }
 
   itemsForPriceReview(inquiry: Inquiry): InquiryItem[] {
+    const hasValidApprovedItem = this.hasValidApprovedItem(inquiry);
     return inquiry.items.filter((item) =>
-      this.isSourcingTidakTerisi(item) ||
+      (!hasValidApprovedItem && this.isSourcingTidakTerisi(item)) ||
+      (!hasValidApprovedItem && item.hargaJual == null && item.approvedPrice == null) ||
       item.reviewStatus === 'review' ||
       item.needsPriceReview === true ||
       this.isItemBelowApprovedFloor(item)

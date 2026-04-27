@@ -66,6 +66,7 @@ export class ReportComponent implements OnInit {
   // ── Users ────────────────────────────────────────────────────────
   marketingUsers: string[] = [];
   sourcingUsers: string[] = [];
+  purchasingUsers: string[] = [];
 
   readonly PAGE_SIZE = 20;
   exporting = false;
@@ -111,8 +112,9 @@ export class ReportComponent implements OnInit {
 
   async init(): Promise<void> {
     const users = await this.inquiryService.getUsers();
-    this.marketingUsers = users.filter((u) => u.role !== 'sourcing' && u.role !== 'manager').map((u) => u.name).sort();
-    this.sourcingUsers  = users.filter((u) => u.role !== 'marketing' && u.role !== 'manager').map((u) => u.name).sort();
+    this.marketingUsers = users.filter((u) => ['admin', 'marketing'].includes(u.role)).map((u) => u.name).sort();
+    this.sourcingUsers  = users.filter((u) => ['admin', 'sourcing'].includes(u.role)).map((u) => u.name).sort();
+    this.purchasingUsers = users.filter((u) => u.role === 'purchasing').map((u) => u.name).sort();
     this.activeTab = this.firstAllowedTab();
     void this.loadMarketing();
     void this.loadSourcing();
@@ -205,9 +207,9 @@ export class ReportComponent implements OnInit {
 
   get pFilteredUsers(): string[] {
     const q = this.pUserSearch.toLowerCase();
-    return q ? this.marketingUsers.filter((u) => u.toLowerCase().includes(q)) : this.marketingUsers;
+    return q ? this.purchasingUsers.filter((u) => u.toLowerCase().includes(q)) : this.purchasingUsers;
   }
-  get pUserLabel(): string { return this.pSelectedSalesPic || 'Semua Sales'; }
+  get pUserLabel(): string { return this.pSelectedSalesPic || 'Semua Purchasing'; }
   openPUserDropdown(): void { this.pUserDropdownOpen = true; this.pUserSearch = ''; }
   selectPUser(name: string): void { this.pSelectedSalesPic = name; this.pUserDropdownOpen = false; this.pUserSearch = ''; this.pPage = 1; void this.loadPurchasing(); }
   clearPUser(): void { this.pSelectedSalesPic = ''; this.pUserDropdownOpen = false; this.pUserSearch = ''; this.pPage = 1; void this.loadPurchasing(); }

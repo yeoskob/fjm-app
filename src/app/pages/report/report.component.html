@@ -136,7 +136,7 @@
           </button>
           <div class="user-dropdown-panel" *ngIf="pUserDropdownOpen">
             <input class="user-search-input" type="text" placeholder="Cari nama..." [(ngModel)]="pUserSearch" (click)="$event.stopPropagation()" autofocus />
-            <div class="user-option" (click)="clearPUser()">Semua Sales</div>
+            <div class="user-option" (click)="clearPUser()">Semua Purchasing</div>
             <div class="user-option" *ngFor="let u of pFilteredUsers" (click)="selectPUser(u)" [class.selected]="u === pSelectedSalesPic">{{ u }}</div>
             <div class="user-option dim" *ngIf="pFilteredUsers.length === 0">Tidak ditemukan</div>
           </div>
