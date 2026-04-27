@@ -10,11 +10,14 @@
 
   <!-- Tabs -->
   <div class="tab-bar">
-    <button type="button" class="tab-btn" [class.active]="activeTab === 'marketing'" (click)="setTab('marketing')">
+    <button type="button" class="tab-btn" *ngIf="canSeeTab('marketing')" [class.active]="activeTab === 'marketing'" (click)="setTab('marketing')">
       Marketing
     </button>
-    <button type="button" class="tab-btn" [class.active]="activeTab === 'sourcing'" (click)="setTab('sourcing')">
+    <button type="button" class="tab-btn" *ngIf="canSeeTab('sourcing')" [class.active]="activeTab === 'sourcing'" (click)="setTab('sourcing')">
       Sourcing
+    </button>
+    <button type="button" class="tab-btn" *ngIf="canSeeTab('purchasing')" [class.active]="activeTab === 'purchasing'" (click)="setTab('purchasing')">
+      Purchasing
     </button>
   </div>
 
@@ -112,6 +115,101 @@
             <span>{{ mPage }} / {{ mTotalPages }}</span>
             <button (click)="mPage = mPage + 1" [disabled]="mPage === mTotalPages">›</button>
             <button (click)="mPage = mTotalPages" [disabled]="mPage === mTotalPages">»</button>
+          </div>
+        </div>
+      </div>
+    </ng-container>
+  </div>
+
+  <div class="tab-content" *ngIf="activeTab === 'purchasing'">
+    <div class="toolbar">
+      <div class="filters-row">
+        <select [(ngModel)]="pSelectedMonth" (change)="onPFilterChange()">
+          <option value="">Semua Bulan</option>
+          <option *ngFor="let m of months" [value]="m.value">{{ m.label }}</option>
+        </select>
+        <div class="user-dropdown-wrap">
+          <button type="button" class="user-dropdown-trigger" (click)="openPUserDropdown()">
+            <span>{{ pUserLabel }}</span>
+            <span *ngIf="pSelectedSalesPic" class="clear-btn" (click)="$event.stopPropagation(); clearPUser()">&#10005;</span>
+            <span *ngIf="!pSelectedSalesPic">&#9660;</span>
+          </button>
+          <div class="user-dropdown-panel" *ngIf="pUserDropdownOpen">
+            <input class="user-search-input" type="text" placeholder="Cari nama..." [(ngModel)]="pUserSearch" (click)="$event.stopPropagation()" autofocus />
+            <div class="user-option" (click)="clearPUser()">Semua Sales</div>
+            <div class="user-option" *ngFor="let u of pFilteredUsers" (click)="selectPUser(u)" [class.selected]="u === pSelectedSalesPic">{{ u }}</div>
+            <div class="user-option dim" *ngIf="pFilteredUsers.length === 0">Tidak ditemukan</div>
+          </div>
+        </div>
+      </div>
+      <div class="search-bar">
+        <input type="text" class="search-input" placeholder="Search RFQ no, customer..." [(ngModel)]="pSearch" (ngModelChange)="pPage = 1" />
+        <button *ngIf="pSearch" class="search-clear" (click)="pSearch = ''">&#10005;</button>
+      </div>
+      <div class="date-filter-row">
+        <select [(ngModel)]="pDateField" (ngModelChange)="onPDateChange()">
+          <option value="tanggal">Inquiry Date</option>
+          <option value="need_by_date">Need By Date</option>
+        </select>
+        <input type="date" [(ngModel)]="pDateFrom" (ngModelChange)="onPDateChange()" />
+        <span class="dim">to</span>
+        <input type="date" [(ngModel)]="pDateTo" (ngModelChange)="onPDateChange()" />
+        <button type="button" class="search-clear" *ngIf="pDateFrom || pDateTo" (click)="clearPDateRange()" title="Clear">&#10005;</button>
+      </div>
+    </div>
+
+    <div class="notice error" *ngIf="pError">{{ pError }}</div>
+    <div class="loading-row" *ngIf="pLoading">Loading...</div>
+
+    <ng-container *ngIf="pData && !pLoading">
+      <div class="summary-bar">
+        <span class="sum-item"><strong>{{ pSortedRows.length }}</strong> RFQ</span>
+        <span class="sum-sep">·</span>
+        <span class="sum-item sum-sent">{{ pSortedRows.length }} Quotation Sent</span>
+      </div>
+      <div class="rfq-table-wrap">
+        <table class="rfq-table">
+          <thead>
+            <tr>
+              <th (click)="setPSort('rfq_no')" class="sortable">RFQ No <span class="sort-icon">{{ pSortIcon('rfq_no') }}</span></th>
+              <th (click)="setPSort('customer')" class="sortable">Customer <span class="sort-icon">{{ pSortIcon('customer') }}</span></th>
+              <th (click)="setPSort('sales_pic')" class="sortable">Sales PIC <span class="sort-icon">{{ pSortIcon('sales_pic') }}</span></th>
+              <th (click)="setPSort('sourcing_pic')" class="sortable">Sourcing PIC <span class="sort-icon">{{ pSortIcon('sourcing_pic') }}</span></th>
+              <th (click)="setPSort('tanggal')" class="sortable">Inquiry Date <span class="sort-icon">{{ pSortIcon('tanggal') }}</span></th>
+              <th (click)="setPSort('need_by_date')" class="sortable">Need By Date <span class="sort-icon">{{ pSortIcon('need_by_date') }}</span></th>
+              <th (click)="setPSort('timeline_days')" class="sortable">Timeline <span class="sort-icon">{{ pSortIcon('timeline_days') }}</span></th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let row of pPagedRows" class="clickable-row" (click)="openDetail(row.id)">
+              <td class="mono">{{ row.rfq_no }}</td>
+              <td>{{ row.customer }}</td>
+              <td>{{ row.sales_pic }}</td>
+              <td>{{ row.sourcing_pic || '-' }}</td>
+              <td class="date-cell">{{ formatDate(row.tanggal) }}</td>
+              <td class="date-cell">{{ formatDate(row.need_by_date) }}</td>
+              <td>
+                <span *ngIf="row.timeline_days != null" class="tl-badge" [ngClass]="timelineClass(row.timeline_days)">{{ row.timeline_days }}d</span>
+                <span *ngIf="row.timeline_days == null" class="dim">-</span>
+              </td>
+              <td>
+                <span class="status-chip" [ngClass]="statusClass(row.status)">{{ statusLabel(row.status) }}</span>
+              </td>
+            </tr>
+            <tr *ngIf="pSortedRows.length === 0">
+              <td colspan="8" class="empty">Tidak ada data quotation sent pada periode ini.</td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="table-footer">
+          <span class="table-total">Total: {{ pSortedRows.length }} items</span>
+          <div class="paginator" *ngIf="pTotalPages > 1">
+            <button (click)="pPage = 1" [disabled]="pPage === 1">«</button>
+            <button (click)="pPage = pPage - 1" [disabled]="pPage === 1">‹</button>
+            <span>{{ pPage }} / {{ pTotalPages }}</span>
+            <button (click)="pPage = pPage + 1" [disabled]="pPage === pTotalPages">›</button>
+            <button (click)="pPage = pTotalPages" [disabled]="pPage === pTotalPages">»</button>
           </div>
         </div>
       </div>
@@ -253,7 +351,7 @@
             <th>Need By</th>
             <th>Supplier</th>
             <th class="num">Harga Beli</th>
-            <th class="num">Harga Jual</th>
+            <th class="num" *ngIf="!isPurchasingTab()">Harga Jual</th>
             <th>Sourced</th>
           </tr>
         </thead>
@@ -266,7 +364,7 @@
               <td class="date-cell">{{ formatDate(item.itemNeedByDate) }}</td>
               <td>{{ item.supplier || '-' }}</td>
               <td class="num">{{ item.hargaBeli != null ? (item.hargaBeli | number) : '-' }}</td>
-              <td class="num">{{ item.hargaJual != null ? (item.hargaJual | number) : '-' }}</td>
+              <td class="num" *ngIf="!isPurchasingTab()">{{ item.hargaJual != null ? (item.hargaJual | number) : '-' }}</td>
               <td>
                 <span class="item-status-dot"
                   [class.dot-filled]="item.supplier && item.hargaBeli != null"
@@ -275,7 +373,7 @@
               </td>
             </tr>
             <tr *ngIf="expandedItemId === item.id" class="item-comments-row">
-              <td colspan="8">
+              <td [attr.colspan]="isPurchasingTab() ? 7 : 8">
                 <div class="item-comments-feed">
                   <div class="empty-comments" *ngIf="(itemNotesMap[item.id]?.length ?? 0) === 0">No comments yet.</div>
                   <div class="comment-bubble" *ngFor="let n of (itemNotesMap[item.id] ?? [])">

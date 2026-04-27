@@ -1,8 +1,9 @@
 import { Component, OnInit, HostListener } from '@angular/core';
 import { InquiryService } from '../../services/inquiry.service';
 import { Inquiry, InquiryItem, InquiryNote, ReportData, ReportRow, ReportSourcingData, ReportSourcingRow, INQUIRY_STATUS_LABELS } from '../../models/inquiry';
+import { AuthService } from '../../services/auth.service';
 
-type ReportTab = 'marketing' | 'sourcing';
+type ReportTab = 'marketing' | 'sourcing' | 'purchasing';
 
 @Component({
   selector: 'app-report',
@@ -46,6 +47,22 @@ export class ReportComponent implements OnInit {
   sUserSearch = '';
   sPage = 1;
 
+  // Purchasing tab
+  pData: ReportData | null = null;
+  pLoading = false;
+  pError = '';
+  pSelectedMonth = '';
+  pSelectedSalesPic = '';
+  pSearch = '';
+  pDateField: 'tanggal' | 'need_by_date' = 'tanggal';
+  pDateFrom = '';
+  pDateTo = '';
+  pSortCol: keyof ReportRow | '' = 'tanggal';
+  pSortDir: 'asc' | 'desc' = 'desc';
+  pUserDropdownOpen = false;
+  pUserSearch = '';
+  pPage = 1;
+
   // ── Users ────────────────────────────────────────────────────────
   marketingUsers: string[] = [];
   sourcingUsers: string[] = [];
@@ -86,7 +103,7 @@ export class ReportComponent implements OnInit {
     { value: 'missed',            label: 'Missed' },
   ];
 
-  constructor(private inquiryService: InquiryService) {}
+  constructor(private inquiryService: InquiryService, private authService: AuthService) {}
 
   ngOnInit(): void {
     void this.init();
@@ -96,14 +113,18 @@ export class ReportComponent implements OnInit {
     const users = await this.inquiryService.getUsers();
     this.marketingUsers = users.filter((u) => u.role !== 'sourcing' && u.role !== 'manager').map((u) => u.name).sort();
     this.sourcingUsers  = users.filter((u) => u.role !== 'marketing' && u.role !== 'manager').map((u) => u.name).sort();
+    this.activeTab = this.firstAllowedTab();
     void this.loadMarketing();
     void this.loadSourcing();
+    void this.loadPurchasing();
   }
 
   setTab(tab: ReportTab): void {
+    if (!this.canSeeTab(tab)) return;
     this.activeTab = tab;
     this.mUserDropdownOpen = false;
     this.sUserDropdownOpen = false;
+    this.pUserDropdownOpen = false;
   }
 
   // ── Marketing ────────────────────────────────────────────────────
@@ -167,6 +188,64 @@ export class ReportComponent implements OnInit {
   mCountByStatus(...statuses: string[]): number {
     return this.mSortedRows.filter((r) => statuses.includes(r.status)).length;
   }
+
+  // Purchasing
+  async loadPurchasing(): Promise<void> {
+    this.pLoading = true; this.pError = '';
+    try {
+      this.pData = await this.inquiryService.getReport(
+        this.pSelectedMonth || undefined,
+        this.pSelectedSalesPic || undefined
+      );
+    } catch { this.pError = 'Failed to load purchasing report.'; }
+    finally { this.pLoading = false; }
+  }
+
+  onPFilterChange(): void { this.pPage = 1; void this.loadPurchasing(); }
+
+  get pFilteredUsers(): string[] {
+    const q = this.pUserSearch.toLowerCase();
+    return q ? this.marketingUsers.filter((u) => u.toLowerCase().includes(q)) : this.marketingUsers;
+  }
+  get pUserLabel(): string { return this.pSelectedSalesPic || 'Semua Sales'; }
+  openPUserDropdown(): void { this.pUserDropdownOpen = true; this.pUserSearch = ''; }
+  selectPUser(name: string): void { this.pSelectedSalesPic = name; this.pUserDropdownOpen = false; this.pUserSearch = ''; this.pPage = 1; void this.loadPurchasing(); }
+  clearPUser(): void { this.pSelectedSalesPic = ''; this.pUserDropdownOpen = false; this.pUserSearch = ''; this.pPage = 1; void this.loadPurchasing(); }
+
+  setPSort(col: keyof ReportRow): void {
+    if (this.pSortCol === col) { this.pSortDir = this.pSortDir === 'asc' ? 'desc' : 'asc'; }
+    else { this.pSortCol = col; this.pSortDir = col === 'tanggal' ? 'desc' : 'asc'; }
+    this.pPage = 1;
+  }
+  pSortIcon(col: keyof ReportRow): string {
+    if (this.pSortCol !== col) return '↕';
+    return this.pSortDir === 'asc' ? '↑' : '↓';
+  }
+
+  get pSortedRows(): ReportRow[] {
+    if (!this.pData) return [];
+    const col = this.pSortCol || 'tanggal';
+    const dir = this.pSortDir === 'asc' ? 1 : -1;
+    let rows = this.pData.rows.filter((r) => r.status === 'quotation_sent');
+    if (this.pSearch.trim()) {
+      const q = this.pSearch.trim().toLowerCase();
+      rows = rows.filter((r) => [r.rfq_no, r.customer].some((v) => v && String(v).toLowerCase().includes(q)));
+    }
+    if (this.pDateFrom || this.pDateTo) {
+      rows = rows.filter((r) => this.inDateRange(r[this.pDateField] as string | null, this.pDateFrom, this.pDateTo));
+    }
+    return [...rows].sort((a, b) => {
+      const av = a[col as keyof ReportRow] ?? ''; const bv = b[col as keyof ReportRow] ?? '';
+      if (av === bv) return 0; if (!av) return 1; if (!bv) return -1;
+      return av < bv ? -dir : dir;
+    });
+  }
+
+  get pPagedRows(): ReportRow[] {
+    const start = (this.pPage - 1) * this.PAGE_SIZE;
+    return this.pSortedRows.slice(start, start + this.PAGE_SIZE);
+  }
+  get pTotalPages(): number { return Math.ceil(this.pSortedRows.length / this.PAGE_SIZE) || 1; }
 
   // ── Sourcing ─────────────────────────────────────────────────────
   async loadSourcing(): Promise<void> {
@@ -282,22 +361,54 @@ export class ReportComponent implements OnInit {
 
   onMDateChange(): void { this.mPage = 1; }
   onSDateChange(): void { this.sPage = 1; }
+  onPDateChange(): void { this.pPage = 1; }
   clearMDateRange(): void { this.mDateFrom = ''; this.mDateTo = ''; this.mPage = 1; }
   clearSDateRange(): void { this.sDateFrom = ''; this.sDateTo = ''; this.sPage = 1; }
+  clearPDateRange(): void { this.pDateFrom = ''; this.pDateTo = ''; this.pPage = 1; }
 
   async exportExcel(): Promise<void> {
     if (this.exporting) return;
     this.exporting = true;
     try {
-      const month = this.activeTab === 'marketing' ? this.mSelectedMonth : this.sSelectedMonth;
-      const salesPic = this.activeTab === 'marketing' ? this.mSelectedSalesPic : undefined;
-      const status = this.activeTab === 'marketing' ? this.mSelectedStatus : this.sSelectedStatus;
-      const search = this.activeTab === 'marketing' ? this.mSearch.trim() : this.sSearch.trim();
-      const dateField = this.activeTab === 'marketing' ? this.mDateField : this.sDateField;
-      const dateFrom = this.activeTab === 'marketing' ? this.mDateFrom : this.sDateFrom;
-      const dateTo   = this.activeTab === 'marketing' ? this.mDateTo   : this.sDateTo;
+      const month = this.activeTab === 'marketing'
+        ? this.mSelectedMonth
+        : this.activeTab === 'purchasing'
+          ? this.pSelectedMonth
+          : this.sSelectedMonth;
+      const salesPic = this.activeTab === 'marketing'
+        ? this.mSelectedSalesPic
+        : this.activeTab === 'purchasing'
+          ? this.pSelectedSalesPic
+          : undefined;
+      const status = this.activeTab === 'marketing'
+        ? this.mSelectedStatus
+        : this.activeTab === 'purchasing'
+          ? 'quotation_sent'
+          : this.sSelectedStatus;
+      const search = this.activeTab === 'marketing'
+        ? this.mSearch.trim()
+        : this.activeTab === 'purchasing'
+          ? this.pSearch.trim()
+          : this.sSearch.trim();
+      const audience = this.activeTab;
+      const dateField = this.activeTab === 'marketing'
+        ? this.mDateField
+        : this.activeTab === 'purchasing'
+          ? this.pDateField
+          : this.sDateField;
+      const dateFrom = this.activeTab === 'marketing'
+        ? this.mDateFrom
+        : this.activeTab === 'purchasing'
+          ? this.pDateFrom
+          : this.sDateFrom;
+      const dateTo   = this.activeTab === 'marketing'
+        ? this.mDateTo
+        : this.activeTab === 'purchasing'
+          ? this.pDateTo
+          : this.sDateTo;
       const blob = await this.inquiryService.exportReport(
         month || undefined, salesPic, status || undefined, search || undefined,
+        audience,
         dateField, dateFrom || undefined, dateTo || undefined,
       );
       const url = URL.createObjectURL(blob);
@@ -342,7 +453,21 @@ export class ReportComponent implements OnInit {
     if (!target.closest('.user-dropdown-wrap')) {
       this.mUserDropdownOpen = false;
       this.sUserDropdownOpen = false;
+      this.pUserDropdownOpen = false;
     }
+  }
+
+  isPurchasingTab(): boolean {
+    return this.activeTab === 'purchasing';
+  }
+
+  canSeeTab(tab: ReportTab): boolean {
+    return this.authService.hasTab('report', tab);
+  }
+
+  private firstAllowedTab(): ReportTab {
+    const tabs: ReportTab[] = ['marketing', 'sourcing', 'purchasing'];
+    return tabs.find((tab) => this.canSeeTab(tab)) ?? 'marketing';
   }
 }
 

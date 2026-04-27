@@ -106,11 +106,11 @@ export interface Inquiry {
   activityLog?: ActivityLog[];
 }
 
-function isItemInPriceReview(item: Pick<InquiryItem, 'needsPriceReview' | 'reviewStatus'>): boolean {
-  return item.needsPriceReview === true || item.reviewStatus === 'review';
+function isItemInPriceReview(item: Pick<InquiryItem, 'needsPriceReview' | 'reviewStatus' | 'priceApproved'>): boolean {
+  return item.priceApproved !== true && (item.needsPriceReview === true || item.reviewStatus === 'review');
 }
 
-export function getInquiryDisplayStatus(inquiry: Pick<Inquiry, 'status'> & { items?: Array<Pick<InquiryItem, 'needsPriceReview' | 'reviewStatus'>> }): InquiryStatus {
+export function getInquiryDisplayStatus(inquiry: Pick<Inquiry, 'status'> & { items?: Array<Pick<InquiryItem, 'needsPriceReview' | 'reviewStatus' | 'priceApproved'>> }): InquiryStatus {
   if (inquiry.status === 'follow_up') return 'follow_up';
   if (
     ['price_approved', 'quotation_sent'].includes(inquiry.status) &&
@@ -202,6 +202,7 @@ export interface ReportRow {
   rfq_no: string;
   customer: string;
   sales_pic: string;
+  sourcing_pic: string | null;
   tanggal: string;
   status: string;
   need_by_date: string | null;
@@ -253,4 +254,5 @@ export interface UserStats {
     inquiriesApproved: number;
   };
 }
+
 

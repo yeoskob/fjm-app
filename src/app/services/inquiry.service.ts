@@ -142,6 +142,7 @@ export class InquiryService {
 
   exportReport(
     month?: string, salesPic?: string, status?: string, search?: string,
+    audience?: 'marketing' | 'sourcing' | 'purchasing',
     dateField?: 'tanggal' | 'need_by_date', dateFrom?: string, dateTo?: string,
   ): Promise<Blob> {
     const params: Record<string, string> = {};
@@ -149,6 +150,7 @@ export class InquiryService {
     if (salesPic) params['salesPic'] = salesPic;
     if (status) params['status'] = status;
     if (search) params['search'] = search;
+    if (audience) params['audience'] = audience;
     if (dateField) params['dateField'] = dateField;
     if (dateFrom) params['dateFrom'] = dateFrom;
     if (dateTo) params['dateTo'] = dateTo;

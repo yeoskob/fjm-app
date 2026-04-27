@@ -75,7 +75,10 @@
           <td>{{ itemCount(inq) }}</td>
           <td>
             <div class="status-stack">
-              <span class="badge" [ngClass]="statusClass(displayStatus(inq))">{{ STATUS_LABELS[displayStatus(inq)] }}</span>
+              <span class="status-badge-wrap">
+                <span class="badge" [ngClass]="statusClass(badgeStatus(inq))">{{ STATUS_LABELS[badgeStatus(inq)] }}</span>
+                <span class="status-alert-indicator" *ngIf="hasPriceReviewIndicator(inq)" title="Contains item(s) that need Price Review">!</span>
+              </span>
             </div>
           </td>
         </tr>
@@ -126,7 +129,10 @@
           <td>{{ inq.sourcingPic || '-' }}</td>
           <td>{{ itemCount(inq) }}</td>
           <td>
-            <span class="badge" [ngClass]="statusClass(displayStatus(inq))">{{ STATUS_LABELS[displayStatus(inq)] }}</span>
+            <span class="status-badge-wrap">
+              <span class="badge" [ngClass]="statusClass(badgeStatus(inq))">{{ STATUS_LABELS[badgeStatus(inq)] }}</span>
+              <span class="status-alert-indicator" *ngIf="hasPriceReviewIndicator(inq)" title="Contains item(s) that need Price Review">!</span>
+            </span>
           </td>
         </tr>
         <tr *ngIf="priceApprovedTabFiltered.length === 0">
@@ -180,7 +186,10 @@
           <td class="muted">{{ formatDate(inq.tanggal) }}</td>
           <td>
             <div class="status-stack">
-              <span class="badge" [ngClass]="statusClass(displayStatus(inq))">{{ STATUS_LABELS[displayStatus(inq)] }}</span>
+              <span class="status-badge-wrap">
+                <span class="badge" [ngClass]="statusClass(badgeStatus(inq))">{{ STATUS_LABELS[badgeStatus(inq)] }}</span>
+                <span class="status-alert-indicator" *ngIf="hasPriceReviewIndicator(inq)" title="Contains item(s) that need Price Review">!</span>
+              </span>
             </div>
           </td>
         </tr>
@@ -222,7 +231,10 @@
           <td>{{ itemCount(inq) }}</td>
           <td>
             <div class="status-stack">
-              <span class="badge" [ngClass]="statusClass(displayStatus(inq))">{{ STATUS_LABELS[displayStatus(inq)] }}</span>
+              <span class="status-badge-wrap">
+                <span class="badge" [ngClass]="statusClass(badgeStatus(inq))">{{ STATUS_LABELS[badgeStatus(inq)] }}</span>
+                <span class="status-alert-indicator" *ngIf="hasPriceReviewIndicator(inq)" title="Contains item(s) that need Price Review">!</span>
+              </span>
             </div>
           </td>
         </tr>
@@ -444,7 +456,10 @@
         <span class="mono-blue">{{ detailInquiry.rfqNo }}</span>
         <span class="coupa-badge" *ngIf="detailInquiry.coupaSource">Coupa</span>
         <span class="org-badge" [ngClass]="organizationClass(detailInquiry.organization)">{{ detailInquiry.organization || 'FJM' }}</span>
-        <span class="badge" [ngClass]="statusClass(displayStatus(detailInquiry))">{{ STATUS_LABELS[displayStatus(detailInquiry)] }}</span>
+        <span class="status-badge-wrap">
+          <span class="badge" [ngClass]="statusClass(badgeStatus(detailInquiry))">{{ STATUS_LABELS[badgeStatus(detailInquiry)] }}</span>
+          <span class="status-alert-indicator" *ngIf="hasPriceReviewIndicator(detailInquiry)" title="Contains item(s) that need Price Review">!</span>
+        </span>
       </div>
       <div class="modal-header-grid">
         <div class="modal-header-col">
@@ -603,7 +618,7 @@
                             <tr *ngIf="item.hargaJual || getApprovedPrice(item)">
                               <td>Harga Jual</td>
                               <td>
-                                <ng-container *ngIf="editingPriceApprovedItemId === item.id; else paTableDisplay">
+                                <ng-container *ngIf="activeTab !== 'riwayat' && editingPriceApprovedItemId === item.id; else paTableDisplay">
                                   <div (click)="$event.stopPropagation()">
                                     <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
                                       <input type="number" [(ngModel)]="priceApprovedInput" [ngModelOptions]="{standalone:true}" class="form-control" style="width:130px" [class.input-error]="isPriceApprovedBelowMin()" />
@@ -614,10 +629,13 @@
                                     <div class="field-error" *ngIf="isPriceApprovedBelowMin()">Harga di bawah harga yang disetujui - item ini akan memerlukan Price Review.</div>
                                   </div>
                                 </ng-container>
-                                <ng-template #paTableDisplay>
-                                  <span class="editable-value" (click)="startEditPriceApproved(item); $event.stopPropagation()" title="Click to edit">{{ getApprovedPrice(item) ? formatCurrency(getApprovedPrice(item)) : '-' }} ✎</span>
-                                  <span class="field-hint" *ngIf="getApprovedFloor(item)"> (min: {{ formatCurrency(getApprovedFloor(item)) }})</span>
-                                </ng-template>
+                                  <ng-template #paTableDisplay>
+                                    <ng-container *ngIf="activeTab !== 'riwayat'; else paTableReadOnly">
+                                      <span class="editable-value" (click)="startEditPriceApproved(item); $event.stopPropagation()" title="Click to edit">{{ getApprovedPrice(item) ? formatCurrency(getApprovedPrice(item)) : '-' }} ✎</span>
+                                    </ng-container>
+                                    <ng-template #paTableReadOnly>{{ getApprovedPrice(item) ? formatCurrency(getApprovedPrice(item)) : '-' }}</ng-template>
+                                    <span class="field-hint" *ngIf="getApprovedFloor(item)"> (min: {{ formatCurrency(getApprovedFloor(item)) }})</span>
+                                  </ng-template>
                               </td>
                             </tr>
                           </table>
@@ -697,7 +715,7 @@
                   <td>Harga Jual</td>
                   <td>
                     <ng-container *ngIf="canUsePriceReviewFlow(detailInquiry); else hjLegacyEdit">
-                      <ng-container *ngIf="editingPriceApprovedItemId === item.id; else paDisplay">
+                        <ng-container *ngIf="activeTab !== 'riwayat' && editingPriceApprovedItemId === item.id; else paDisplay">
                         <div (click)="$event.stopPropagation()">
                           <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
                             <input type="number" [(ngModel)]="priceApprovedInput" [ngModelOptions]="{standalone:true}" class="form-control" style="width:130px" [class.input-error]="isPriceApprovedBelowMin()" />
@@ -708,13 +726,16 @@
                           <div class="field-error" *ngIf="isPriceApprovedBelowMin()">Harga di bawah harga yang disetujui — item ini akan memerlukan Price Review.</div>
                         </div>
                       </ng-container>
-                      <ng-template #paDisplay>
-                        <span class="editable-value" (click)="startEditPriceApproved(item); $event.stopPropagation()" title="Click to edit">{{ getApprovedPrice(item) ? formatCurrency(getApprovedPrice(item)) : '—' }} ✎</span>
-                        <span class="field-hint" *ngIf="getApprovedFloor(item)"> (min: {{ formatCurrency(getApprovedFloor(item)) }})</span>
-                      </ng-template>
+                        <ng-template #paDisplay>
+                          <ng-container *ngIf="activeTab !== 'riwayat'; else paReadOnly">
+                            <span class="editable-value" (click)="startEditPriceApproved(item); $event.stopPropagation()" title="Click to edit">{{ getApprovedPrice(item) ? formatCurrency(getApprovedPrice(item)) : '—' }} ✎</span>
+                          </ng-container>
+                          <ng-template #paReadOnly>{{ getApprovedPrice(item) ? formatCurrency(getApprovedPrice(item)) : '—' }}</ng-template>
+                          <span class="field-hint" *ngIf="getApprovedFloor(item)"> (min: {{ formatCurrency(getApprovedFloor(item)) }})</span>
+                        </ng-template>
                     </ng-container>
                     <ng-template #hjLegacyEdit>
-                      <ng-container *ngIf="detailInquiry.status === 'quotation_sent'; else hjReadOnly">
+                        <ng-container *ngIf="detailInquiry.status === 'quotation_sent' && activeTab !== 'riwayat'; else hjReadOnly">
                         <ng-container *ngIf="editingHargaJualId === item.id; else hjDisplay">
                           <input type="number" [(ngModel)]="hargaJualInput" [ngModelOptions]="{standalone:true}" class="form-control" style="width:120px;display:inline-block" min="0" (click)="$event.stopPropagation()" />
                           <button type="button" class="primary sm" (click)="saveHargaJual(detailInquiry!); $event.stopPropagation()">Save</button>

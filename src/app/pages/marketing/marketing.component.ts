@@ -303,6 +303,20 @@ export class MarketingComponent implements OnInit {
     return getInquiryDisplayStatus(inquiry);
   }
 
+  badgeStatus(inquiry: Inquiry): InquiryStatus {
+    if (this.hasPriceReviewIndicator(inquiry) && ['price_approved', 'quotation_sent'].includes(inquiry.status)) {
+      return inquiry.status;
+    }
+    return this.displayStatus(inquiry);
+  }
+
+  hasPriceReviewIndicator(inquiry: Inquiry): boolean {
+    return ['price_approved', 'quotation_sent'].includes(inquiry.status) && (
+      this.itemsBelowApprovedFloor(inquiry).length > 0 ||
+      this.reviewNeededItems(inquiry).length > 0
+    );
+  }
+
   canUsePriceReviewFlow(inquiry: Inquiry | null): boolean {
     if (!inquiry) return false;
     return ['price_approved', 'quotation_sent', 'follow_up'].includes(this.displayStatus(inquiry));
@@ -1070,5 +1084,6 @@ export class MarketingComponent implements OnInit {
     }
   }
 }
+
 
 

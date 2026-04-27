@@ -110,10 +110,21 @@
         <div class="module-list">
           <div class="module-item" *ngFor="let m of modules">
             <label class="checkbox-label">
-              <input type="checkbox" [(ngModel)]="roleForm.menus[m.key]" [ngModelOptions]="{standalone:true}" />
+              <input type="checkbox" [(ngModel)]="roleForm.menus[m.key]" [ngModelOptions]="{standalone:true}" (ngModelChange)="onRoleMenuToggle(m.key)" />
               {{ m.label }}
             </label>
           </div>
+        </div>
+
+        <div class="module-list" *ngIf="roleForm.menus['report']">
+          <div class="hint" style="margin-bottom: 0.35rem;">Report Tab Access</div>
+          <div class="module-item" *ngFor="let t of reportTabs">
+            <label class="checkbox-label">
+              <input type="checkbox" [(ngModel)]="roleForm.tabs.report[t.key]" [ngModelOptions]="{standalone:true}" />
+              {{ t.label }}
+            </label>
+          </div>
+          <div class="hint">If no report tab is checked, this role will still be able to access all report tabs for backward compatibility.</div>
         </div>
 
         <div class="notice error" *ngIf="roleError">{{ roleError }}</div>
@@ -149,7 +160,10 @@
           <tbody>
             <tr *ngFor="let r of roles" [class.editing-role-row]="editingRoleName === r.name">
               <td><span class="role-chip">{{ r.name }}</span></td>
-              <td class="menus-cell">{{ roleMenuLabels(r) || '—' }}</td>
+              <td class="menus-cell">
+                <div>{{ roleMenuLabels(r) || '—' }}</div>
+                <div class="hint" *ngIf="roleTabLabels(r)">{{ roleTabLabels(r) }}</div>
+              </td>
               <td class="row-actions">
                 <button type="button" class="ghost" (click)="startEditRole(r)">Edit</button>
                 <button type="button" class="danger" (click)="deleteRole(r)">Delete</button>

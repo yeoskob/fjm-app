@@ -13,11 +13,17 @@ export const ALL_MODULES: { key: string; label: string }[] = [
   { key: 'marketing', label: 'Marketing' },
   { key: 'sourcing', label: 'Sourcing' },
   { key: 'pricelist', label: 'Price List' },
-  { key: 'purchasing', label: 'Purchasing' },
   { key: 'report', label: 'Report' },
 ];
 
 type AdminTab = 'users' | 'roles' | 'organizations' | 'deadline';
+type ReportAccessTab = 'marketing' | 'sourcing' | 'purchasing';
+
+const REPORT_ACCESS_TABS: Array<{ key: ReportAccessTab; label: string }> = [
+  { key: 'marketing', label: 'Marketing Tab' },
+  { key: 'sourcing', label: 'Sourcing Tab' },
+  { key: 'purchasing', label: 'Purchasing Tab' },
+];
 
 @Component({
   selector: 'app-admin-users',
@@ -50,9 +56,10 @@ export class AdminUsersComponent implements OnInit {
   roleSuccess = '';
   roleBusy = false;
 
-  roleForm: { name: string; menus: Record<string, boolean> } = {
+  roleForm: { name: string; menus: Record<string, boolean>; tabs: { report: Record<ReportAccessTab, boolean> } } = {
     name: '',
     menus: {},
+    tabs: { report: { marketing: false, sourcing: false, purchasing: false } },
   };
 
   // Organizations
@@ -63,6 +70,7 @@ export class AdminUsersComponent implements OnInit {
   orgBusy = false;
 
   readonly modules = ALL_MODULES;
+  readonly reportTabs = REPORT_ACCESS_TABS;
 
   deadlineHours = 24;
   deadlineBusy = false;
@@ -197,7 +205,7 @@ export class AdminUsersComponent implements OnInit {
   startAddRole(): void {
     this.isAddingRole = true;
     this.editingRoleName = null;
-    this.roleForm = { name: '', menus: {} };
+    this.roleForm = this.createEmptyRoleForm();
     this.roleError = '';
     this.roleSuccess = '';
   }
@@ -207,7 +215,10 @@ export class AdminUsersComponent implements OnInit {
     this.isAddingRole = false;
     const menus: Record<string, boolean> = {};
     for (const m of this.modules) menus[m.key] = role.menus.includes(m.key);
-    this.roleForm = { name: role.name, menus };
+    const tabs = this.createEmptyRoleForm().tabs;
+    const reportTabs = role.tabs?.['report'] ?? [];
+    for (const t of this.reportTabs) tabs.report[t.key] = reportTabs.includes(t.key);
+    this.roleForm = { name: role.name, menus, tabs };
     this.roleError = '';
     this.roleSuccess = '';
   }
@@ -215,7 +226,7 @@ export class AdminUsersComponent implements OnInit {
   cancelRoleEdit(): void {
     this.editingRoleName = null;
     this.isAddingRole = false;
-    this.roleForm = { name: '', menus: {} };
+    this.roleForm = this.createEmptyRoleForm();
     this.roleError = '';
     this.roleSuccess = '';
   }
@@ -224,11 +235,21 @@ export class AdminUsersComponent implements OnInit {
     return this.modules.filter((m) => this.roleForm.menus[m.key]).map((m) => m.key);
   }
 
+  selectedTabs(): Record<string, string[]> {
+    const result: Record<string, string[]> = {};
+    if (this.roleForm.menus['report']) {
+      const reportTabs = this.reportTabs.filter((t) => this.roleForm.tabs.report[t.key]).map((t) => t.key);
+      result['report'] = reportTabs;
+    }
+    return result;
+  }
+
   async saveRole(): Promise<void> {
     if (this.roleBusy) return;
     this.roleError = '';
     this.roleSuccess = '';
     const menus = this.selectedMenus();
+    const tabs = this.selectedTabs();
     if (menus.length === 0) {
       this.roleError = 'Select at least one module.';
       return;
@@ -242,10 +263,10 @@ export class AdminUsersComponent implements OnInit {
           this.roleError = 'Role name is required.';
           return;
         }
-        await this.roleService.create(name, menus);
+        await this.roleService.create(name, menus, tabs);
         this.roleSuccess = `Role "${name}" created.`;
       } else if (this.editingRoleName) {
-        await this.roleService.update(this.editingRoleName, menus);
+        await this.roleService.update(this.editingRoleName, menus, tabs);
         this.roleSuccess = `Role "${this.editingRoleName}" updated.`;
       }
       await this.refresh();
@@ -271,6 +292,30 @@ export class AdminUsersComponent implements OnInit {
     return role.menus
       .map((k) => this.modules.find((m) => m.key === k)?.label ?? k)
       .join(', ');
+  }
+
+  roleTabLabels(role: RoleDef): string {
+    const reportTabs = role.tabs?.['report'] ?? [];
+    if (!reportTabs.length) return '';
+    const labels = this.reportTabs
+      .filter((tab) => reportTabs.includes(tab.key))
+      .map((tab) => tab.label.replace(' Tab', ''));
+    return labels.length ? `Report Tabs: ${labels.join(', ')}` : '';
+  }
+
+  onRoleMenuToggle(menuKey: string): void {
+    if (menuKey !== 'report') return;
+    if (!this.roleForm.menus['report']) {
+      for (const t of this.reportTabs) this.roleForm.tabs.report[t.key] = false;
+    }
+  }
+
+  private createEmptyRoleForm(): { name: string; menus: Record<string, boolean>; tabs: { report: Record<ReportAccessTab, boolean> } } {
+    return {
+      name: '',
+      menus: {},
+      tabs: { report: { marketing: false, sourcing: false, purchasing: false } },
+    };
   }
 
   async saveDeadlineHours(): Promise<void> {
@@ -317,3 +362,4 @@ export class AdminUsersComponent implements OnInit {
     }
   }
 }
+

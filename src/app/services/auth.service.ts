@@ -67,8 +67,14 @@ export class AuthService implements OnDestroy {
     return this.currentUser?.menus?.includes(menu) ?? false;
   }
 
-  hasTab(module: string, _tab: string): boolean {
-    return this.hasMenu(module);
+  hasTab(module: string, tab: string): boolean {
+    if (this.currentUser?.role === 'admin') return true;
+    if (!this.hasMenu(module)) return false;
+    const allowedTabs = this.currentUser?.tabs?.[module];
+    if (!Array.isArray(allowedTabs) || allowedTabs.length === 0) {
+      return true;
+    }
+    return allowedTabs.includes(tab);
   }
 
   hasRole(role: Role): boolean {
@@ -90,7 +96,7 @@ export class AuthService implements OnDestroy {
       return '/dashboard';
     }
     const menus = this.currentUser.menus ?? [];
-    const priority = ['dashboard', 'marketing', 'sourcing', 'pricelist', 'purchasing'];
+    const priority = ['dashboard', 'marketing', 'sourcing', 'pricelist', 'report', 'purchasing'];
     for (const m of priority) {
       if (menus.includes(m)) return `/${m}`;
     }
