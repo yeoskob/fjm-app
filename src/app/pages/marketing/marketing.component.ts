@@ -43,6 +43,7 @@ export class MarketingComponent implements OnInit {
   newSalesPic = '';
   editInquiry: Inquiry | null = null;
   editForm: Partial<InquiryCreate> = {};
+  editItems: Array<{ id?: string; itemName: string; itemQuantity?: number; itemUom?: string; itemExtendedDescription?: string; itemImage?: string }> = [];
   closeNote = '';
 
   reviewingItemId: string | null = null;
@@ -378,6 +379,21 @@ export class MarketingComponent implements OnInit {
     if (!file) return;
     const result = await this.processImage(file);
     if (result) this.createItems[index].itemImage = result;
+  }
+
+  addEditItem(): void {
+    this.editItems.push({ itemName: '' });
+  }
+
+  removeEditItem(index: number): void {
+    if (this.editItems.length > 1) this.editItems.splice(index, 1);
+  }
+
+  async onEditItemImage(event: Event, index: number): Promise<void> {
+    const file = (event.target as HTMLInputElement).files?.[0];
+    if (!file) return;
+    const result = await this.processImage(file);
+    if (result) this.editItems[index].itemImage = result;
   }
 
   openImport(): void {
@@ -825,43 +841,67 @@ export class MarketingComponent implements OnInit {
   }
 
   startEdit(inquiry: Inquiry): void {
-    if (!this.isSingleItem(inquiry)) {
-      this.error = 'Edit hanya tersedia untuk inquiry dengan 1 item.';
-      return;
-    }
     this.editInquiry = inquiry;
-    const item = inquiry.items[0];
+    const firstItem = inquiry.items[0];
     this.editForm = {
       customer: inquiry.customer,
       organization: inquiry.organization ?? 'FJM',
       salesPic: inquiry.salesPic,
-      namaBarang: item?.itemName,
-      spesifikasi: item?.itemExtendedDescription,
-      qty: item?.itemQuantity,
-      itemUom: item?.itemUom,
-      itemNeedByDate: item?.itemNeedByDate,
-      itemManufacturerName: item?.itemManufacturerName,
-      itemManufacturerPartNumber: item?.itemManufacturerPartNumber,
-      itemClassificationOfGoods: item?.itemClassificationOfGoods,
+      itemNeedByDate: firstItem?.itemNeedByDate,
     };
+    this.editItems = inquiry.items.map((item) => ({
+      id: item.id,
+      itemName: item.itemName ?? '',
+      itemQuantity: item.itemQuantity,
+      itemUom: item.itemUom,
+      itemExtendedDescription: item.itemExtendedDescription,
+      itemImage: item.itemImage,
+    }));
+    if (this.editItems.length === 0) this.editItems = [{ itemName: '' }];
     this.detailInquiry = null;
   }
 
   cancelEdit(): void {
     this.editInquiry = null;
+    this.editItems = [];
   }
 
   async saveEdit(): Promise<void> {
     if (!this.editInquiry) return;
     const user = this.authService.getCurrentUser();
     if (!user) return;
+    this.error = '';
+    if (!this.editForm.customer?.trim()) { this.error = 'Customer wajib diisi.'; return; }
+    if (!this.editForm.organization) { this.error = 'Organisasi wajib dipilih.'; return; }
+    if (!this.editForm.itemNeedByDate) { this.error = 'Need by Date wajib diisi.'; return; }
+    const invalidItemIndex = this.editItems.findIndex((item) =>
+      !item.itemName.trim() ||
+      item.itemQuantity == null ||
+      item.itemQuantity <= 0 ||
+      !item.itemUom?.trim()
+    );
+    if (invalidItemIndex >= 0) {
+      this.error = `Item ${invalidItemIndex + 1} wajib mengisi Item Name, Expected Quantity, dan Unit of Measurement.`;
+      return;
+    }
     await this.inquiryService.update(this.editInquiry.id, {
       ...this.editForm,
+      customer: this.editForm.customer.trim(),
+      organization: this.editForm.organization,
+      items: this.editItems.map((item) => ({
+        id: item.id,
+        itemName: item.itemName.trim(),
+        itemQuantity: item.itemQuantity,
+        itemUom: item.itemUom?.trim(),
+        itemExtendedDescription: item.itemExtendedDescription?.trim(),
+        itemImage: item.itemImage,
+      })),
       updatedBy: user.username,
       updatedByName: user.name,
     });
     this.success = 'Inquiry updated.';
     this.editInquiry = null;
+    this.editItems = [];
     await this.refresh();
   }
 

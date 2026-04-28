@@ -398,36 +398,58 @@
 
     <div class="create-items-section">
       <div class="create-items-header">
-        <span class="create-items-title">Item</span>
+        <span class="create-items-title">Items</span>
+        <button type="button" class="ghost sm" (click)="addEditItem()">+ Add Item</button>
       </div>
 
-      <div class="create-item-card">
-        <label>Item Name *
-          <input type="text" [(ngModel)]="editForm.namaBarang" [ngModelOptions]="{standalone:true}"
-            class="form-control" placeholder="Nama produk yang diminta" />
-        </label>
-        <div class="form-row">
-          <label>Expected Quantity *
-            <input type="number" [(ngModel)]="editForm.qty" [ngModelOptions]="{standalone:true}" class="form-control" min="1" placeholder="0" />
-          </label>
-          <label>Unit of Measurement *
-            <input type="text" [(ngModel)]="editForm.itemUom" [ngModelOptions]="{standalone:true}" class="form-control" placeholder="cth: Each, MeterSquared" />
-          </label>
-        </div>
-        <div class="form-row">
-          <label>Manufacturer Name
-            <input type="text" [(ngModel)]="editForm.itemManufacturerName" [ngModelOptions]="{standalone:true}" class="form-control" />
-          </label>
-          <label>Manufacturer Part Number
-            <input type="text" [(ngModel)]="editForm.itemManufacturerPartNumber" [ngModelOptions]="{standalone:true}" class="form-control" />
-          </label>
-        </div>
-        <label>Classification of Goods
-          <input type="text" [(ngModel)]="editForm.itemClassificationOfGoods" [ngModelOptions]="{standalone:true}" class="form-control" />
-        </label>
-        <label>Description
-          <textarea [(ngModel)]="editForm.spesifikasi" [ngModelOptions]="{standalone:true}" class="form-control" rows="2"></textarea>
-        </label>
+      <div class="create-items-table-wrap">
+        <table class="create-items-table">
+          <thead>
+            <tr>
+              <th class="col-no">#</th>
+              <th class="col-name">Item Name *</th>
+              <th class="col-qty">Expected Quantity *</th>
+              <th class="col-uom">Unit of Measurement *</th>
+              <th class="col-desc">Description</th>
+              <th class="col-image">Image</th>
+              <th class="col-actions"></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let item of editItems; let i = index">
+              <td class="col-no">{{ i + 1 }}</td>
+              <td class="col-name">
+                <input type="text" [(ngModel)]="item.itemName" [ngModelOptions]="{standalone:true}"
+                  class="form-control" placeholder="Nama produk" />
+              </td>
+              <td class="col-qty">
+                <input type="number" [(ngModel)]="item.itemQuantity" [ngModelOptions]="{standalone:true}"
+                  class="form-control" min="1" placeholder="0" />
+              </td>
+              <td class="col-uom">
+                <input type="text" [(ngModel)]="item.itemUom" [ngModelOptions]="{standalone:true}"
+                  class="form-control" placeholder="Pilih atau ketik..." [attr.list]="'edit-uom-list-' + i" />
+                <datalist [id]="'edit-uom-list-' + i">
+                  <option *ngFor="let u of UOM_OPTIONS" [value]="u"></option>
+                </datalist>
+              </td>
+              <td class="col-desc">
+                <textarea [(ngModel)]="item.itemExtendedDescription" [ngModelOptions]="{standalone:true}"
+                  class="form-control" rows="2" placeholder="Spesifikasi / extended description"></textarea>
+              </td>
+              <td class="col-image">
+                <div class="create-image-cell">
+                  <input type="file" (change)="onEditItemImage($event, i)" class="form-control" accept="image/*" />
+                  <img *ngIf="item.itemImage" [src]="item.itemImage" class="item-thumb-preview" />
+                </div>
+              </td>
+              <td class="col-actions">
+                <button type="button" class="remove-item-btn" *ngIf="editItems.length > 1"
+                  (click)="removeEditItem(i)" title="Remove item">x</button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
       </div>
     </div>
 
@@ -848,7 +870,7 @@
       <ng-container [ngSwitch]="detailInquiry!.status">
         <ng-container *ngSwitchCase="'new_inquiry'">
           <div class="footer-actions">
-            <button type="button" class="ghost sm" *ngIf="isSingleItem(detailInquiry!)" (click)="startEdit(detailInquiry!)">Edit</button>
+            <button type="button" class="ghost sm" (click)="startEdit(detailInquiry!)">Edit</button>
             <button type="button" class="primary sm" (click)="sendRfq(detailInquiry!)">Send to Sourcing (RFQ)</button>
           </div>
         </ng-container>

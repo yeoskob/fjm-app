@@ -52,7 +52,7 @@ export class AppComponent implements OnInit, OnDestroy {
     }
 
     this.notifSub = this.rfqNotif.visible$.subscribe(notifs => {
-      document.title = notifs.length > 0 ? `(${notifs.length}) FJM Portal` : 'FJM Portal';
+      document.title = notifs.length > 0 ? `(${notifs.length}) Procera Portal` : 'Procera Portal';
       if (notifs.length > this.lastNotifCount) this.toastVisible = true;
       this.lastNotifCount = notifs.length;
     });

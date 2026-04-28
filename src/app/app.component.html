@@ -1,6 +1,8 @@
 <div class="app-shell">
   <header class="topbar" *ngIf="authService.isLoggedIn()">
-    <div class="brand">FJM Portal</div>
+    <a class="brand" [routerLink]="authService.getLandingRoute()" aria-label="Procera home">
+      <img class="brand-logo" src="assets/Procera logo.jpeg" alt="Procera" />
+    </a>
 
     <nav class="menu">
       <a routerLink="/marketing" routerLinkActive="active" *ngIf="authService.hasMenu('marketing')">
@@ -59,7 +61,7 @@
         </div>
       </ng-container>
 
-      <span>{{ authService.getCurrentUser()?.name }}</span>
+      <span class="user-name">{{ authService.getCurrentUser()?.name }}</span>
       <button type="button" class="ghost" (click)="logout()">Logout</button>
     </div>
   </header>

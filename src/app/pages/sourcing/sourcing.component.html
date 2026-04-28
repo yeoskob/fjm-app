@@ -270,10 +270,7 @@
                 <span class="sourced-pill" *ngIf="!item.priceApproved && isSourced(item) && !isMissed(item)">Terisi</span>
                 <span class="unsourced-pill" *ngIf="!item.priceApproved && !isSourced(item) && !isMissed(item)">Tidak Terisi</span>
               </td>
-              <td class="action-cell">
-                <button *ngIf="editingItemId === item.id"
-                  type="button" class="ghost sm" (click)="cancelFill(); $event.stopPropagation()">Batal</button>
-              </td>
+              <td class="action-cell"></td>
             </tr>
             <!-- Inline fill form -->
             <tr *ngIf="editingItemId === item.id" class="inline-input-row">

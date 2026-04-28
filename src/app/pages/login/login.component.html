@@ -1,8 +1,10 @@
 ﻿<section class="login-shell">
   <div class="login-card">
-    <h1>FJM Portal</h1>
-    <p class="subtitle">Sign in to access your menus.</p>
-
+    <img
+      class="brand-logo"
+      src="assets/Procera logo.jpeg"
+      alt="Procera logo"
+    />
     <form (ngSubmit)="submit()" #loginForm="ngForm">
       <label>
         Username
@@ -33,7 +35,7 @@
       </button>
     </form>
 
-    <div class="demo">
+    <!-- <div class="demo">
       <h2>Demo Accounts</h2>
       <p class="demo-hint">Click an account to auto-fill.</p>
       <div class="demo-list">
@@ -50,6 +52,6 @@
           <span class="demo-cred">marketing / marketing</span>
         </button>
       </div>
-    </div>
+    </div> -->
   </div>
 </section>

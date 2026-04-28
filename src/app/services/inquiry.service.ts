@@ -30,7 +30,11 @@ export class InquiryService {
     return firstValueFrom(this.http.post<{ id: string; rfqNo: string; itemCount: number }>(`${this.base}/import-coupa`, payload));
   }
 
-  update(id: string, payload: Partial<InquiryCreate> & { updatedBy: string; updatedByName: string }): Promise<void> {
+  update(id: string, payload: Partial<InquiryCreate> & {
+    items?: Array<{ id?: string; itemName: string; itemQuantity?: number; itemUom?: string; itemExtendedDescription?: string; itemImage?: string }>;
+    updatedBy: string;
+    updatedByName: string;
+  }): Promise<void> {
     return firstValueFrom(this.http.put<void>(`${this.base}/${id}`, payload));
   }
 

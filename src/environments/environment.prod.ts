@@ -1,4 +1,4 @@
 export const environment = {
   production: true,
-  apiUrl: 'https://api.yeosbuild.com',
+  apiUrl: 'https://api.procera.id',
 };
