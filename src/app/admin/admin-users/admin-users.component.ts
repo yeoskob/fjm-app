@@ -197,8 +197,17 @@ export class AdminUsersComponent implements OnInit {
   }
 
   async deleteUser(user: User): Promise<void> {
+    if (user.role === 'admin') {
+      this.userError = 'Admin users cannot be deleted.';
+      return;
+    }
     if (!confirm(`Delete user "${user.username}"?`)) return;
-    await this.userService.deleteUser(user.id);
+    try {
+      await this.userService.deleteUser(user.id);
+    } catch (err: any) {
+      this.userError = err?.error?.error ?? 'Failed to delete user.';
+      return;
+    }
     if (this.authService.getCurrentUser()?.id === user.id) {
       this.authService.logout();
       void this.router.navigateByUrl('/login');
