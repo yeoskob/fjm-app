@@ -194,7 +194,7 @@ export interface DashboardStats {
   itemsMissedUnassigned: number;
   rfqsMissed: number;
   rfqsMissedUnassigned: number;
-  urgentRfqs: Array<{ id: string; rfq_no: string; customer: string; sourcing_pic: string | null; deadline_quotation: string; days_left: number }>;
+  urgentRfqs: Array<{ id: string; rfq_no: string; customer: string; sourcing_pic: string | null; need_by_date: string; days_left: number }>;
 }
 
 export interface ReportRow {

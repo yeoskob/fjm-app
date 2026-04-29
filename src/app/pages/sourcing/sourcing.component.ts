@@ -447,6 +447,7 @@ export class SourcingComponent implements OnInit {
   }
 
   earliestNeedByDate(inq: Inquiry): string | null {
+    if (inq.needByDate) return inq.needByDate;
     const dates = (inq.items ?? [])
       .map((i) => i.itemNeedByDate)
       .filter((d): d is string => !!d)

@@ -217,7 +217,7 @@
           </div>
           <div class="modal-header-row">
             <span class="header-label">Need by Date:</span>
-            <span class="header-value">{{ formatDate(selectedInquiry.needByDate) }}</span>
+            <span class="header-value">{{ formatDate(earliestNeedByDate(selectedInquiry) || undefined) }}</span>
           </div>
         </div>
       </div>

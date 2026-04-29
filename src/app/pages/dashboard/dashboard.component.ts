@@ -80,6 +80,32 @@ export class DashboardComponent implements OnInit {
     return steps.map((s) => ({ ...s, pct: Math.round((s.count / base) * 100) }));
   }
 
+  get urgentRfqs() {
+    return this.allInquiries
+      .filter((inquiry) => inquiry.status === 'rfq' && !inquiry.sourcingMissed)
+      .map((inquiry) => {
+        const needByDate = this.earliestNeedByDate(inquiry);
+        return {
+          id: inquiry.id,
+          rfq_no: inquiry.rfqNo ?? '',
+          customer: inquiry.customer,
+          sourcing_pic: inquiry.sourcingPic ?? null,
+          need_by_date: needByDate,
+          days_left: this.daysLeft(needByDate),
+        };
+      })
+      .filter((row): row is {
+        id: string;
+        rfq_no: string;
+        customer: string;
+        sourcing_pic: string | null;
+        need_by_date: string;
+        days_left: number;
+      } => row.need_by_date !== null && row.days_left !== null && row.days_left >= 0 && row.days_left <= 1)
+      .sort((a, b) => a.need_by_date.localeCompare(b.need_by_date))
+      .slice(0, 8);
+  }
+
   get marketingPieData() {
     const rows = this.marketingBreakdown;
     return this.buildMarketingPie(rows, this.dashboard?.unsent ?? 0);
@@ -261,5 +287,28 @@ export class DashboardComponent implements OnInit {
       sourcing: 'Sourcing',
     };
     return map[role] ?? role;
+  }
+
+  earliestNeedByDate(inquiry: Inquiry): string | null {
+    if (inquiry.needByDate) return inquiry.needByDate;
+    const dates = (inquiry.items ?? [])
+      .map((item) => item.itemNeedByDate)
+      .filter((date): date is string => !!date)
+      .sort();
+    return dates[0] ?? null;
+  }
+
+  daysLeft(dateStr: string | null): number | null {
+    if (!dateStr) return null;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const target = new Date(dateStr);
+    target.setHours(0, 0, 0, 0);
+    return Math.round((target.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+  }
+
+  daysLeftLabel(days: number): string {
+    if (days < 0) return `${Math.abs(days)}d overdue`;
+    return `${days}d`;
   }
 }

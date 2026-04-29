@@ -69,7 +69,7 @@
             <span class="org-badge" [ngClass]="organizationClass(inq.organization)">{{ inq.organization || 'FJM' }}</span>
           </td>
           <td>{{ inq.customer }}</td>
-          <td>{{ formatDateOnly(inq.items[0].itemNeedByDate) }}</td>
+          <td>{{ earliestNeedByDate(inq) }}</td>
           <td>{{ formatDate(inq.tanggal) }}</td>
           <td>{{ inq.salesPic }}</td>
           <td>{{ itemCount(inq) }}</td>
@@ -224,7 +224,7 @@
             <span class="org-badge" [ngClass]="organizationClass(inq.organization)">{{ inq.organization || 'FJM' }}</span>
           </td>
           <td>{{ inq.customer }}</td>
-          <td>{{ formatDateOnly(inq.items[0].itemNeedByDate) }}</td>
+          <td>{{ earliestNeedByDate(inq) }}</td>
           <td>{{ formatDate(inq.tanggal) }}</td>
           <td>{{ inq.salesPic }}</td>
           <td>{{ inq.sourcingPic || '-' }}</td>
@@ -519,7 +519,7 @@
           </div>
           <div class="modal-header-row">
             <span class="header-label">Need by Date:</span>
-            <span>{{ formatDateOnly(detailInquiry.items[0].itemNeedByDate) }}</span>
+            <span>{{ earliestNeedByDate(detailInquiry) }}</span>
           </div>
         </div>
       </div>

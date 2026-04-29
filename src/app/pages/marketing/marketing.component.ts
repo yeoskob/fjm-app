@@ -137,8 +137,8 @@ export class MarketingComponent implements OnInit {
         else if (sort.col === 'updatedAt') { av = this.lastUpdatedValue(a); bv = this.lastUpdatedValue(b); }
         else if (sort.col === 'items') { av = a.items.length; bv = b.items.length; }
         else if (sort.col === 'needByDate') {
-          const earliest = (inq: Inquiry) => inq.items.map(i => i.itemNeedByDate).filter(Boolean).sort()[0] ?? '';
-          av = earliest(a); bv = earliest(b);
+          av = this.earliestNeedByRaw(a) ?? '';
+          bv = this.earliestNeedByRaw(b) ?? '';
           if (!av) return 1;
           if (!bv) return -1;
         }
@@ -191,6 +191,7 @@ export class MarketingComponent implements OnInit {
   quotationPages(): number { return Math.ceil(this.quotationTabFiltered.length / this.pageSize); }
 
   earliestNeedByDate(inq: Inquiry): string {
+    if (inq.needByDate) return this.formatDate(inq.needByDate);
     const dates = inq.items
       .map((it) => it.itemNeedByDate)
       .filter((d): d is string => !!d)
@@ -199,6 +200,7 @@ export class MarketingComponent implements OnInit {
   }
 
   earliestNeedByRaw(inq: Inquiry): string | null {
+    if (inq.needByDate) return inq.needByDate;
     const dates = inq.items.map((it) => it.itemNeedByDate).filter((d): d is string => !!d).sort();
     return dates[0] ?? null;
   }

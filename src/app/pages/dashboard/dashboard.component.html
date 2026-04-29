@@ -157,7 +157,7 @@
       </div>
 
       <!-- Urgent RFQ table -->
-      <div class="card" *ngIf="(dashboard.urgentRfqs?.length ?? 0) > 0">
+      <div class="card" *ngIf="urgentRfqs.length > 0">
         <h2>RFQ Mendekati Deadline <span class="card-sub">diurutkan paling mendesak</span></h2>
         <table class="urgent-table">
           <thead>
@@ -165,12 +165,12 @@
               <th>RFQ No</th>
               <th>Customer</th>
               <th>Sourcing PIC</th>
-              <th>Deadline</th>
+              <th>Need by Date</th>
               <th class="col-center">Days Left</th>
             </tr>
           </thead>
           <tbody>
-            <tr *ngFor="let r of dashboard.urgentRfqs"
+            <tr *ngFor="let r of urgentRfqs"
                 [class.urgent-critical]="r.days_left <= 1"
                 [class.urgent-warning]="r.days_left > 1 && r.days_left <= 3">
               <td class="mono-blue">{{ r.rfq_no }}</td>
@@ -179,12 +179,12 @@
                 <span *ngIf="r.sourcing_pic">{{ r.sourcing_pic }}</span>
                 <span class="unassigned-badge" *ngIf="!r.sourcing_pic">Unassigned</span>
               </td>
-              <td class="muted">{{ r.deadline_quotation | slice:0:10 }}</td>
+              <td class="muted">{{ r.need_by_date | slice:0:10 }}</td>
               <td class="col-center">
                 <span class="days-badge"
                   [class.critical]="r.days_left <= 1"
                   [class.warning]="r.days_left > 1 && r.days_left <= 3">
-                  {{ r.days_left }}
+                  {{ daysLeftLabel(r.days_left) }}
                 </span>
               </td>
             </tr>
