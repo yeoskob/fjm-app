@@ -14,6 +14,7 @@ export const ALL_MODULES: { key: string; label: string }[] = [
   { key: 'sourcing', label: 'Sourcing' },
   { key: 'pricelist', label: 'Price List' },
   { key: 'report', label: 'Report' },
+  { key: 'settings', label: 'Settings' },
 ];
 
 type AdminTab = 'users' | 'roles' | 'organizations' | 'deadline' | 'backup';

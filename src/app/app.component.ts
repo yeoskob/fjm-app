@@ -95,7 +95,7 @@ export class AppComponent implements OnInit, OnDestroy {
       case '/report':
         return 'report';
       case '/admin/users':
-        return 'admin';
+        return 'settings';
       default:
         return null;
     }
