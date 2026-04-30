@@ -58,6 +58,15 @@ select {
   flex-wrap: wrap;
 }
 
+.supplier-url-link {
+  display: inline-block;
+  max-width: 320px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  vertical-align: bottom;
+}
+
 .primary {
   background: #1d4ed8;
   color: #ffffff;

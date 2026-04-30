@@ -297,6 +297,10 @@
                       <span class="field-label">Harga Beli</span>
                       <span class="field-value">{{ formatCurrency(item.hargaBeli) }}<span *ngIf="item.ppnType" class="ppn-badge">{{ ppnTypeLabel(item.ppnType) }}</span></span>
                     </div>
+                    <div class="inline-field-row" *ngIf="item.supplierUrl">
+                      <span class="field-label">Supplier URL</span>
+                      <span class="field-value"><a [href]="item.supplierUrl" target="_blank" rel="noopener noreferrer" class="supplier-url-link" [title]="item.supplierUrl">{{ item.supplierUrl }}</a></span>
+                    </div>
                     <div class="inline-field-row">
                       <span class="field-label">Approved Price (Rp) *</span>
                       <input type="number" [(ngModel)]="approvalForms[item.id].hargaJual"

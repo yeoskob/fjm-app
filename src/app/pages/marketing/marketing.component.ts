@@ -28,6 +28,7 @@ export class MarketingComponent implements OnInit {
   showImport = false;
   importFile: File | null = null;
   importOrganization = '';
+  importNeedByDate = '';
   importing = false;
   importWarning = '';
   importWarningItems: Array<{ itemName: string; inquiryDate: string; needByDate: string }> = [];
@@ -403,6 +404,7 @@ export class MarketingComponent implements OnInit {
     this.showCreate = false;
     this.importFile = null;
     this.importOrganization = '';
+    this.importNeedByDate = '';
     this.error = '';
     this.success = '';
     this.clearImportWarning();
@@ -412,6 +414,7 @@ export class MarketingComponent implements OnInit {
     this.showImport = false;
     this.importFile = null;
     this.importOrganization = '';
+    this.importNeedByDate = '';
     this.clearImportWarning();
   }
 
@@ -486,6 +489,7 @@ export class MarketingComponent implements OnInit {
     if (!user) { this.error = 'Anda belum login.'; return; }
     if (!this.importFile) { this.error = 'Silakan pilih file Excel.'; return; }
     if (!this.importOrganization) { this.error = 'Organisasi wajib dipilih.'; return; }
+    if (!this.importNeedByDate) { this.error = 'Need by Date wajib diisi.'; return; }
 
     this.importing = true;
     try {
@@ -496,6 +500,7 @@ export class MarketingComponent implements OnInit {
         createdBy: user.username,
         createdByName: user.name,
         organization: this.importOrganization,
+        needByDate: this.importNeedByDate,
       });
       const importedInquiry = await this.inquiryService.getById(result.id);
       const warningItems = this.getImportedDateWarnings(importedInquiry);
@@ -1021,7 +1026,11 @@ export class MarketingComponent implements OnInit {
   }
 
   isSourcingTidakTerisi(item: InquiryItem): boolean {
-    return !(item.supplier && item.hargaBeli != null && item.leadTime);
+    if (!item.supplier || !/[a-zA-Z0-9]/.test(item.supplier)) return true;
+    if (item.hargaBeli == null || item.hargaBeli <= 0) return true;
+    if (!item.leadTime) return true;
+    const lt = parseInt(String(item.leadTime), 10);
+    return !Number.isFinite(lt) || lt <= 0;
   }
 
   unresolvedItems(inquiry: Inquiry): InquiryItem[] {

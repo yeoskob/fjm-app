@@ -64,6 +64,7 @@ export interface InquiryItem {
   alternateName?: string;
   approvedPrice?: number;
   supplier?: string;
+  supplierUrl?: string;
   hargaBeli?: number;
   leadTime?: string;
   moq?: number;
@@ -155,6 +156,7 @@ export interface InquiryCreate {
 
 export interface SourcingInfo {
   supplier: string;
+  supplierUrl?: string;
   hargaBeli: number;
   leadTime: string;
   moq?: number;

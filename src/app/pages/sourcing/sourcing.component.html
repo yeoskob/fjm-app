@@ -322,6 +322,11 @@
                     <input type="text" [(ngModel)]="fillForm.alternateName" [ngModelOptions]="{standalone:true}"
                       class="form-control" placeholder="Supplier item name" [disabled]="isMissed(item)" />
                   </div>
+                  <div class="inline-field-row">
+                    <span class="field-label">Supplier URL</span>
+                    <input type="url" [(ngModel)]="fillForm.supplierUrl" [ngModelOptions]="{standalone:true}"
+                      class="form-control" placeholder="https://..." [disabled]="isMissed(item)" />
+                  </div>
                   <div class="inline-field-row inline-actions-row">
                     <span></span>
                     <div class="inline-actions">
@@ -363,6 +368,13 @@
                   <div class="inline-field-row">
                     <span class="field-label">Supplier Item Name</span>
                     <span class="field-value-ro">{{ item.alternateName || '-' }}</span>
+                  </div>
+                  <div class="inline-field-row">
+                    <span class="field-label">Supplier URL</span>
+                    <span class="field-value-ro">
+                      <a *ngIf="item.supplierUrl" [href]="item.supplierUrl" target="_blank" rel="noopener noreferrer" class="supplier-url-link" [title]="item.supplierUrl">{{ item.supplierUrl }}</a>
+                      <ng-container *ngIf="!item.supplierUrl">-</ng-container>
+                    </span>
                   </div>
                 </div>
               </td>
