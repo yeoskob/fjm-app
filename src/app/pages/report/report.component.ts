@@ -112,9 +112,9 @@ export class ReportComponent implements OnInit {
 
   async init(): Promise<void> {
     const users = await this.inquiryService.getUsers();
-    this.marketingUsers = users.filter((u) => u.menus?.includes('marketing')).map((u) => u.name).sort();
-    this.sourcingUsers  = users.filter((u) => u.menus?.includes('sourcing')).map((u) => u.name).sort();
-    this.purchasingUsers = users.filter((u) => u.menus?.includes('purchasing')).map((u) => u.name).sort();
+    this.marketingUsers = users.filter((u) => u.menus?.includes('marketing') || (!u.menus?.length && u.role === 'marketing')).map((u) => u.name).sort();
+    this.sourcingUsers  = users.filter((u) => u.menus?.includes('sourcing') || (!u.menus?.length && u.role === 'sourcing')).map((u) => u.name).sort();
+    this.purchasingUsers = users.filter((u) => u.menus?.includes('purchasing') || (!u.menus?.length && u.role === 'purchasing')).map((u) => u.name).sort();
     this.activeTab = this.firstAllowedTab();
     void this.loadMarketing();
     void this.loadSourcing();

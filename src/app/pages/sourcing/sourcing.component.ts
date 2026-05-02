@@ -112,8 +112,8 @@ export class SourcingComponent implements OnInit {
     void this.refresh();
     if (this.isAdminOrManager()) {
       void this.inquiryService.getUsers().then((users) => {
-        this.salesUsers = users.filter((u) => u.menus?.includes('marketing'));
-        this.sourcingUsers = users.filter((u) => u.menus?.includes('sourcing'));
+        this.salesUsers = users.filter((u) => u.menus?.includes('marketing') || (!u.menus?.length && u.role === 'marketing'));
+        this.sourcingUsers = users.filter((u) => u.menus?.includes('sourcing') || (!u.menus?.length && u.role === 'sourcing'));
       });
     }
 

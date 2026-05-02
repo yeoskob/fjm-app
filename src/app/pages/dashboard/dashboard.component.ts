@@ -214,7 +214,7 @@ export class DashboardComponent implements OnInit {
     const tabMenu = this.activeTab === 'sales' ? 'marketing' : 'sourcing';
     return this.users.filter(
       (u) =>
-        u.menus?.includes(tabMenu) &&
+        (u.menus?.includes(tabMenu) || (!u.menus?.length && u.role === tabMenu)) &&
         (u.name.toLowerCase().includes(q) || u.username.toLowerCase().includes(q))
     );
   }
@@ -283,7 +283,7 @@ export class DashboardComponent implements OnInit {
     const map: Record<string, string> = {
       admin: 'Admin',
       manager: 'Manager',
-      marketing: 'Sales / Marketing',
+      marketing: 'Marketing',
       sourcing: 'Sourcing',
     };
     return map[role] ?? role;

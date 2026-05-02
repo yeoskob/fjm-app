@@ -258,7 +258,7 @@ export class MarketingComponent implements OnInit {
     const user = this.authService.getCurrentUser();
     if (user?.role === 'admin' || user?.role === 'manager') {
       void this.inquiryService.getUsers().then((users) => {
-        this.salesUsers = users.filter((u) => u.menus?.includes('marketing'));
+        this.salesUsers = users.filter((u) => u.menus?.includes('marketing') || (!u.menus?.length && u.role === 'marketing'));
       });
     }
     void this.loadOrganizationOptions();
