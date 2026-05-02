@@ -350,6 +350,7 @@
             <th>Qty</th>
             <th>Need By</th>
             <th>Supplier</th>
+            <th *ngIf="isPurchasingTab()">Supplier URL</th>
             <th class="num">Harga Beli</th>
             <th class="num" *ngIf="!isPurchasingTab()">Harga Jual</th>
             <th>Sourced</th>
@@ -363,6 +364,10 @@
               <td>{{ item.itemQuantity != null ? item.itemQuantity + ' ' + (item.itemUom || '') : '-' }}</td>
               <td class="date-cell">{{ formatDate(item.itemNeedByDate) }}</td>
               <td>{{ item.supplier || '-' }}</td>
+              <td *ngIf="isPurchasingTab()" class="url-cell" (click)="$event.stopPropagation()">
+                <a *ngIf="item.supplierUrl" [href]="item.supplierUrl" target="_blank" rel="noopener noreferrer" class="supplier-url-link" [title]="item.supplierUrl">{{ item.supplierUrl }}</a>
+                <span *ngIf="!item.supplierUrl">-</span>
+              </td>
               <td class="num">{{ item.hargaBeli != null ? (item.hargaBeli | number) : '-' }}</td>
               <td class="num" *ngIf="!isPurchasingTab()">{{ item.hargaJual != null ? (item.hargaJual | number) : '-' }}</td>
               <td>
@@ -373,7 +378,7 @@
               </td>
             </tr>
             <tr *ngIf="expandedItemId === item.id" class="item-comments-row">
-              <td [attr.colspan]="isPurchasingTab() ? 7 : 8">
+              <td [attr.colspan]="8">
                 <div class="item-comments-feed">
                   <div class="empty-comments" *ngIf="(itemNotesMap[item.id]?.length ?? 0) === 0">No comments yet.</div>
                   <div class="comment-bubble" *ngFor="let n of (itemNotesMap[item.id] ?? [])">

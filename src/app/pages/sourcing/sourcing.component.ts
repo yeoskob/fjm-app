@@ -260,6 +260,7 @@ export class SourcingComponent implements OnInit {
     const leadTimeNum = storedLeadTime ? parseInt(String(storedLeadTime), 10) || undefined : undefined;
     this.fillForm = {
       supplier: item.supplier,
+      supplierUrl: item.supplierUrl,
       hargaBeli: item.hargaBeli ?? item.bidPriceAmount ?? undefined,
       leadTime: item.leadTime ?? (storedLeadTime ? String(storedLeadTime) : undefined),
       leadTimeNum,
@@ -300,8 +301,13 @@ export class SourcingComponent implements OnInit {
     this.error = '';
 
     const { supplier, hargaBeli, leadTimeNum } = this.fillForm;
-    if (!supplier?.trim() || hargaBeli == null || leadTimeNum == null) {
+    const supplierTrimmed = supplier?.trim() ?? '';
+    if (!supplierTrimmed || hargaBeli == null || leadTimeNum == null) {
       this.error = 'Supplier, harga beli, lead time, dan PPN wajib diisi.';
+      return;
+    }
+    if (!/[a-zA-Z0-9]/.test(supplierTrimmed)) {
+      this.error = 'Nama supplier tidak valid.';
       return;
     }
     if (!this.ppnType) {
@@ -314,7 +320,8 @@ export class SourcingComponent implements OnInit {
     if (!user) { this.error = 'Not logged in.'; return; }
 
     const payload: SourcingInfo = {
-      supplier: supplier.trim(),
+      supplier: supplierTrimmed,
+      supplierUrl: this.fillForm.supplierUrl?.trim() || undefined,
       hargaBeli,
       leadTime: leadTime.trim(),
       moq: this.fillForm.moq,
@@ -402,7 +409,11 @@ export class SourcingComponent implements OnInit {
   }
 
   isSourced(item: InquiryItem): boolean {
-    return !!(item.supplier && item.hargaBeli != null && item.leadTime);
+    if (!item.supplier || !/[a-zA-Z0-9]/.test(item.supplier)) return false;
+    if (item.hargaBeli == null || item.hargaBeli <= 0) return false;
+    if (!item.leadTime) return false;
+    const lt = parseInt(String(item.leadTime), 10);
+    return Number.isFinite(lt) && lt > 0;
   }
 
   submittedSourcingCount(inquiry: Inquiry): number {

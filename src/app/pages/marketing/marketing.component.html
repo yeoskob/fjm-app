@@ -359,6 +359,9 @@
           <option *ngFor="let org of organizationOptions" [value]="org">{{ org }}</option>
         </select>
       </label>
+      <label>Need by Date *
+        <input type="date" [(ngModel)]="importNeedByDate" [ngModelOptions]="{standalone:true}" class="form-control" [min]="today" />
+      </label>
       <label>Excel File (.xlsx)
         <input type="file" (change)="onImportFileChange($event)" class="form-control" accept=".xlsx" />
       </label>
@@ -637,6 +640,7 @@
                             <tr *ngIf="item.moq"><td>MOQ</td><td>{{ item.moq }}</td></tr>
                             <tr *ngIf="item.stockAvailability"><td>Stock</td><td>{{ item.stockAvailability }}</td></tr>
                             <tr *ngIf="item.termPembayaran"><td>Term Pembayaran</td><td>{{ item.termPembayaran }}</td></tr>
+                            <tr *ngIf="item.supplierUrl"><td>Supplier URL</td><td><a [href]="item.supplierUrl" target="_blank" rel="noopener noreferrer" class="supplier-url-link" [title]="item.supplierUrl">{{ item.supplierUrl }}</a></td></tr>
                             <tr *ngIf="item.hargaJual || getApprovedPrice(item)">
                               <td>Harga Jual</td>
                               <td>
@@ -733,6 +737,7 @@
                 <tr *ngIf="item.moq"><td>MOQ</td><td>{{ item.moq }}</td></tr>
                 <tr *ngIf="item.stockAvailability"><td>Stock</td><td>{{ item.stockAvailability }}</td></tr>
                 <tr *ngIf="item.termPembayaran"><td>Term Pembayaran</td><td>{{ item.termPembayaran }}</td></tr>
+                <tr *ngIf="item.supplierUrl"><td>Supplier URL</td><td><a [href]="item.supplierUrl" target="_blank" rel="noopener noreferrer" class="supplier-url-link" [title]="item.supplierUrl">{{ item.supplierUrl }}</a></td></tr>
                 <tr *ngIf="item.hargaJual || getApprovedPrice(item)">
                   <td>Harga Jual</td>
                   <td>
