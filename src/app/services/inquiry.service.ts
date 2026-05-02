@@ -126,8 +126,8 @@ export class InquiryService {
     return firstValueFrom(this.http.get<UserStats>(`${this.base}/dashboard/user`, { params: { name } }));
   }
 
-  getUsers(): Promise<Array<{ id: string; name: string; username: string; role: string }>> {
-    return firstValueFrom(this.http.get<Array<{ id: string; name: string; username: string; role: string }>>(`${environment.apiUrl}/users`));
+  getUsers(): Promise<Array<{ id: string; name: string; username: string; role: string; menus: string[] }>> {
+    return firstValueFrom(this.http.get<Array<{ id: string; name: string; username: string; role: string; menus: string[] }>>(`${environment.apiUrl}/users`));
   }
 
   getReport(month?: string, salesPic?: string): Promise<ReportData> {

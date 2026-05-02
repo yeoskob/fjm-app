@@ -16,7 +16,7 @@ export class DashboardComponent implements OnInit {
   activeTab: 'sales' | 'sourcing' = 'sales';
 
   // User search
-  users: Array<{ id: string; name: string; username: string; role: string }> = [];
+  users: Array<{ id: string; name: string; username: string; role: string; menus: string[] }> = [];
   searchQuery = '';
   selectedUser: { id: string; name: string; username: string; role: string } | null = null;
   userStats: UserStats | null = null;
@@ -211,10 +211,10 @@ export class DashboardComponent implements OnInit {
 
   get filteredUsers() {
     const q = this.searchQuery.toLowerCase();
-    const tabRole = this.activeTab === 'sales' ? 'marketing' : 'sourcing';
+    const tabMenu = this.activeTab === 'sales' ? 'marketing' : 'sourcing';
     return this.users.filter(
       (u) =>
-        (u.role === tabRole || u.role === 'admin') &&
+        u.menus?.includes(tabMenu) &&
         (u.name.toLowerCase().includes(q) || u.username.toLowerCase().includes(q))
     );
   }

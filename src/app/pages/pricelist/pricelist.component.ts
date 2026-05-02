@@ -149,8 +149,8 @@ export class PricelistComponent implements OnInit {
     });
     void this.refresh();
     void this.inquiryService.getUsers().then((users) => {
-      this.salesUsers = users.filter((u) => u.role === 'marketing');
-      this.sourcingUsers = users.filter((u) => u.role === 'sourcing');
+      this.salesUsers = users.filter((u) => u.menus?.includes('marketing'));
+      this.sourcingUsers = users.filter((u) => u.menus?.includes('sourcing'));
     });
 
     const initialRefresh = this.route.snapshot.queryParamMap.get('refresh');
